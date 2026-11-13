@@ -1,4 +1,4 @@
-const API_URL = process.env.API_URL ?? "http://localhost:3010";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 /**
  * Client-side API helper. Browser code calls this with relative paths
@@ -41,7 +41,7 @@ export async function api<T = unknown>(path: string, options: Options = {}): Pro
 
   const headers: Record<string, string> = { "content-type": "application/json", ...extraHeaders };
 
-  const base = typeof window === "undefined" ? API_URL : "";
+  const base = API_URL;
   const response = await fetch(base + path, {
     method,
     headers,

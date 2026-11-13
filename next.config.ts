@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const api = process.env.API_URL ?? "http://localhost:3010";
+    const api = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
     return {
       beforeFiles: [
         // The Next app proxies to the Fastify API so browser-side auth is same-origin

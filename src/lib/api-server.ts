@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
  * cookie header explicitly so pages can build it once and fan out requests.
  */
 
-const API_URL = process.env.API_URL ?? "http://localhost:3010";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 export class ApiServerError extends Error {
   constructor(

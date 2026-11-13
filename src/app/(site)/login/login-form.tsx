@@ -45,7 +45,7 @@ export default function LoginForm({
 
     setSubmitting(true);
     try {
-      const signIn = await fetch(process.env.API_URL  + "/api/auth/sign-in/email", {
+      const signIn = await fetch(process.env.NEXT_PUBLIC_API_URL  + "/api/auth/sign-in/email", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -65,7 +65,7 @@ export default function LoginForm({
         return;
       }
 
-      const me = await fetch(process.env.API_URL  + "/api/v1/users/me", {
+      const me = await fetch(process.env.NEXT_PUBLIC_API_URL  + "/api/v1/users/me", {
         credentials: "include",
         cache: "no-store",
       });
