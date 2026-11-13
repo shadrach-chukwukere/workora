@@ -8,7 +8,7 @@ import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon } from "@/li
 import type { PublicFreelancer } from "@/lib/api-data";
 
 const PAGE_SIZE = 9;
-const API = process.env.API_URL ?? "http://localhost:3010";
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.talent)[number]>(SORT_OPTIONS.talent.map((s) => [s.value, s]));
 const AVAILABILITY = new Map<string, (typeof AVAILABILITY_OPTIONS)[number]>(AVAILABILITY_OPTIONS.map((a) => [a.value, a]));

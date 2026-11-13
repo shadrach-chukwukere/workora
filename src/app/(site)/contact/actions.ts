@@ -32,7 +32,7 @@ export interface PasswordResetResult {
  * "use server" module.
  */
 export async function requestPasswordReset(email: string): Promise<PasswordResetResult> {
- const API = process.env.API_URL ?? "http://localhost:3010";
+ const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
  try {
   const response = await fetch(`${API}/api/auth/request-password-reset`, {
    method: "POST",

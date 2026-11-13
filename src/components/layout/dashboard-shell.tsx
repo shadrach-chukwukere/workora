@@ -211,7 +211,7 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
                 label: "Sign out",
                 danger: true,
                 onClick: () => {
-                  fetch(process.env.API_URL  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
+                  fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
                   toast.success("Signed out");
                   router.push("/login");
                   router.refresh();
@@ -297,7 +297,7 @@ function NotificationsBell({
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(process.env.API_URL  + "/api/v1/notifications", { cache: "no-store", credentials: "include" });
+        const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/notifications", { cache: "no-store", credentials: "include" });
         const json = (await res.json()) as { success: boolean; data?: { notifications: NotificationPayload[] } };
         if (!cancelled && json?.success && json.data) setItems(json.data.notifications);
       } catch {
@@ -314,7 +314,7 @@ function NotificationsBell({
 
   const markAllRead = async () => {
     setItems((list) => list.map((n) => ({ ...n, is_read: true })));
-    await fetch(process.env.API_URL  + "/api/v1/notifications/mark-all-read", { method: "POST", credentials: "include" }).catch(() => {});
+    await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/notifications/mark-all-read", { method: "POST", credentials: "include" }).catch(() => {});
   };
 
   const openItem = (n: NotificationPayload) => {

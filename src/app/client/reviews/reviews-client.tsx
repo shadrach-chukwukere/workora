@@ -147,7 +147,7 @@ export function ReviewsClient({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${process.env.API_URL}/api/v1/contracts/${encodeURIComponent(composerFor.id)}/reviews`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/contracts/${encodeURIComponent(composerFor.id)}/reviews`, {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },

@@ -125,7 +125,7 @@ export function PaymentsClient({
     const brand = cleanNumber.startsWith("5") ? "mastercard" : cleanNumber.startsWith("4") ? "visa" : "card";
     setActionPending(true);
     try {
-      const res = await fetch(process.env.API_URL  + "/api/v1/payments/methods", {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/payments/methods", {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
@@ -161,7 +161,7 @@ export function PaymentsClient({
     if (!deleteTarget || actionPending) return;
     setActionPending(true);
     try {
-      const res = await fetch(`${process.env.API_URL}/api/v1/payments/methods/${encodeURIComponent(deleteTarget.id)}`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/payments/methods/${encodeURIComponent(deleteTarget.id)}`, {
         method: "DELETE",
         credentials: "include",
       });

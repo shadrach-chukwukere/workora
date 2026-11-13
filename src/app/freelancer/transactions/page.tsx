@@ -76,7 +76,7 @@ export default function FreelancerTransactionsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), perPage: "50" });
       if (tab !== "all") params.set("type", tab);
-      const res = await fetch(`${process.env.API_URL}/api/v1/payments/transactions?${params.toString()}`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/payments/transactions?${params.toString()}`, {
         credentials: "include",
         cache: "no-store",
       });

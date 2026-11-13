@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors"; // <-- Import fastify cors
 import { env } from "./config/env.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { registerSecurityPlugins } from "./plugins/security.js";
@@ -6,8 +7,6 @@ import { ok } from "./utils/response.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { auth } from "./modules/auth/auth.js";
 import { registerModules } from "./modules/index.js";
-
-
 
 /**
  * The API app. Kept free of process-side effects so tests can inject into it
@@ -37,42 +36,54 @@ export async function buildApp(options: { logger?: boolean } = {}) {
   await registerSecurityPlugins(app);
   registerErrorHandler(app);
 
+  // Register Fastify CORS plugin correctly
+  await app.register(cors, {
+    origin: [
+      "https://workora-phi.vercel.app",
+      // Include your local dev environments if needed:
+      "http://localhost:3000",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  });
+
   // Populate request.currentUser once per request; public routes can ignore it.
   app.addHook("onRequest", authenticate);
 
-app.get("/healthz", async (_request, reply) => {
-  try {
-    const { db } = await import("./database/connection.js");
-    const database = await db();
+  app.get("/healthz", async (_request, reply) => {
+    try {
+      const { db } = await import("./database/connection.js");
+      const database = await db();
 
-    await database
-      .selectFrom("users")
-      .select("id")
-      .limit(1)
-      .execute();
+      await database
+        .selectFrom("users")
+        .select("id")
+        .limit(1)
+        .execute();
 
-    return reply.send(
-      ok({
-        status: "ok",
-        server: "up",
-        db: "up",
-      }),
-    );
-  } catch (error) {
-    app.log.error({ err: error }, "Health check failed");
+      return reply.send(
+        ok({
+          status: "ok",
+          server: "up",
+          db: "up",
+        }),
+      );
+    } catch (error) {
+      app.log.error({ err: error }, "Health check failed");
 
-    return reply.code(503).send({
-      success: false,
-      message: "Health check failed",
-      data: {
-        server: "up",
-        db: "down",
-        error:
-          error instanceof Error ? error.message : "Unknown database error",
-      },
-    });
-  }
-});
+      return reply.code(503).send({
+        success: false,
+        message: "Health check failed",
+        data: {
+          server: "up",
+          db: "down",
+          error:
+            error instanceof Error ? error.message : "Unknown database error",
+        },
+      });
+    }
+  });
 
   // Better Auth, mounted as a Web Request/Response handler on the same port.
   app.route({
@@ -95,7 +106,7 @@ app.get("/healthz", async (_request, reply) => {
         request.method !== "GET" &&
         request.method !== "HEAD" &&
         request.body !== undefined;
-     const body = hasBody
+      const body = hasBody
         ? Buffer.isBuffer(request.body)
           ? new Blob([request.body as unknown as ArrayBuffer])
           : typeof request.body === "string"

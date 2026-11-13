@@ -163,7 +163,7 @@ export function ProjectsClient({ projects, lifetimeSpendMinor }: { projects: Own
     setEditLoading(true);
     void (async () => {
       try {
-        const res = await fetch(`${process.env.API_URL}/api/v1/projects/${encodeURIComponent(project.id)}`, { credentials: "include" });
+        const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/projects/${encodeURIComponent(project.id)}`, { credentials: "include" });
         const envelope = (await res.json().catch(() => null)) as { success?: boolean; data?: ProjectDetailResponse } | null;
         const detail = envelope?.data?.project ?? null;
         setEditDetail(detail);
@@ -218,7 +218,7 @@ export function ProjectsClient({ projects, lifetimeSpendMinor }: { projects: Own
       const deadline = (detail?.deadline ?? editTarget.deadline ?? "").slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(deadline)) body.deadline = deadline;
 
-      const res = await fetch(`${process.env.API_URL}/api/v1/projects/${encodeURIComponent(editTarget.id)}`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/projects/${encodeURIComponent(editTarget.id)}`, {
         method: "PUT",
         credentials: "include",
         headers: { "content-type": "application/json" },

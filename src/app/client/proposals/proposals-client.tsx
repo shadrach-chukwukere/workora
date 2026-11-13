@@ -89,7 +89,7 @@ function ProposalsInner({ proposals }: { proposals: ReceivedProposal[] }) {
     if (actionPending) return;
     setActionPending(id);
     try {
-      const res = await fetch(`${process.env.API_URL}/api/v1/proposals/${encodeURIComponent(id)}/${kind}`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/proposals/${encodeURIComponent(id)}/${kind}`, {
         method: "POST",
         credentials: "include",
       });

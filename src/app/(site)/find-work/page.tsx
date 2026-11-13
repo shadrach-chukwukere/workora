@@ -8,7 +8,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { ArrowUpRight02Icon, Briefcase02Icon, Icon, Search01Icon, SearchRemoveIcon } from "@/lib/icons";
 
 const PAGE_SIZE = 9;
-const API = process.env.API_URL ?? "http://localhost:3010";
+const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.projects)[number]>(SORT_OPTIONS.projects.map((s) => [s.value, s]));
 const EXPERIENCE = new Map<string, (typeof EXPERIENCE_LEVELS)[number]>(EXPERIENCE_LEVELS.map((s) => [s.value, s]));

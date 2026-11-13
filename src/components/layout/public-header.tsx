@@ -43,7 +43,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
   const settingsHref = account ? `/${account.role}/settings` : "/login";
 
   const signOut = async () => {
-    await fetch(process.env.API_URL  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
+    await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
     toast.success("Signed out");
     setMenuOpen(false);
     router.push("/");

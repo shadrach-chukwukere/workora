@@ -94,7 +94,7 @@ export function ProposalsClient({ initialProposals }: { initialProposals: Propos
     if (withdrawing) return;
     setWithdrawing(true);
     try {
-      const res = await fetch(`${process.env.API_URL}/api/v1/proposals/${encodeURIComponent(id)}`, {
+      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")}/api/v1/proposals/${encodeURIComponent(id)}`, {
         method: "DELETE",
         credentials: "include",
       });
