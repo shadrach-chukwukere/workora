@@ -21,7 +21,13 @@ async function createKysely(): Promise<Kysely<DB>> {
   }
   return new Kysely<DB>({
     dialect: new PostgresDialect({
-      pool: new pg.Pool({ connectionString: url, max: 20 }),
+      pool: new pg.Pool({
+  connectionString: url,
+  max: 5,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  ssl: { rejectUnauthorized: true },
+}),
     }),
   });
 }
