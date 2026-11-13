@@ -22,7 +22,9 @@ export async function buildApp(options: { logger?: boolean } = {}) {
           },
     genReqId: (request) => {
       const header = request.headers["x-request-id"];
-      return typeof header === "string" && header.length > 0 ? header : crypto.randomUUID();
+      return typeof header === "string" && header.length > 0
+        ? header
+        : crypto.randomUUID();
     },
     trustProxy: env.NODE_ENV === "production",
     exposeHeadRoutes: false,
@@ -59,11 +61,25 @@ export async function buildApp(options: { logger?: boolean } = {}) {
       const proto = request.headers["x-forwarded-proto"] ?? "http";
       const host = `${Array.isArray(proto) ? proto[0] : proto}://${request.headers.host}`;
       const url = new URL(request.raw.url ?? "/", host);
-      const hasBody = request.method !== "GET" && request.method !== "HEAD" && request.body !== undefined;
+      const hasBody =
+        request.method !== "GET" &&
+        request.method !== "HEAD" &&
+        request.body !== undefined;
       const webRequest = new Request(url, {
         method: request.method,
         headers,
-        body: hasBody ? (Buffer.isBuffer(request.body) ? (request.body as Buffer) : typeof request.body === "string" ? (request.body as string) : JSON.stringify(request.body)) : undefined,
+        body: hasBody
+          ? Buffer.isBuffer(request.body)
+            ? new Uint8Array(
+                request.body.buffer.slice(
+                  request.body.byteOffset,
+                  request.body.byteOffset + request.body.byteLength,
+                ),
+              )
+            : typeof request.body === "string"
+              ? request.body
+              : JSON.stringify(request.body)
+          : undefined,
       });
       const response = await auth.handler(webRequest);
       reply.status(response.status);
