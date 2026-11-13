@@ -10,18 +10,7 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     crossOriginEmbedderPolicy: false,
   });
 
-  await app.register(cors, {
-    origin: (origin, cb) => {
-      // Same-origin requests (no Origin header) and explicitly listed origins pass.
-      if (!origin || corsOrigins.includes(origin)) {
-        cb(null, true);
-        return;
-      }
-      cb(new Error("CORS policy rejected this origin"), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  });
+
 
   await app.register(rateLimit, {
     timeWindow: "1 minute",
