@@ -1,0 +1,47 @@
+⚠ Warning: Next.js ignored package-lock.json in C:\Users\PC because it would include your home directory (C:\Users\PC).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+⚠ Slow filesystem detected. The benchmark took 716ms. If \\?\C:\Users\PC\projects\freelance\.next\dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+⨯ upstream image response timed out for https://i.pravatar.cc/150?u=d4cb1299-8ade-4b0b-8676-b3d13db565d4
+⨯ upstream image response timed out for https://i.pravatar.cc/150?u=2c97e0f8-028e-4ff7-94a1-3d0a6da468b4
+⨯ upstream image response timed out for https://i.pravatar.cc/150?u=880a328c-6598-4436-ac20-fc9bb3d87332
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+⨯ TypeError: Cannot read properties of undefined (reading 'opacity')
+    at ignore-listed frames {
+  digest: '136012599'
+}
+[browser] Uncaught TypeError: Cannot read properties of undefined (reading 'opacity')
+    at Array.sort (<anonymous>:1:19)

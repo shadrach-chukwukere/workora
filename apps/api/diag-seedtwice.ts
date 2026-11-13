@@ -1,0 +1,12 @@
+import pg from "pg";
+const c = new pg.Client({ connectionString: "postgresql://postgres@localhost:5432/workora_fresh_audit" });
+await c.connect();
+const r = await c.query("select count(*)::int n, count(distinct (user_id, provider_id))::int d from accounts where provider_id='credential'");
+console.log("credential accounts:", r.rows[0]);
+const u = await c.query("select count(*)::int n from users");
+console.log("users:", u.rows[0].n);
+const p = await c.query("select count(*)::int n from subscription_plans");
+console.log("plans:", p.rows[0].n);
+const pat = await c.query("select indexdef from pg_indexes where tablename='accounts'");
+console.log("accounts indexes:", pat.rows.map(x=>x.indexdef));
+await c.end();

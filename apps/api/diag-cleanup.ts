@@ -1,0 +1,11 @@
+import pg from "pg";
+const c = new pg.Client({ connectionString: "postgresql://postgres@localhost:5432/workora_fresh_audit" });
+await c.connect();
+const dbs = await c.query("select 1 from pg_database where datname='workora_fresh_audit'");
+console.log("scratch exists:", dbs.rowCount > 0);
+await c.end();
+const admin = new pg.Client({ connectionString: "postgresql://postgres@localhost:5432/postgres" });
+await admin.connect();
+await admin.query("DROP DATABASE workora_fresh_audit");
+console.log("scratch dropped");
+await admin.end();

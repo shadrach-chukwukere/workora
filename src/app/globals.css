@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand - deep iris violet. One accent, locked page-wide. */
+  --color-brand-50: #f0f0fe;
+  --color-brand-100: #e4e3fd;
+  --color-brand-200: #d0cefb;
+  --color-brand-300: #b2aef8;
+  --color-brand-400: #8e88f2;
+  --color-brand-500: #6f66ec;
+  --color-brand-600: #5a50e5;
+  --color-brand-700: #4a41cf;
+  --color-brand-800: #3e36a6;
+  --color-brand-900: #342f84;
+
+  /* Semantic surface tokens - border-led, elevation only where it communicates hierarchy. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f5f7;
+  --color-surface-hover: #f8f9fb;
+  --color-border: #e5e7eb;
+  --color-border-hover: #d4d6db;
+  --color-border-focus: var(--color-brand-600);
+
+  /* Text */
+  --color-text: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-inverse: #ffffff;
+
+  --font-sans: var(--font-geist-sans), "Geist Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono Fallback", ui-monospace, monospace;
+
+  /* Shadows - tinted, elevation only. No flat black shadows. */
+  --shadow-dropdown: 0 10px 30px -12px rgba(23, 23, 43, 0.16), 0 2px 6px -2px rgba(23, 23, 43, 0.06);
+  --shadow-overlay: 0 24px 60px -20px rgba(23, 23, 43, 0.32), 0 8px 24px -12px rgba(23, 23, 43, 0.12);
+  --shadow-sm: 0 1px 2px 0 rgba(23, 23, 43, 0.06);
+
+  --radius-interactive: 8px;
+  --radius-container: 12px;
+  --radius-overlay: 16px;
+  --radius-pill: 9999px;
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .card {
+    @apply rounded-xl border border-neutral-200 bg-white;
+  }
+
+  /* Skip link for keyboard users - visible on focus. */
+  .skip-link {
+    @apply absolute -top-12 left-4 z-50 px-3 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium transition-transform transform -translate-y-full focus-visible:translate-y-0;
+  }
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Smooth scroll for anchor navigation. */
+html {
+  scroll-behavior: smooth;
+}
+
+
+
+
+
+
+.form-background {
+   background-image: url("../assets/bg-form.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

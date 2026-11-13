@@ -1,0 +1,45 @@
+▲ Next.js 16.4.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.100.16:3000
+- Environments: .env
+✓ Ready in 15.5s
+✓ Running next.config.ts took 3.2s
+
+○ Compiling / ...
+ GET / 200 in 13.8s (next.js: 663ms, application-code: 13.2s)
+ GET / 200 in 1072ms (next.js: 4ms, application-code: 1069ms)
+○ Compiling /register ...
+ GET /register 200 in 673ms (next.js: 33ms, application-code: 639ms)
+○ Compiling /admin/dashboard ...
+ GET /admin/dashboard 200 in 5.2s (next.js: 84ms, application-code: 5.1s)
+ GET /admin/subscriptions 200 in 1251ms (next.js: 317ms, application-code: 933ms)
+ GET /admin/settings 200 in 636ms (next.js: 42ms, application-code: 595ms)
+○ Compiling /admin/verification ...
+ GET /admin/verification 200 in 967ms (next.js: 117ms, application-code: 850ms)
+○ Compiling /admin/analytics ...
+ GET /admin/analytics 200 in 1297ms (next.js: 33ms, application-code: 1264ms)
+ GET /admin/users 200 in 434ms (next.js: 33ms, application-code: 401ms)
+○ Compiling /login ...
+ GET /login 200 in 766ms (next.js: 52ms, application-code: 714ms)
+○ Compiling /client/dashboard ...
+ GET /client/dashboard 200 in 5.2s (next.js: 678ms, application-code: 4.5s)
+ GET /client/dashboard 200 in 5.1s (next.js: 4ms, application-code: 5.1s)
+✓ Finished filesystem cache database compaction in 36.3min
+ GET / 200 in 4.4s (next.js: 25ms, application-code: 4.4s)
+✓ Finished writing to filesystem cache in 17.9s
+✓ Finished writing to filesystem cache in 12.0s
+✓ Compiled in 310.4s
+○ Compiling / ...
+✓ Compiled in 2.8s
+✓ Compiled in 594ms
+○ Compiling / ...
+ GET / 200 in 8.4s (next.js: 45ms, application-code: 8.3s)
+✓ Compiled in 315ms
+ GET / 200 in 220ms (next.js: 4ms, application-code: 216ms)
+✓ Compiled in 318ms
+ GET / 200 in 143ms (next.js: 3ms, application-code: 140ms)
+✓ Compiled in 219ms
+ GET /find-talent 200 in 389ms (next.js: 24ms, application-code: 366ms)
+ GET /find-work 200 in 289ms (next.js: 52ms, application-code: 237ms)
+ GET /categories 200 in 893ms (next.js: 19ms, application-code: 874ms)
+✓ Finished writing to filesystem cache in 2.2min
