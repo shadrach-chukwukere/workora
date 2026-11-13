@@ -266,7 +266,7 @@ export default function PostProjectPage() {
         });
       }
 
-      toast.success("Project posted as a draft. Publish it from your listings when you are ready.");
+      toast.success("Project published successfully!");
       router.push("/client/projects");
     } finally {
       setSubmitting(false);

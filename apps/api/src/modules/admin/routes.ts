@@ -97,6 +97,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const page = Math.max(1, Number(query.page ?? "1") || 1);
     const perPage = Math.min(100, Math.max(1, Number(query.perPage ?? "50") || 50));
     const instance = await db();
+    const whereSql = 'WHERE 1 = 1';
     const filters = [
       status ? sql`AND p.status = ${status}` : sql``,
       q ? sql`AND (p.title ILIKE ${"%" + q + "%"} OR p.summary ILIKE ${"%" + q + "%"})` : sql``,
@@ -114,11 +115,11 @@ export default async function adminRoutes(app: FastifyInstance) {
       LEFT JOIN categories c ON c.id = p.category_id
       JOIN users cu ON cu.id = p.client_id
       LEFT JOIN client_profiles cp ON cp.user_id = p.client_id
-      WHERE 1 = 1 ${sql.join(filters, sql` `)}
+      WHERE 1 = 1 ${whereSql}}
       ORDER BY p.created_at DESC
       LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
     `.execute(instance).then((r) => r.rows);
-    const total = Number((await sql<{ count: string }>`SELECT COUNT(*)::text AS count FROM projects p WHERE 1 = 1 ${sql.join(filters, sql` `)}`.execute(instance).then((r) => r.rows[0]!.count)));
+    const total = Number((await sql<{ count: string }>`SELECT COUNT(*)::text AS count FROM projects p WHERE 1 = 1 ${whereSql}}`.execute(instance).then((r) => r.rows[0]!.count)));
     reply.send(ok({ projects: rows, page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) }));
   });
 
@@ -128,6 +129,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const q = (query.q ?? "").trim();
     const status = query.status;
     const instance = await db();
+    const whereSql = 'WHERE 1 = 1';
     const filters = [
       status ? sql`AND c.status = ${status}` : sql``,
       q ? sql`AND (c.title_snapshot ILIKE ${"%" + q + "%"} OR cu.name ILIKE ${"%" + q + "%"} OR fu.name ILIKE ${"%" + q + "%"})` : sql``,
@@ -150,7 +152,7 @@ export default async function adminRoutes(app: FastifyInstance) {
                SUM(amount_minor) AS total_amount, SUM(amount_minor) FILTER (WHERE status = 'paid') AS paid_amount
         FROM contract_milestones GROUP BY contract_id
       ) m ON m.contract_id = c.id
-      WHERE 1 = 1 ${sql.join(filters, sql` `)}
+      WHERE 1 = 1 ${whereSql}}
       ORDER BY c.created_at DESC
       LIMIT 100
     `.execute(instance).then((r) => r.rows);
@@ -165,6 +167,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const status = query.status;
     const limit = Math.min(200, Math.max(1, Number(query.limit ?? "100") || 100));
     const instance = await db();
+    const whereSql = 'WHERE 1 = 1';
     const filters = [
       type ? sql`AND t.type = ${type}` : sql``,
       status ? sql`AND t.status = ${status}` : sql``,
@@ -176,7 +179,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       SELECT t.id, t.user_id, u.name AS user_name, t.type, t.amount_minor::text AS amount_minor, t.currency, t.status, t.description, t.created_at, t.contract_id
       FROM transactions t
       JOIN users u ON u.id = t.user_id
-      WHERE 1 = 1 ${sql.join(filters, sql` `)}
+      WHERE 1 = 1 ${whereSql}}
       ORDER BY t.created_at DESC
       LIMIT ${limit}
     `.execute(instance).then((r) => r.rows);
@@ -188,6 +191,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const query = request.query as Record<string, string>;
     const status = query.status;
     const instance = await db();
+    const whereSql = 'WHERE 1 = 1';
     const filters = [status ? sql`AND d.status = ${status}` : sql``];
     const rows = await sql<{
       id: string; contract_id: string; title_snapshot: string; contract_total_minor: string; opened_by: string; opened_by_name: string; client_name: string; freelancer_name: string;
@@ -202,7 +206,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       JOIN users opener ON opener.id = d.opened_by
       JOIN users cu ON cu.id = c.client_id
       JOIN users fu ON fu.id = c.freelancer_id
-      WHERE 1 = 1 ${sql.join(filters, sql` `)}
+      WHERE 1 = 1 ${whereSql}}
       ORDER BY d.opened_at DESC
       LIMIT 100
     `.execute(instance).then((r) => r.rows);
@@ -215,6 +219,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     const q = (query.q ?? "").trim();
     const reportedOnly = query.reported === "true" || query.reported === "1";
     const instance = await db();
+    const whereSql = 'WHERE 1 = 1';
     const filters = [
       q ? sql`AND (ru.name ILIKE ${"%" + q + "%"} OR su.name ILIKE ${"%" + q + "%"} OR r.comment ILIKE ${"%" + q + "%"})` : sql``,
     ];
@@ -227,7 +232,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       FROM reviews r
       JOIN users ru ON ru.id = r.reviewer_id
       JOIN users su ON su.id = r.reviewee_id
-      WHERE 1 = 1 ${sql.join(filters, sql` `)}
+      WHERE 1 = 1 ${whereSql}}
       ORDER BY r.created_at DESC
       LIMIT 200
     `.execute(instance).then((r) => r.rows);

@@ -187,11 +187,11 @@ function combinedWhere(fragments: RawBuilder<SqlBool>[]): RawBuilder<SqlBool> {
 /* Projects                                                                    */
 /* -------------------------------------------------------------------------- */
 
-export async function insertProject(db: Db, clientId: string, input: ProjectBody) {
+export async function insertProject(db: Db, clientId: string, input: ProjectBody, status: "draft" | "open" = "draft") {
   const values = toDbProjectInput(input);
   const row = await db
     .insertInto("projects")
-    .values({ ...values, client_id: clientId, status: "draft" } as never)
+    .values({ ...values, client_id: clientId, status } as never)
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;

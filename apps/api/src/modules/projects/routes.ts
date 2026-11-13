@@ -35,11 +35,11 @@ function parseParams<T>(schema: ZodType<T>, params: unknown): T {
 }
 
 export default async function projectsRoutes(app: FastifyInstance) {
-  /** POST /api/v1/projects — create a draft project (client only). */
+  /** POST /api/v1/projects — create and publish a project (client only). */
   app.post("/projects", { preHandler: [requireAuth, requireAccountType("client")] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const input = parse(projectBodySchema, request.body);
     const project = await service.createProject(await db(), request.currentUser!, input);
-    reply.send(ok({ project }, "Project created"));
+    reply.send(ok({ project }, "Project published"));
   });
 
   /** GET /api/v1/projects — public, paginated marketplace listing. */

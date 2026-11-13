@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/form";
-import { PageHeader } from "@/components/ui/page-blocks";
+import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
-import { Download01Icon, Icon, Search01Icon } from "@/lib/icons";
+import { Download01Icon, Icon, Search01Icon, SearchRemoveIcon } from "@/lib/icons";
 import { formatDate, formatMoney, labelize } from "@/lib/format";
 
 export interface TransactionRow {

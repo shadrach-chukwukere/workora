@@ -30,6 +30,7 @@ interface ConversationLastMessage {
   senderId: string;
   body: string;
   createdAt: string;
+  isDeleted: boolean;
 }
 
 interface Conversation {

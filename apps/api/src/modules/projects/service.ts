@@ -31,7 +31,7 @@ async function checkCategory(db: Db, categoryId: string | undefined): Promise<vo
 
 export async function createProject(db: Db, user: AuthedUser, input: ProjectBody) {
   await checkCategory(db, input.categoryId);
-  const id = await repo.insertProject(db, user.id, input);
+  const id = await repo.insertProject(db, user.id, input, "open");
   const project = await repo.findProjectById(db, id);
   if (!project) {
     throw new AppError(500, "INTERNAL_ERROR", "Project was created but could not be loaded", {});

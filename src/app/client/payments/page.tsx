@@ -3,7 +3,7 @@ import { apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { PaymentsClient } from "./payments-client";
 
 interface MethodsResponse {
-  methods: { id: string; provider: string; brand: string | null; last_four: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean; created_at: string }[];
+  methods: { id: string; user_id: string; provider: string; provider_method_id: string | null; brand: string | null; last_four: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean; created_at: string }[];
 }
 
 interface TransactionsResponse {

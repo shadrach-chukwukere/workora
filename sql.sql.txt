@@ -1,0 +1,407 @@
+-- sql.sql.txt — Idempotent database schema for Workora
+-- Run via: psql -f sql.sql.txt  OR  via the Kysely migrator + sql.sql.txt bootstrap
+-- Safe to run repeatedly; uses IF NOT EXISTS / IF NOT EXISTS patterns where supported.
+-- PostgreSQL dialect; adapt syntax for other databases.
+
+-- =============================================================================
+-- Extensions
+-- =============================================================================
+CREATE EXTENSION IF NOT EXISTS "pg_catalog"."uuid_ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_catalog"."pg_stat_statements";
+
+-- =============================================================================
+-- Enums
+-- =============================================================================
+CREATE TYPE IF NOT EXISTS "account_type" AS ENUM ('freelancer', 'client', 'admin');
+CREATE TYPE IF NOT EXISTS "status" AS ENUM ('active', 'suspended', 'restricted');
+CREATE TYPE IF NOT EXISTS "budget_type" AS ENUM ('fixed', 'hourly');
+CREATE TYPE IF NOT EXISTS "duration_bucket" AS ENUM ('lt-1m', '1-3m', '3-6m', 'gt-6m');
+CREATE TYPE IF NOT EXISTS "payment_provider" AS ENUM ('stripe', 'paystack');
+CREATE TYPE IF NOT EXISTS "milestone_status" AS ENUM ('in_review', 'approved', 'paid');
+CREATE TYPE IF NOT EXISTS "transaction_type" AS ENUM ('payment', 'commission', 'refund', 'withdrawal', 'topup', 'payout');
+CREATE TYPE IF NOT EXISTS "resolution_outcome" AS ENUM ('approved', 'rejected', 'settled');
+
+-- =============================================================================
+-- Core tables
+-- =============================================================================
+
+-- users
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  email_verified BOOLEAN DEFAULT TRUE,
+  account_type "account_type" NOT NULL DEFAULT 'freelancer',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- sessions (Better Auth manages sessions, but we keep a baseline)
+CREATE TABLE IF NOT EXISTS sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- roles
+CREATE TABLE IF NOT EXISTS roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL, -- e.g. "admin.owner", "client.standard", "freelancer.standard"
+  name TEXT NOT NULL,
+  description TEXT
+);
+
+-- permissions
+CREATE TABLE IF NOT EXISTS permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL, -- e.g. "admin.users", "admin.moderation"
+  description TEXT
+);
+
+-- user_roles (junction table)
+CREATE TABLE IF NOT EXISTS user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  UNIQUE(user_id, role_id)
+);
+
+-- =============================================================================
+-- Payments / money tables
+-- =============================================================================
+
+-- payment_methods
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider "payment_provider" NOT NULL,
+  provider_method_id TEXT NOT NULL, -- synthetic demo token, e.g. demo-visa-4169
+  brand TEXT,
+  last_four TEXT,
+  exp_month SMALLINT,
+  exp_year SMALLINT,
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  UNIQUE(user_id, provider_method_id)
+);
+
+-- payments (milestones, subscriptions, top-ups, etc.)
+CREATE TABLE IF NOT EXISTS payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider "payment_provider" NOT NULL,
+  kind "milestone_status" NOT NULL DEFAULT 'pending', -- pending | in_review | approved | paid
+  provider_ref TEXT,
+  amount_minor INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  status TEXT NOT NULL DEFAULT 'pending',
+  contract_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+  milestone_id UUID REFERENCES contract_milestones(id) ON DELETE SET NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- =============================================================================
+-- Project / contract tables
+-- =============================================================================
+
+-- categories
+CREATE TABLE IF NOT EXISTS categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  kind TEXT DEFAULT 'category',
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- projects
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  summary TEXT,
+  description TEXT,
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  status "status" NOT NULL DEFAULT 'open',
+  budget_type "budget_type" NOT NULL,
+  budget_min_minor INTEGER,
+  budget_max_minor INTEGER,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  experience_level TEXT DEFAULT 'intermediate',
+  duration_bucket duration_bucket,
+  proposals_count INTEGER DEFAULT 0,
+  invited_only BOOLEAN DEFAULT FALSE,
+  published_at TIMESTAMP WITH TIME ZONE,
+  deadline TIMESTAMP WITH TIME ZONE,
+  close_reason TEXT,
+  client_company_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- contracts
+CREATE TABLE IF NOT EXISTS contracts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  freelancer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title_snapshot TEXT NOT NULL,
+  status "status" NOT NULL DEFAULT 'active',
+  total_minor INTEGER NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  started_at TIMESTAMP WITH TIME ZONE,
+  ended_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- contract_milestones
+CREATE TABLE IF NOT EXISTS contract_milestones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  amount_minor INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  status "milestone_status" NOT NULL DEFAULT 'in_review',
+  client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  freelancer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  contract_currency TEXT NOT NULL DEFAULT 'USD',
+  milestone_title TEXT,
+  milestone_amount_minor INTEGER,
+  milestone_status "milestone_status" NOT NULL DEFAULT 'in_review',
+  approved_at TIMESTAMP WITH TIME ZONE,
+  paid_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- =============================================================================
+-- Transaction / ledger tables
+-- =============================================================================
+
+-- transactions
+CREATE TABLE IF NOT EXISTS transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type "transaction_type" NOT NULL DEFAULT 'payment',
+  amount_minor INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  status "status" NOT NULL DEFAULT 'pending',
+  counterparty_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  contract_id UUID REFERENCES contracts(id) ON DELETE SET NULL,
+  payment_id UUID REFERENCES payments(id) ON DELETE SET NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- platform_fees
+CREATE TABLE IF NOT EXISTS platform_fees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  milestone_id UUID REFERENCES contract_milestones(id) ON DELETE SET NULL,
+  amount_minor INTEGER NOT NULL,
+  rate_bps INTEGER NOT NULL DEFAULT 1000, -- 10% = 1000 bps
+  currency TEXT NOT NULL DEFAULT 'USD',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- =============================================================================
+-- Dispute / review tables
+-- =============================================================================
+
+-- disputes
+CREATE TABLE IF NOT EXISTS disputes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  opened_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status "status" NOT NULL DEFAULT 'open',
+  reason TEXT,
+  details TEXT,
+  amount_minor INTEGER,
+  currency TEXT DEFAULT 'USD',
+  resolution "resolution_outcome",
+  resolution_outcome "resolution_outcome",
+  opened_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  resolved_at TIMESTAMP WITH TIME ZONE,
+  closed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- reviews
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+  reviewer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reviewee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  -- computed fields (materialized or calculated on read)
+  reported BOOLEAN DEFAULT FALSE
+);
+
+-- =============================================================================
+-- Auxiliary / helper tables
+-- =============================================================================
+
+-- freelancer_profiles
+CREATE TABLE IF NOT EXISTS freelancer_profiles (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  headline TEXT,
+  location TEXT,
+  hourly_rate_minor INTEGER,
+  rating_avg NUMERIC(3,2) DEFAULT 0,
+  rating_count INTEGER DEFAULT 0,
+  completed_count INTEGER DEFAULT 0,
+  company_name TEXT,
+  industry TEXT,
+  spent_minor INTEGER DEFAULT 0,
+  projects_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- client_profiles
+CREATE TABLE IF NOT EXISTS client_profiles (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  company_name TEXT,
+  company_size TEXT,
+  industry TEXT,
+  about TEXT,
+  spent_minor INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- subscription_plans
+CREATE TABLE IF NOT EXISTS subscription_plans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  audience "account_type" NOT NULL,
+  price_minor INTEGER NOT NULL,
+  interval "interval" NOT NULL DEFAULT 'month', -- month | year | week
+  features TEXT DEFAULT '[]'::text,
+  is_active BOOLEAN DEFAULT TRUE,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- subscriptions
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE CASCADE,
+  interval "interval" NOT NULL DEFAULT 'month',
+  status "status" NOT NULL DEFAULT 'active',
+  started_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  current_period_end TIMESTAMP WITH TIME ZONE,
+  canceled_at TIMESTAMP WITH TIME ZONE,
+  cancel_at_period_end BOOLEAN DEFAULT FALSE,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- =============================================================================
+-- Indexes & helpful constraints
+-- =============================================================================
+
+-- Users lookups
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_account_type ON users("account_type");
+
+-- Projects lookups
+CREATE INDEX IF NOT EXISTS idx_projects_client_id ON projects(client_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_category_id ON projects(category_id);
+
+-- Contracts lookups
+CREATE INDEX IF NOT EXISTS idx_contracts_project_id ON contracts(project_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_client_id ON contracts(client_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_freelancer_id ON contracts(freelancer_id);
+
+-- Milestones lookups
+CREATE INDEX IF NOT EXISTS idx_contract_milestones_contract_id ON contract_milestones(contract_id);
+CREATE INDEX IF NOT EXISTS idx_contract_milestones_status ON contract_milestones(status);
+
+-- Payments lookups
+CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_kind ON payments(kind);
+
+-- Transactions lookups
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
+
+-- Payment methods lookups
+CREATE INDEX IF NOT EXISTS idx_payment_methods_user_id ON payment_methods(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_methods_provider ON payment_methods(provider);
+
+-- Subscriptions lookups
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+
+-- Reviews lookups
+CREATE INDEX IF NOT EXISTS idx_reviews_contract_id ON reviews(contract_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_id ON reviews(reviewer_id);
+
+-- =============================================================================
+-- Row-level security policies (Postgres RLS example)
+-- =============================================================================
+-- These policies restrict access so users can only read/write their own data.
+-- Enable RLS on tables and assign these policies as needed.
+
+-- Example: users can only update their own profile
+-- ALTER TABLE freelancer_profiles ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Users can view own profile" ON freelancer_profiles FOR SELECT USING (user_id = current_setting('app.current_user_id')::uuid);
+-- CREATE POLICY "Users can update own profile" ON freelancer_profiles FOR UPDATE USING (user_id = current_setting('app.current_user_id')::uuid);
+
+-- Example: users can only create their own projects
+-- ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Users can create their own projects" ON projects FOR INSERT WITH CHECK (client_id = current_setting('app.current_user_id')::uuid);
+-- CREATE POLICY "Users can view own projects" ON projects FOR SELECT USING (client_id = current_setting('app.current_user_id')::uuid);
+
+-- =============================================================================
+-- Idempotent seed data (INSERT ... ON CONFLICT DO NOTHING)
+-- =============================================================================
+-- Run after the schema is set up. Seed data is integration-test gated; production
+-- should only include rows that are safe for a multi-tenant marketplace.
+
+-- Permissions (starter set)
+INSERT INTO permissions (key, description) VALUES
+  ('admin.access', 'Open the admin console'),
+  ('admin.users', 'Manage users'),
+  ('admin.moderation', 'Moderate projects, listings and reviews'),
+  ('admin.transactions', 'Review financial records'),
+  ('admin.verification', 'Decide identity verification'),
+  ('admin.disputes', 'Resolve disputes'),
+  ('admin.subscriptions', 'Manage subscriptions and billing'),
+  ('admin.reports', 'Generate platform reports'),
+  ('admin.settings', 'Change platform settings'),
+  ('admin.analytics', 'View platform analytics'),
+ON CONFLICT (key) DO NOTHING;
+
+-- Roles (starter set)
+INSERT INTO roles (key, name, description) VALUES
+  ('admin.owner', 'Console owner', 'Full access to every admin permission'),
+  ('admin.trust', 'Trust & safety', 'Verification, disputes and moderation'),
+  ('admin.finance', 'Finance', 'Transactions, subscriptions and reports'),
+  ('client.standard', 'Client', 'Standard client access'),
+  ('freelancer.standard', 'Freelancer', 'Standard freelancer access')
+ON CONFLICT (key) DO NOTHING;
+
+-- Note: Additional seed data (users, project samples, etc.) should be gated
+-- behind an environment flag (e.g. SEED_DEMO_DATA=true) and is not intended
+-- for production databases.

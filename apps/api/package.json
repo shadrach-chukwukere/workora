@@ -13,7 +13,8 @@
                     "start":  "node dist/server.js",
                     "typecheck":  "tsc --noEmit",
                     "migrate":  "node --import tsx src/database/migrate.ts",
-                    "seed":  "node --import tsx src/database/seeds/run.ts",
+                    "seed":  "node --import tsx src/database/seeds/seed.ts",
+                    "db:setup": "node --import tsx -e \"import('./src/database/migrate.js').then(m => m.migrate()).then(() => import('./src/database/seeds/seed.js')).then(s => s.seed()).then(() => console.log('database up to date'))\"",
                     "test":  "node --import tsx --test test/*.test.ts",
                     "test:watch":  "node --import tsx --test --watch test/*.test.ts",
                     "admin:create":  "node --import tsx src/modules/admin/create-admin.ts"

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input } from "@/components/ui/form";
 import { PageHeader, StatCard } from "@/components/ui/page-blocks";
-import { Download01Icon, Icon, Search01Icon, Wallet01Icon } from "@/lib/icons";
+import { Download01Icon, Icon, Search01Icon, SearchRemoveIcon, Wallet01Icon } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 import { formatDateShort, formatMoney, labelize } from "@/lib/format";
 
 type TypeFilter = "all" | "milestone" | "commission" | "withdrawal" | "refund";
