@@ -43,14 +43,14 @@ export default function AdminVerificationPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/v1/verification-requests?status=pending", { cache: "no-store", credentials: "include" });
+        const res = await fetch(process.env.API_URL  + "/api/v1/verification-requests?status=pending", { cache: "no-store", credentials: "include" });
         if (!res.ok) {
           if (cancelled) return;
           setError(res.status === 403 ? "Admin verification permission is required for this queue." : "Could not load the verification queue.");
           return;
         }
         const pending = (await res.json()) as { data?: { requests: VerificationRequest[] } };
-        const infoRes = await fetch("/api/v1/verification-requests?status=info_requested", { cache: "no-store", credentials: "include" });
+        const infoRes = await fetch(process.env.API_URL  + "/api/v1/verification-requests?status=info_requested", { cache: "no-store", credentials: "include" });
         const infoRequested = infoRes.ok ? ((await infoRes.json()) as { data?: { requests: VerificationRequest[] } }).data?.requests ?? [] : [];
         if (cancelled) return;
         setItems([...(pending.data?.requests ?? []), ...infoRequested]);
@@ -128,7 +128,7 @@ export default function AdminVerificationPage() {
     if (!infoTarget || draft.length === 0) return;
     setBusy(true);
     try {
-      const res = await fetch(`/api/v1/verification-requests/${encodeURIComponent(infoTarget.id)}/request-info`, {
+      const res = await fetch(`${process.env.API_URL }/api/v1/verification-requests/${encodeURIComponent(infoTarget.id)}/request-info`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",

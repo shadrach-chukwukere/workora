@@ -107,7 +107,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
     if (savingBusiness) return;
     setSavingBusiness(true);
     try {
-      const res = await fetch("/api/v1/clients/me", {
+      const res = await fetch(process.env.API_URL  + "/api/v1/clients/me", {
         method: "PATCH",
         credentials: "include",
         headers: { "content-type": "application/json" },
@@ -142,7 +142,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
     try {
       const payload: Record<string, string> = { name: data.name.trim() };
       if (data.image.trim()) payload.image = data.image.trim();
-      const res = await fetch("/api/v1/users/me", {
+      const res = await fetch(process.env.API_URL  + "/api/v1/users/me", {
         method: "PATCH",
         credentials: "include",
         headers: { "content-type": "application/json" },

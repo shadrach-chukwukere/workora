@@ -125,7 +125,7 @@ export default function ClientMessagesPage() {
 
   const loadConversations = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/conversations", { credentials: "include", cache: "no-store" });
+      const res = await fetch(process.env.API_URL  + "/api/v1/conversations", { credentials: "include", cache: "no-store" });
       if (res.status === 401 || res.status === 403) {
         router.push("/login");
         return;
@@ -148,7 +148,7 @@ export default function ClientMessagesPage() {
     void loadConversations();
     void (async () => {
       try {
-        const res = await fetch("/api/v1/users/me", { credentials: "include", cache: "no-store" });
+        const res = await fetch(process.env.API_URL  + "/api/v1/users/me", { credentials: "include", cache: "no-store" });
         const envelope = (await res.json().catch(() => null)) as { success?: boolean; data?: { user?: { id: string } } } | null;
         if (envelope?.success && envelope.data?.user?.id) setMyId(envelope.data.user.id);
       } catch {
@@ -179,8 +179,8 @@ export default function ClientMessagesPage() {
     setLoadingMessages(true);
     try {
       const [messagesRes] = await Promise.all([
-        fetch(`/api/v1/conversations/${encodeURIComponent(id)}/messages`, { credentials: "include", cache: "no-store" }),
-        fetch(`/api/v1/conversations/${encodeURIComponent(id)}/read`, { method: "POST", credentials: "include" }),
+        fetch(`${process.env.API_URL}/api/v1/conversations/${encodeURIComponent(id)}/messages`, { credentials: "include", cache: "no-store" }),
+        fetch(`${process.env.API_URL}/api/v1/conversations/${encodeURIComponent(id)}/read`, { method: "POST", credentials: "include" }),
       ]);
       if (messagesRes.status === 401 || messagesRes.status === 403) {
         router.push("/login");
@@ -205,7 +205,7 @@ export default function ClientMessagesPage() {
     if (!body || sending) return;
     setSending(true);
     try {
-      const res = await fetch(`/api/v1/conversations/${encodeURIComponent(selected.id)}/messages`, {
+      const res = await fetch(`${process.env.API_URL}/api/v1/conversations/${encodeURIComponent(selected.id)}/messages`, {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },

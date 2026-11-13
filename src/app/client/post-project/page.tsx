@@ -102,8 +102,8 @@ export default function PostProjectPage() {
     async function load() {
       try {
         const [categoriesRes, skillsRes] = await Promise.all([
-          fetch("/api/v1/categories", { credentials: "include" }),
-          fetch("/api/v1/skills", { credentials: "include" }),
+          fetch(process.env.API_URL  + "/api/v1/categories", { credentials: "include" }),
+          fetch(process.env.API_URL  + "/api/v1/skills", { credentials: "include" }),
         ]);
         if (cancelled) return;
         const categoriesBody = (await categoriesRes.json().catch(() => null)) as
@@ -216,7 +216,7 @@ export default function PostProjectPage() {
       }
       if (data.deadline.trim()) body.deadline = data.deadline;
 
-      const res = await fetch("/api/v1/projects", {
+      const res = await fetch(process.env.API_URL  + "/api/v1/projects", {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
@@ -250,7 +250,7 @@ export default function PostProjectPage() {
       const unmatched = parsedSkills.filter((skill) => !skillIdsByName.has(skill.toLowerCase()));
       if (matchedIds.length > 0) {
         try {
-          await fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/skills`, {
+          await fetch(`${process.env.API_URL}/api/v1/projects/${encodeURIComponent(projectId)}/skills`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },

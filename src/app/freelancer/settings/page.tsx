@@ -59,7 +59,7 @@ export default function FreelancerSettingsPage() {
   async function load() {
     setError(null);
     try {
-      const res = await fetch("/api/v1/users/me", { credentials: "include", cache: "no-store" });
+      const res = await fetch(process.env.API_URL  + "/api/v1/users/me", { credentials: "include", cache: "no-store" });
       if (res.status === 401) {
         router.push("/login");
         return;
@@ -153,7 +153,7 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
   const preview = (watch("image") ?? "").trim();
 
   async function onSubmit(values: ProfileValues) {
-    const res = await fetch("/api/v1/users/me", {
+    const res = await fetch(process.env.API_URL  + "/api/v1/users/me", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -257,7 +257,7 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
   const availability = watch("availability");
 
   async function onSubmit(values: FreelancerValues) {
-    const res = await fetch("/api/v1/freelancers/me", {
+    const res = await fetch(process.env.API_URL  + "/api/v1/freelancers/me", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -351,7 +351,7 @@ function PasswordCard() {
   });
 
   async function onSubmit(values: PasswordValues) {
-    const res = await fetch("/api/auth/change-password", {
+    const res = await fetch(process.env.API_URL  + "/api/auth/change-password", {
       method: "POST",
       credentials: "include",
       headers: { "content-type": "application/json" },

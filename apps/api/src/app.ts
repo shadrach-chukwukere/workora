@@ -7,6 +7,8 @@ import { authenticate } from "./middleware/authenticate.js";
 import { auth } from "./modules/auth/auth.js";
 import { registerModules } from "./modules/index.js";
 
+
+
 /**
  * The API app. Kept free of process-side effects so tests can inject into it
  * and the WebSocket server can attach later on the same instance.
@@ -38,11 +40,39 @@ export async function buildApp(options: { logger?: boolean } = {}) {
   // Populate request.currentUser once per request; public routes can ignore it.
   app.addHook("onRequest", authenticate);
 
-  app.get("/healthz", async (_request, reply) => {
-    const db = await import("./database/connection.js").then((m) => m.db());
-    await db.selectFrom("users").select("id").limit(1).execute();
-    reply.send(ok({ status: "ok", db: "up" }));
-  });
+app.get("/healthz", async (_request, reply) => {
+  try {
+    const { db } = await import("./database/connection.js");
+    const database = await db();
+
+    await database
+      .selectFrom("users")
+      .select("id")
+      .limit(1)
+      .execute();
+
+    return reply.send(
+      ok({
+        status: "ok",
+        server: "up",
+        db: "up",
+      }),
+    );
+  } catch (error) {
+    app.log.error({ err: error }, "Health check failed");
+
+    return reply.code(503).send({
+      success: false,
+      message: "Health check failed",
+      data: {
+        server: "up",
+        db: "down",
+        error:
+          error instanceof Error ? error.message : "Unknown database error",
+      },
+    });
+  }
+});
 
   // Better Auth, mounted as a Web Request/Response handler on the same port.
   app.route({
