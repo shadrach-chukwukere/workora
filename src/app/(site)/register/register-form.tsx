@@ -76,7 +76,7 @@ export default function RegisterForm() {
     setSending(true);
 
     try {
-      const signup = await fetch(process.env.NEXT_PUBLIC_API_URL  + "/api/auth/sign-up/email", {
+      const signup = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-up/email", {
         method: "POST",
         headers: { "content-type": "application/json", origin: window.location.origin },
         body: JSON.stringify({ name: values.name, email: values.email, password: values.password }),
@@ -88,7 +88,7 @@ export default function RegisterForm() {
         return;
       }
 
-      const setType = await fetch(process.env.NEXT_PUBLIC_API_URL  + "/api/v1/users/me/account-type", {
+      const setType = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me/account-type", {
         method: "PATCH",
         headers: { "content-type": "application/json", origin: window.location.origin },
         credentials: "include",
