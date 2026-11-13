@@ -65,21 +65,18 @@ export async function buildApp(options: { logger?: boolean } = {}) {
         request.method !== "GET" &&
         request.method !== "HEAD" &&
         request.body !== undefined;
+     const body = hasBody
+        ? Buffer.isBuffer(request.body)
+          ? new Blob([request.body as unknown as ArrayBuffer])
+          : typeof request.body === "string"
+            ? request.body
+            : JSON.stringify(request.body)
+        : undefined;
+
       const webRequest = new Request(url, {
         method: request.method,
         headers,
-        body: hasBody
-          ? Buffer.isBuffer(request.body)
-            ? new Uint8Array(
-                request.body.buffer.slice(
-                  request.body.byteOffset,
-                  request.body.byteOffset + request.body.byteLength,
-                ),
-              )
-            : typeof request.body === "string"
-              ? request.body
-              : JSON.stringify(request.body)
-          : undefined,
+        body,
       });
       const response = await auth.handler(webRequest);
       reply.status(response.status);
