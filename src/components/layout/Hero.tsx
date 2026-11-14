@@ -30,7 +30,7 @@ export default function Hero() {
             place for the whole arc from brief to payment.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-3 justify-center">
-            <Button href={account ? "workspace" : "/register"} size="lg">
+            <Button href={account ? "/workspace" : "/register"} size="lg">
               {account ? "Open your dashboard" : "Start hiring"}
             </Button>
             <Button href="/find-work" variant="secondary" size="lg">

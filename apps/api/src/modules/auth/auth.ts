@@ -21,7 +21,9 @@ export const auth = betterAuth({
     minPasswordLength: 12,
     maxPasswordLength: 128,
     autoSignIn: env.NODE_ENV !== "production",
-    requireEmailVerification: env.NODE_ENV === "production",
+    // Only require email verification when Resend is actually configured;
+    // otherwise sign-up would stall on a verification email that can never be sent.
+    requireEmailVerification: env.NODE_ENV === "production" && Boolean(env.RESEND_API_KEY),
     // Argon2id, per project security requirements
     password: {
       hash: async (password: string) => hash(password),
@@ -39,7 +41,7 @@ export const auth = betterAuth({
   },
 
   emailVerification: {
-    sendOnSignUp: env.NODE_ENV === "production",
+    sendOnSignUp: env.NODE_ENV === "production" && Boolean(env.RESEND_API_KEY),
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
       await sendEmail({
@@ -95,7 +97,11 @@ export const auth = betterAuth({
     },
   },
 
-  trustedOrigins: ["http://localhost:3000", "http://localhost:3010"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:3010",
+    "https://workora-phi.vercel.app",
+  ],
 
   advanced: {
     useSecureCookies: env.NODE_ENV === "production",

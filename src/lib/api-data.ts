@@ -13,7 +13,6 @@ export async function apiServer<T = unknown>(path: string, opts: { public?: bool
         .map((c) => `${c.name}=${c.value}`)
         .join("; ");
       if (cookie) headers.cookie = cookie;
-      headers.origin = "http://localhost:3000";
     } catch {
       // unauthenticated read
     }
