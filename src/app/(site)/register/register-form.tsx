@@ -79,6 +79,7 @@ export default function RegisterForm() {
       const signup = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-up/email", {
         method: "POST",
         headers: { "content-type": "application/json", origin: window.location.origin },
+        credentials: "include",
         body: JSON.stringify({ name: values.name, email: values.email, password: values.password }),
       });
       const body = (await signup.json()) as { user?: { email: string }; message?: string };
