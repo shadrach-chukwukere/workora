@@ -9,12 +9,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const api = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
     return {
       beforeFiles: [
-        // The Next app proxies to the Fastify API so browser-side auth is same-origin
-        { source: "/api/v1/:path*", destination: `${api}/api/v1/:path*` },
-        { source: "/api/auth/:path*", destination: `${api}/api/auth/:path*` },
+        // Always proxy to Render backend so browser-side auth is same-origin.
+        // NEXT_PUBLIC_API_URL must be empty on Vercel so frontend fetch calls
+        // are relative (same-origin cookies); Next.js rewrites them to Render.
+        { source: "/api/v1/:path*", destination: "https://workora-backend-x5il.onrender.com/api/v1/:path*" },
+        { source: "/api/auth/:path*", destination: "https://workora-backend-x5il.onrender.com/api/auth/:path*" },
       ],
     };
   },
