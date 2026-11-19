@@ -65,7 +65,7 @@ export default async function PricingPage() {
                   {item.question}
                   <span
                     aria-hidden
-                    className="flex size-6 shrink-0 items-center justify-center rounded-md border border-neutral-200 text-neutral-500 transition-transform duration-200 group-open:rotate-45"
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md border border-neutral-200 text-neutral-500 transition-transform duration-200 ease-in-out group-open:rotate-45 group-open:translate-x-1"
                   >
                     <svg viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth={1.6}>
                       <path d="M6 1v10M1 6h10" strokeLinecap="round" />

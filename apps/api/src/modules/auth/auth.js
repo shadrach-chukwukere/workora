@@ -17,7 +17,7 @@ export const auth = betterAuth({
         minPasswordLength: 12,
         maxPasswordLength: 128,
         autoSignIn: env.NODE_ENV !== "production",
-        requireEmailVerification: env.NODE_ENV === "production",
+        requireEmailVerification: false,
         // Argon2id, per project security requirements
         password: {
             hash: async (password) => hash(password),
@@ -33,7 +33,7 @@ export const auth = betterAuth({
         },
     },
     emailVerification: {
-        sendOnSignUp: env.NODE_ENV === "production",
+        sendOnSignUp: true,
         autoSignInAfterVerification: true,
         sendVerificationEmail: async ({ user, url }) => {
             await sendEmail({
