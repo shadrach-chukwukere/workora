@@ -87,7 +87,11 @@ export const auth = betterAuth({
             updatedAt: "updated_at",
         },
     },
-    trustedOrigins: ["http://localhost:3000", "http://localhost:3010"],
+    trustedOrigins: [
+      "http://localhost:3000",
+      "http://localhost:3010",
+      "https://workora-phi.vercel.app",
+    ],
     advanced: {
         useSecureCookies: env.NODE_ENV === "production",
         database: { generateId: "uuid" },

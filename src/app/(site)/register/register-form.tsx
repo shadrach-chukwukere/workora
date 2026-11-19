@@ -39,6 +39,8 @@ export default function RegisterForm() {
   const [termsError, setTermsError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [sending, setSending] = useState(false);
+  /** True when Better Auth actually established a session cookie after signup. */
+  const [signedIn, setSignedIn] = useState(false);
 
   const {
     register,
@@ -76,9 +78,9 @@ export default function RegisterForm() {
     setSending(true);
 
     try {
-      const signup = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-up/email", {
+      const signup = await fetch("/api/auth/sign-up/email", {
         method: "POST",
-        headers: { "content-type": "application/json", origin: window.location.origin },
+        headers: { "content-type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ name: values.name, email: values.email, password: values.password }),
       });
@@ -89,9 +91,9 @@ export default function RegisterForm() {
         return;
       }
 
-      const setType = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me/account-type", {
+      const setType = await fetch("/api/v1/users/me/account-type", {
         method: "PATCH",
-        headers: { "content-type": "application/json", origin: window.location.origin },
+        headers: { "content-type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ accountType: role }),
       });
@@ -102,6 +104,12 @@ export default function RegisterForm() {
         return;
       }
 
+      // Better Auth only creates a session when autoSignIn is on (and, in
+      // production, after email verification). Confirm a session cookie really
+      // exists before sending the user to a protected dashboard.
+      const sessionRes = await fetch("/api/auth/get-session", { credentials: "include", cache: "no-store" });
+      const sessionBody = (await sessionRes.json().catch(() => null)) as { user?: { email: string } } | null;
+      setSignedIn(sessionRes.ok && !!sessionBody?.user);
       setStep(3);
     } catch {
       toast.error("Network error. Please try again.");
@@ -111,6 +119,10 @@ export default function RegisterForm() {
   }
 
   function finish() {
+    if (!signedIn) {
+      router.push("/login");
+      return;
+    }
     router.push(role === "freelancer" ? "/freelancer/dashboard" : "/client/dashboard");
     router.refresh();
   }
@@ -248,17 +260,37 @@ export default function RegisterForm() {
 
         {/* Step 3: done */}
         {step === 3 ? (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
-            <Icon icon={CheckmarkCircle02Icon as any} size={26} strokeWidth={1.8} className="text-emerald-600" />
-            <p className="mt-3 text-base font-semibold text-emerald-900">Your workspace is ready</p>
-            <p className="mt-1 text-sm leading-relaxed text-emerald-800">
-              We sent a verification email to your inbox. Until you verify, a few write actions stay on hold.
-            </p>
-            <div className="mt-5">
-              <Button onClick={finish} size="md">
-                Go to my dashboard
-              </Button>
-            </div>
+          <div className="mt-6 rounded-xl p-6">
+            {signedIn ? (
+              <div className="border border-emerald-200 bg-emerald-50">
+                <Icon icon={CheckmarkCircle02Icon as any} size={26} strokeWidth={1.8} className="text-emerald-600" />
+                <p className="mt-3 text-base font-semibold text-emerald-900">Your workspace is ready</p>
+                <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+                  You are signed in. Choose your dashboard to continue.
+                </p>
+                <div className="mt-5">
+                  <Button onClick={finish} size="md">
+                    Go to my dashboard
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-amber-200 bg-amber-50">
+                <Icon icon={Alert02Icon as any} size={26} strokeWidth={1.8} className="text-amber-600" />
+                <p className="mt-3 text-base font-semibold text-amber-900">Your account is created — please sign in</p>
+                <p className="mt-1 text-sm leading-relaxed text-amber-800">
+                  Your workspace is ready, but no sign-in session was started yet. Sign in below to open your dashboard.
+                </p>
+                <div className="mt-5">
+                  <Button
+                    onClick={() => router.push("/login")}
+                    size="md"
+                  >
+                    Sign in to your workspace
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ) : null}
       </div>

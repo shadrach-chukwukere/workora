@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import type { Role } from "@/lib/types";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
 
-const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
+/** Absolute backend URL for server-side session lookup. Browser code never uses
+ * this; it is not exposed to the client. */
+const API = process.env.API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 export type { SessionAccount };
 export { workspacePathForRole };
@@ -33,15 +35,20 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
     const session = (await res.json()) as { user?: { id: string; name: string; email: string; image: string | null } } | null;
     if (!session?.user) return null;
 
-    // Better Auth does not expose account_type by default; look it up via our API.
-    let accountType: Role = "freelancer";
+    // Role comes only from the authenticated API response. A failed role lookup
+    // is treated as an explicit failure: we never silently fall back to a
+    // default workspace, because that would send a client or admin to the wrong
+    // dashboard (or let them into one) without a verified role.
+    let accountType: Role | null = null;
     try {
       const meRes = await fetch(`${API}/api/v1/users/me`, { headers: { cookie, origin }, cache: "no-store" });
-      const meBody = (await meRes.json()) as { data?: { user?: { account_type: Role } } } | null;
-      accountType = meBody?.data?.user?.account_type ?? "freelancer";
+      if (!meRes.ok) return null;
+      const meBody = (await meRes.json()) as { data?: { user?: { account_type?: Role } } } | null;
+      accountType = meBody?.data?.user?.account_type ?? null;
     } catch {
-      // fall back to the default workspace rather than logging the user out
+      return null;
     }
+    if (!accountType) return null;
 
     return {
       userId: session.user.id,

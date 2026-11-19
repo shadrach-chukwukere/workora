@@ -1,10 +1,10 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
-
 /**
  * Client-side API helper. Browser code calls this with relative paths
- * (the Next rewrites proxy them to Fastify on :3010). It never imports
- * `next/headers` so it is safe inside Client Components. Server Components
- * must use @/lib/api-server.ts or @/lib/api-data.ts, which forward cookies.
+ * (e.g. "/api/v1/projects", "/api/auth/sign-in/email"). The Next.js rewrites
+ * proxy them to the Fastify backend, so the session cookie is stored and sent
+ * for the frontend domain. It never imports `next/headers` so it is safe
+ * inside Client Components. Server Components must use @/lib/api-server.ts or
+ * @/lib/api-data.ts, which forward cookies using the server-only API_URL.
  */
 
 export interface ApiEnvelope<T> {
@@ -41,8 +41,7 @@ export async function api<T = unknown>(path: string, options: Options = {}): Pro
 
   const headers: Record<string, string> = { "content-type": "application/json", ...extraHeaders };
 
-  const base = API_URL;
-  const response = await fetch(base + path, {
+  const response = await fetch(path, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

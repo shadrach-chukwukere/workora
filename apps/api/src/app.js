@@ -1,5 +1,6 @@
 import Fastify from "fastify";
-import { env } from "./config/env.js";
+import cors from "@fastify/cors";
+import { env, corsOrigins } from "./config/env.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { registerSecurityPlugins } from "./plugins/security.js";
 import { ok } from "./utils/response.js";
@@ -30,6 +31,15 @@ export async function buildApp(options = {}) {
     // NOTE: better-auth handles its own body reading, so no wildcard parser here.
     await registerSecurityPlugins(app);
     registerErrorHandler(app);
+    // Register Fastify CORS plugin with an explicit allowlist. Never echo the
+    // request origin or allow wildcards; cookie-bearing requests need a listed
+    // origin. Production frontend domain comes from CORS_ORIGINS; localhost is
+    // always allowed for local development.
+    await app.register(cors, {
+        origin: [...corsOrigins, "http://localhost:3000", "http://localhost:5173"],
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    });
     // Populate request.currentUser once per request; public routes can ignore it.
     app.addHook("onRequest", authenticate);
     app.get("/healthz", async (_request, reply) => {

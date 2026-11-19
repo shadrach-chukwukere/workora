@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 
-/** Server-side call to the Fastify API, with cookies forwarded so auth'd reads work. */
-const API = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
+/** Server-side call to the Fastify API, with cookies forwarded so auth'd reads work.
+ * Uses the server-only API_URL; browser code must never depend on it. */
+const API = process.env.API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 export async function apiServer<T = unknown>(path: string, opts: { public?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {};

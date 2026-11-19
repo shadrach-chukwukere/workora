@@ -45,12 +45,9 @@ export default function LoginForm({
 
     setSubmitting(true);
     try {
-      const signIn = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-in/email", {
+      const signIn = await fetch("/api/auth/sign-in/email", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: window.location.origin,
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         credentials: "include",
       });
@@ -65,10 +62,15 @@ export default function LoginForm({
         return;
       }
 
-      const me = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", {
+      const me = await fetch("/api/v1/users/me", {
         credentials: "include",
         cache: "no-store",
       });
+      if (!me.ok) {
+        toast.error("Sign-in succeeded but your session could not be confirmed. Please sign in again.");
+        setSubmitting(false);
+        return;
+      }
       const meBody = (await me.json()) as {
         data?: { user?: { account_type?: string } };
       };
