@@ -12,6 +12,7 @@ import { Checkbox, Field, Input } from "@/components/ui/form";
 import { Logo } from "@/components/ui/logo";
 import {
   Icon,
+  Alert02Icon,
   ArrowLeft02Icon,
   Briefcase02Icon,
   CheckmarkCircle02Icon,
