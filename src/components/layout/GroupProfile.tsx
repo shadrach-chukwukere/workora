@@ -1,5 +1,8 @@
+"use client";
+
 import { useMemo, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Select } from "@/components/ui/select";
 import {
   Search01Icon,
   StarIcon,
@@ -395,16 +398,18 @@ export default function DeveloperGrid() {
 
           <label className="relative">
             <span className="sr-only">Sort by</span>
-            <select
+            <Select
+              ariaLabel="Sort by"
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
-              className="w-full appearance-none rounded-full border border-neutral-200 bg-white py-3.5 pl-5 pr-10 text-sm font-medium text-neutral-700 transition focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/15 sm:w-56"
-            >
-              <option value="recommended">Recommended</option>
-              <option value="rating">Highest rated</option>
-              <option value="jobs">Most jobs done</option>
-              <option value="rate-asc">Lowest rate</option>
-            </select>
+              onChange={(v) => setSort(v as SortKey)}
+              className="sm:w-56"
+              options={[
+                { value: "recommended", label: "Recommended" },
+                { value: "rating", label: "Highest rated" },
+                { value: "jobs", label: "Most jobs done" },
+                { value: "rate-asc", label: "Lowest rate" },
+              ]}
+            />
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="rotate-90" />
             </span>

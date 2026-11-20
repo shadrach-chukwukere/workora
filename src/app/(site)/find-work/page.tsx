@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Monogram } from "@/components/ui/logo";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { FilterSelect } from "@/components/ui/select";
 import { ArrowUpRight02Icon, Briefcase02Icon, Icon, Search01Icon, SearchRemoveIcon } from "@/lib/icons";
 import { serverApiBase } from "@/lib/api-base";
 
@@ -195,29 +196,34 @@ export default async function FindWorkPage({
             className="h-10 w-full rounded-lg border border-neutral-200 bg-white pl-9 pr-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 hover:border-neutral-300"
           />
         </label>
-        <NativeSelect name="category" defaultValue={category} label="Category" className="md:col-span-2">
-          <option value="all">All categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </NativeSelect>
-        <NativeSelect name="budget" defaultValue={budget} label="Budget" className="md:col-span-2">
-          <option value="all">Any budget</option>
-          {BUDGET_RANGES.map((b) => (
-            <option key={b.value} value={b.value}>{b.label}</option>
-          ))}
-        </NativeSelect>
-        <NativeSelect name="exp" defaultValue={exp} label="Experience" className="md:col-span-2">
-          <option value="all">Any level</option>
-          {EXPERIENCE_LEVELS.map((e) => (
-            <option key={e.value} value={e.value}>{e.label}</option>
-          ))}
-        </NativeSelect>
-        <NativeSelect name="sort" defaultValue={sort} label="Sort" className="md:col-span-1">
-          {SORT_OPTIONS.projects.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </NativeSelect>
+        <FilterSelect
+          name="category"
+          defaultValue={category}
+          label="Category"
+          className="md:col-span-2"
+          options={[{ value: "all", label: "All categories" }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+        />
+        <FilterSelect
+          name="budget"
+          defaultValue={budget}
+          label="Budget"
+          className="md:col-span-2"
+          options={[{ value: "all", label: "Any budget" }, ...BUDGET_RANGES.map((b) => ({ value: b.value, label: b.label }))]}
+        />
+        <FilterSelect
+          name="exp"
+          defaultValue={exp}
+          label="Experience"
+          className="md:col-span-2"
+          options={[{ value: "all", label: "Any level" }, ...EXPERIENCE_LEVELS.map((e) => ({ value: e.value, label: e.label }))]}
+        />
+        <FilterSelect
+          name="sort"
+          defaultValue={sort}
+          label="Sort"
+          className="md:col-span-1"
+          options={SORT_OPTIONS.projects.map((s) => ({ value: s.value, label: s.label }))}
+        />
         <button
           type="submit"
           className="h-10 rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-800 md:col-span-1"
@@ -289,39 +295,6 @@ export default async function FindWorkPage({
 
       <Pagination page={page} totalPages={totalPages} className="mt-8" />
     </div>
-  );
-}
-
-function NativeSelect({
-  name,
-  defaultValue,
-  label,
-  className,
-  children,
-}: {
-  name: string;
-  defaultValue: string;
-  label: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className={`relative block ${className ?? ""}`}>
-      <span className="sr-only">{label}</span>
-      <select
-        name={name}
-        defaultValue={defaultValue}
-        aria-label={label}
-        className="h-10 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-3 pr-8 text-sm text-neutral-900 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 hover:border-neutral-300"
-      >
-        {children}
-      </select>
-      <span aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400">
-        <svg viewBox="0 0 12 12" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-          <path d="M2.5 4.5L6 8l3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-    </label>
   );
 }
 
