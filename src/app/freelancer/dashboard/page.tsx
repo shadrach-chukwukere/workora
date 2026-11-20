@@ -18,11 +18,11 @@ import {
   TrendingUpIcon,
   Wallet01Icon,
 } from "@/lib/icons";
+import { apiOptional, apiServer, isAuthError, monthlyEarnings, sessionCookie } from "@/lib/api-server";
 import { PROPOSAL_STATUS_META } from "@/lib/constants";
-import { formatDateShort, formatMoney, formatPercent, formatRelative } from "@/lib/format";
-import { apiServer, isAuthError, monthlyEarnings, sessionCookie } from "@/lib/api-server";
 import type { ProposalStatus } from "@/lib/types";
 import { redirect } from "next/navigation";
+import { formatDateShort, formatMoney, formatPercent, formatRelative } from "@/lib/format";
 
 interface MeResponse {
   user: {
@@ -132,41 +132,46 @@ export default async function FreelancerDashboard() {
   const cookie = await sessionCookie();
 
   let me: MeResponse;
-  let contractsRes: ContractsResponse;
-  let proposalsRes: ProposalsResponse;
-  let transactionsRes: TransactionsResponse;
-  let conversationsRes: ConversationsResponse;
-  let projectsRes: ProjectsResponse;
-  let categoriesRes: CategoriesResponse;
+  let contractsRes: ContractsResponse | null;
+  let proposalsRes: ProposalsResponse | null;
+  let transactionsRes: TransactionsResponse | null;
+  let conversationsRes: ConversationsResponse | null;
+  let projectsRes: ProjectsResponse | null;
+  let categoriesRes: CategoriesResponse | null;
   try {
     [me, contractsRes, proposalsRes, transactionsRes, conversationsRes, projectsRes, categoriesRes] =
       await Promise.all([
         apiServer<MeResponse>("/api/v1/users/me", undefined, cookie),
-        apiServer<ContractsResponse>("/api/v1/contracts", undefined, cookie),
-        apiServer<ProposalsResponse>("/api/v1/proposals/me", undefined, cookie),
-        apiServer<TransactionsResponse>("/api/v1/payments/transactions?perPage=50", undefined, cookie),
-        apiServer<ConversationsResponse>("/api/v1/conversations", undefined, cookie),
-        apiServer<ProjectsResponse>("/api/v1/projects", undefined, cookie),
-        apiServer<CategoriesResponse>("/api/v1/categories", undefined, cookie),
+        apiOptional(apiServer<ContractsResponse>("/api/v1/contracts?status=active", undefined, cookie)),
+        apiOptional(apiServer<ProposalsResponse>("/api/v1/proposals/me", undefined, cookie)),
+        apiOptional(apiServer<TransactionsResponse>("/api/v1/payments/transactions?perPage=50", undefined, cookie)),
+        apiOptional(apiServer<ConversationsResponse>("/api/v1/conversations", undefined, cookie)),
+        apiOptional(apiServer<ProjectsResponse>("/api/v1/projects", undefined, cookie)),
+        apiOptional(apiServer<CategoriesResponse>("/api/v1/categories", undefined, cookie)),
       ]);
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
     throw error;
   }
 
-  const activeList = contractsRes.contracts.filter((c) => c.status === "active");
+  const activeList = contractsRes?.contracts.filter((c) => c.status === "active") ?? [];
   let activeContracts: ActiveContract[] = [];
   try {
-    activeContracts = await Promise.all(
-      activeList.map(async (list) => {
-        const detail = await apiServer<{ contract: ContractDetail }>(
-          `/api/v1/contracts/${encodeURIComponent(list.id)}`,
-          undefined,
-          cookie,
-        );
-        return { list, milestones: detail.contract.milestones ?? [] };
-      }),
+    const details = await Promise.all(
+      activeList.map((list) =>
+        apiOptional(
+          apiServer<{ contract: ContractDetail }>(
+            `/api/v1/contracts/${encodeURIComponent(list.id)}`,
+            undefined,
+            cookie,
+          ),
+        ),
+      ),
     );
+    activeContracts = activeList.map((list, i) => ({
+      list,
+      milestones: details[i]?.contract.milestones ?? [],
+    }));
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
     throw error;
@@ -175,41 +180,41 @@ export default async function FreelancerDashboard() {
   const user = me.user;
   const rating = user.rating_avg === null ? null : Number(user.rating_avg);
 
-  const milestoneOf = (c: ActiveContract) => c.milestones;
   const sumMilestones = (milestones: MilestoneRow[], statuses: MilestoneRow["status"][]) =>
     milestones.filter((m) => statuses.includes(m.status)).reduce((sum, m) => sum + Number(m.amount_minor), 0);
 
   const escrowTotalMinor = activeContracts.reduce(
-    (sum, c) => sum + sumMilestones(milestoneOf(c), ["funded", "in_review", "approved"]),
+    (sum, c) => sum + sumMilestones(c.milestones, ["funded", "in_review", "approved"]),
     0,
   );
 
-  const series = monthlyEarnings(transactionsRes.transactions, new Date(), 13);
+  const series = monthlyEarnings(transactionsRes?.transactions ?? [], new Date(), 13);
   const [prevMonth, lastMonth, thisMonth] = series.slice(-3);
   const monthDelta =
     prevMonth && lastMonth && prevMonth.earningsMinor > 0
       ? (lastMonth.earningsMinor - prevMonth.earningsMinor) / prevMonth.earningsMinor
       : 0;
 
-  const earnings = transactionsRes.earnings;
+  const earnings = transactionsRes?.earnings ?? {
+    pendingPayoutsMinor: 0,
+    availableBalanceMinor: 0,
+    lifetimeVolumeMinor: 0,
+  };
   const availableBalance = Number(earnings.availableBalanceMinor) / 100;
   const pendingPayouts = Number(earnings.pendingPayoutsMinor) / 100;
 
-  const pendingProposals = proposalsRes.proposals.filter((p) => p.status === "pending");
-  const inFlight = proposalsRes.proposals.filter((p) => p.status === "pending" || p.status === "shortlisted").length;
+  const proposals = proposalsRes?.proposals ?? [];
+  const pendingProposals = proposals.filter((p) => p.status === "pending");
+  const inFlight = proposals.filter((p) => p.status === "pending" || p.status === "shortlisted").length;
 
-  const unreadMessages = conversationsRes.conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+  const unreadMessages = (conversationsRes?.conversations ?? []).reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
 
-  const awaitingReview = activeContracts.flatMap((c) =>
-    c.milestones
-      .filter((m) => m.status === "in_review")
-      .map((m) => ({ milestone: m, contract: c.list })),
-  );
+  const awaitingReview = activeContracts.flatMap((c) => c.milestones.filter((m) => m.status === "in_review"));
 
   /* Featured open work in Amara's categories, excluding what she already bid on. */
-  const categorySlugById = new Map(categoriesRes.categories.map((c) => [c.id, c.slug]));
-  const bidProjectIds = new Set(proposalsRes.proposals.map((p) => p.project?.id).filter(Boolean) as string[]);
-  const featured = projectsRes.projects
+  const categorySlugById = new Map((categoriesRes?.categories ?? []).map((c) => [c.id, c.slug]));
+  const bidProjectIds = new Set(proposals.map((p) => p.project?.id).filter(Boolean) as string[]);
+  const featured = (projectsRes?.projects ?? [])
     .filter((p) => {
       const slug = p.categoryId ? categorySlugById.get(p.categoryId) : undefined;
       return (slug === "web-development" || slug === "data-ai") && !bidProjectIds.has(p.id);
@@ -327,7 +332,7 @@ export default async function FreelancerDashboard() {
             <h2 className="text-sm font-semibold text-neutral-900">Needs your attention</h2>
           </div>
           <ul className="divide-y divide-neutral-100">
-            {awaitingReview.map(({ milestone }) => (
+            {awaitingReview.map((milestone) => (
               <li key={milestone.id}>
                 <AttentionItem
                   href="/freelancer/contracts"

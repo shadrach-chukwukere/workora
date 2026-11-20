@@ -14,8 +14,8 @@ import {
   ShieldCheckIcon,
   Wallet01Icon,
 } from "@/lib/icons";
+import { apiOptional, apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { formatDateShort, formatMoney, formatRelative } from "@/lib/format";
-import { apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 
 interface MeResponse {
   user: { id: string; name: string };
@@ -122,53 +122,58 @@ function isAuth(error: unknown): boolean {
 export default async function ClientDashboard() {
   const cookie = await sessionCookie();
 
-  let me: MeResponse;
-  let ownProjects: OwnProjectsResponse;
-  let contractsRes: ContractsResponse;
-  let transactionsRes: TransactionsResponse;
-  let received: ReceivedProposalsResponse;
-  let unread: NotificationsResponse;
+  let me: MeResponse | null;
+  let ownProjects: OwnProjectsResponse | null;
+  let contractsRes: ContractsResponse | null;
+  let transactionsRes: TransactionsResponse | null;
+  let received: ReceivedProposalsResponse | null;
+  let unread: NotificationsResponse | null;
   try {
     [me, ownProjects, contractsRes, transactionsRes, received, unread] = await Promise.all([
-      apiServer<MeResponse>("/api/v1/users/me", undefined, cookie),
-      apiServer<OwnProjectsResponse>("/api/v1/users/me/projects", undefined, cookie),
-      apiServer<ContractsResponse>("/api/v1/contracts", undefined, cookie),
-      apiServer<TransactionsResponse>("/api/v1/payments/transactions?limit=8", undefined, cookie),
-      apiServer<ReceivedProposalsResponse>("/api/v1/users/me/project-proposals", undefined, cookie),
-      apiServer<NotificationsResponse>("/api/v1/notifications?unread=true", undefined, cookie),
+      apiOptional(apiServer<MeResponse>("/api/v1/users/me", undefined, cookie)),
+      apiOptional(apiServer<OwnProjectsResponse>("/api/v1/users/me/projects", undefined, cookie)),
+      apiOptional(apiServer<ContractsResponse>("/api/v1/contracts", undefined, cookie)),
+      apiOptional(apiServer<TransactionsResponse>("/api/v1/payments/transactions?limit=8", undefined, cookie)),
+      apiOptional(apiServer<ReceivedProposalsResponse>("/api/v1/users/me/project-proposals", undefined, cookie)),
+      apiOptional(apiServer<NotificationsResponse>("/api/v1/notifications?unread=true", undefined, cookie)),
     ]);
   } catch (error) {
     if (isAuth(error)) redirect("/login");
     throw error;
   }
 
-  const contracts = contractsRes.contracts ?? [];
+  const contracts = contractsRes?.contracts ?? [];
   const activeList = contracts.filter((c) => c.status === "active" || c.status === "paused" || c.status === "disputed");
   let activeContracts: ActiveContract[] = [];
   try {
-    activeContracts = await Promise.all(
-      activeList.map(async (list) => {
-        const detail = await apiServer<{ contract: { milestones: MilestoneRow[] } }>(
-          `/api/v1/contracts/${encodeURIComponent(list.id)}`,
-          undefined,
-          cookie,
-        );
-        return { list, milestones: detail.contract.milestones ?? [] };
-      }),
+    const details = await Promise.all(
+      activeList.map((list) =>
+        apiOptional(
+          apiServer<{ contract: { milestones: MilestoneRow[] } }>(
+            `/api/v1/contracts/${encodeURIComponent(list.id)}`,
+            undefined,
+            cookie,
+          ),
+        ),
+      ),
     );
+    activeContracts = activeList.map((list, i) => ({
+      list,
+      milestones: details[i]?.contract.milestones ?? [],
+    }));
   } catch (error) {
     if (isAuth(error)) redirect("/login");
     throw error;
   }
 
-  const projects = ownProjects.projects ?? [];
-  const transactions = transactionsRes.transactions ?? [];
-  const pendingProposals = (received.proposals ?? [])
+  const projects = ownProjects?.projects ?? [];
+  const transactions = transactionsRes?.transactions ?? [];
+  const pendingProposals = (received?.proposals ?? [])
     .filter((p) => p.status === "pending")
     .sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
   const latestPending = pendingProposals.slice(0, 3);
-  const notifications = (unread.notifications ?? []).slice(0, 4);
-  const unreadCount = unread.total ?? notifications.length;
+  const notifications = (unread?.notifications ?? []).slice(0, 4);
+  const unreadCount = unread?.total ?? notifications.length;
 
   const activeProjectCount = projects.filter((p) => p.status === "open" || p.status === "in_progress").length;
   const contractTotalMinor = contracts.reduce((sum, c) => sum + Number(c.total_minor), 0);
@@ -186,7 +191,7 @@ export default async function ClientDashboard() {
     0,
   );
 
-  const firstName = me.user.name.split(" ")[0];
+  const firstName = me?.user.name.split(" ")[0] ?? "there";
 
   return (
     <div className="flex flex-col gap-6">

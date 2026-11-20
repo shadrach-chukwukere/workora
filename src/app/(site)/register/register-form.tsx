@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input } from "@/components/ui/form";
 import { Logo } from "@/components/ui/logo";
 import {
+  Alert02Icon,
   Icon,
   Alert02Icon,
   ArrowLeft02Icon,

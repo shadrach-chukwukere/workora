@@ -17,7 +17,7 @@ import {
   UserMultiple02Icon,
   Wallet02Icon,
 } from "@/lib/icons";
-import { ApiServerError, apiServer, isAuthError, sessionCookie } from "@/lib/api-server";
+import { ApiServerError, apiOptional, apiServer, isAuthError, sessionCookie } from "@/lib/api-server";
 import { formatMoney, formatNumber, formatRelative } from "@/lib/format";
 
 interface Overview {
@@ -88,18 +88,18 @@ export default async function AdminDashboardPage() {
   try {
     const [overviewRes, monthlyRes, disputesRes, reviewsRes, suspendedRes, meRes] = await Promise.all([
       apiServer<Overview>("/api/v1/admin/overview", undefined, cookie),
-      apiServer<{ months: MonthlyPoint[] }>("/api/v1/admin/analytics/monthly?months=6", undefined, cookie),
-      apiServer<{ disputes: DisputeRow[] }>("/api/v1/admin/disputes?status=open", undefined, cookie),
-      apiServer<{ reviews: ReviewRow[] }>("/api/v1/admin/reviews?reported=true", undefined, cookie),
-      apiServer<{ users: UserRow[] }>("/api/v1/admin/users?status=suspended", undefined, cookie),
-      apiServer<{ user: { name?: string | null } }>("/api/v1/users/me", undefined, cookie),
+      apiOptional(apiServer<{ months: MonthlyPoint[] }>("/api/v1/admin/analytics/monthly?months=6", undefined, cookie)),
+      apiOptional(apiServer<{ disputes: DisputeRow[] }>("/api/v1/admin/disputes?status=open", undefined, cookie)),
+      apiOptional(apiServer<{ reviews: ReviewRow[] }>("/api/v1/admin/reviews?reported=true", undefined, cookie)),
+      apiOptional(apiServer<{ users: UserRow[] }>("/api/v1/admin/users?status=suspended", undefined, cookie)),
+      apiOptional(apiServer<{ user: { name?: string | null } }>("/api/v1/users/me", undefined, cookie)),
     ]);
     overview = overviewRes;
-    monthly = monthlyRes.months;
-    openDisputes = disputesRes.disputes.slice(0, 3);
-    reportedReviews = reviewsRes.reviews.filter((r) => r.reported).slice(0, 3);
-    suspendedUsers = suspendedRes.users;
-    adminName = meRes.user.name?.trim() || "Admin";
+    monthly = monthlyRes?.months ?? [];
+    openDisputes = disputesRes?.disputes.slice(0, 3) ?? [];
+    reportedReviews = reviewsRes?.reviews.filter((r) => r.reported).slice(0, 3) ?? [];
+    suspendedUsers = suspendedRes?.users ?? [];
+    adminName = meRes?.user.name?.trim() || "Admin";
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
     if (error instanceof ApiServerError && error.status === 403) return <AdminAccessCard message={error.message} />;

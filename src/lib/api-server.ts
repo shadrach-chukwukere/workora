@@ -26,6 +26,20 @@ export function isAuthError(error: unknown): boolean {
   return error instanceof ApiServerError && error.status === 401;
 }
 
+/**
+ * Wraps an optional API read so one failed feed cannot take down a whole dashboard.
+ * Auth and authorization failures still propagate so callers keep their existing
+ * redirect / access-denied behavior.
+ */
+export async function apiOptional<T>(request: Promise<T>): Promise<T | null> {
+  try {
+    return await request;
+  } catch (error) {
+    if (isAuthError(error) || (error instanceof ApiServerError && error.status === 403)) throw error;
+    return null;
+  }
+}
+
 /** Reads the incoming session cookie; redirects to /login when there is none. */
 export async function sessionCookie(): Promise<string> {
   const store = await cookies();
