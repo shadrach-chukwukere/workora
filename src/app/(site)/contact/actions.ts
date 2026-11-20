@@ -9,6 +9,8 @@
  * the UI can show an honest error toast instead of pretending it sent.
  */
 
+import { serverApiBase } from "@/lib/api-base";
+
 const SUPPORT_EMAIL = "hello@workora.com";
 // Resend's shared sandbox sender; override with RESEND_FROM once a domain is verified.
 const FROM_ADDRESS = process.env.RESEND_FROM ?? "Workora <onboarding@resend.dev>";
@@ -32,9 +34,8 @@ export interface PasswordResetResult {
  * "use server" module.
  */
 export async function requestPasswordReset(email: string): Promise<PasswordResetResult> {
- const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
  try {
-  const response = await fetch(`${API}/api/auth/request-password-reset`, {
+  const response = await fetch(`${serverApiBase}/api/auth/request-password-reset`, {
    method: "POST",
    headers: { "content-type": "application/json" },
    body: JSON.stringify({ email: email.trim() }),

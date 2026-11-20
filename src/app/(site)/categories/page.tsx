@@ -1,7 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Icon, ArrowRight02Icon, Globe02Icon } from "@/lib/icons";
+import {
+  ArrowRight02Icon,
+  ChartLineIcon,
+  Globe02Icon,
+  Icon,
+  MarketingIcon,
+  PaletteIcon,
+  SmartPhone01Icon,
+  SourceCodeIcon,
+  Task01Icon,
+  TextIcon,
+  Video01Icon,
+  type IconName,
+} from "@/lib/icons";
 import { apiServer } from "@/lib/api-data";
 import { cn } from "@/lib/utils";
 
@@ -20,16 +33,16 @@ interface PublicCategory {
   kind?: string;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  "web-development": "SourceCodeIcon",
-  "mobile-development": "SmartPhone01Icon",
-  "product-design": "PaletteIcon",
-  "data-ai": "ChartLineIcon",
-  marketing: "MarketingIcon",
-  "writing-translation": "TextIcon",
-  "video-audio": "Video01Icon",
-  "virtual-assistance": "Task01Icon",
-  "brand-graphic-design": "Globe02Icon",
+const CATEGORY_ICONS: Record<string, IconName> = {
+  "web-development": SourceCodeIcon,
+  "mobile-development": SmartPhone01Icon,
+  "product-design": PaletteIcon,
+  "data-ai": ChartLineIcon,
+  marketing: MarketingIcon,
+  "writing-translation": TextIcon,
+  "video-audio": Video01Icon,
+  "virtual-assistance": Task01Icon,
+  "brand-graphic-design": Globe02Icon,
 };
 
 export default async function CategoriesPage() {
@@ -86,7 +99,7 @@ export default async function CategoriesPage() {
         ) : (
           <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {categories.map((category) => {
-              const CategoryIcon = CATEGORY_ICONS[category.slug] ?? "Task01Icon";
+              const CategoryIcon = CATEGORY_ICONS[category.slug] ?? Task01Icon;
               return (
                 <li key={category.id}>
                   <Link
@@ -95,10 +108,10 @@ export default async function CategoriesPage() {
                   >
                     <div className="flex items-center justify-between gap-3 mb-4">
                       <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                        <Icon icon={CategoryIcon as any} size={22} strokeWidth={1.7} />
+                        <Icon icon={CategoryIcon} size={22} strokeWidth={1.7} />
                       </span>
                       <Icon
-                        icon={ArrowRight02Icon as any}
+                        icon={ArrowRight02Icon}
                         size={18}
                         strokeWidth={1.8}
                         className="text-neutral-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600"
@@ -124,7 +137,7 @@ export default async function CategoriesPage() {
         >
           <div className="flex items-start gap-4">
             <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-brand-700">
-              <Icon icon={Globe02Icon as any} size={20} strokeWidth={1.8} />
+              <Icon icon={Globe02Icon} size={20} strokeWidth={1.8} />
             </span>
             <div>
               <h2 className="text-base font-semibold text-neutral-900">Remote everywhere</h2>
@@ -136,7 +149,7 @@ export default async function CategoriesPage() {
           </div>
           <Button href="/find-talent" variant="secondary" className="shrink-0">
             Open Find talent
-            <Icon icon={ArrowRight02Icon as any} size={15} strokeWidth={1.8} />
+            <Icon icon={ArrowRight02Icon} size={15} strokeWidth={1.8} />
           </Button>
         </div>
       </section>
@@ -152,7 +165,7 @@ export default async function CategoriesPage() {
           </p>
           <Button href="/register" size="lg" className="mt-6">
             Create your profile
-            <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} />
+            <Icon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
           </Button>
         </div>
       </section>

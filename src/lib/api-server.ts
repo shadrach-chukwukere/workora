@@ -1,13 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { serverApiBase } from "@/lib/api-base";
 
 /**
  * Server-side helper for calling the Fastify API with the caller's session.
  * Distinct from src/lib/api-data.ts (which other pages use): this one takes the
  * cookie header explicitly so pages can build it once and fan out requests.
  */
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 export class ApiServerError extends Error {
   constructor(
@@ -103,7 +102,7 @@ export async function apiServer<T>(path: string, init?: RequestInit, cookie?: st
     headers["content-type"] = "application/json";
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${serverApiBase}${path}`, {
     ...init,
     headers,
     cache: "no-store",

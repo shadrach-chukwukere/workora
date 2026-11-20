@@ -1,10 +1,9 @@
 import { cache } from "react";
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { serverApiBase } from "@/lib/api-base";
 import type { Role } from "@/lib/types";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
-
-const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
 
 export type { SessionAccount };
 export { workspacePathForRole };
@@ -28,7 +27,7 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
 
   const origin = await bareOrigin();
   try {
-    const res = await fetch(`${API}/api/auth/get-session`, { headers: { cookie, origin }, cache: "no-store" });
+    const res = await fetch(`${serverApiBase}/api/auth/get-session`, { headers: { cookie, origin }, cache: "no-store" });
     if (!res.ok) return null;
     const session = (await res.json()) as { user?: { id: string; name: string; email: string; image: string | null } } | null;
     if (!session?.user) return null;
@@ -36,7 +35,7 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
     // Better Auth does not expose account_type by default; look it up via our API.
     let accountType: Role = "freelancer";
     try {
-      const meRes = await fetch(`${API}/api/v1/users/me`, { headers: { cookie, origin }, cache: "no-store" });
+      const meRes = await fetch(`${serverApiBase}/api/v1/users/me`, { headers: { cookie, origin }, cache: "no-store" });
       const meBody = (await meRes.json()) as { data?: { user?: { account_type: Role } } } | null;
       accountType = meBody?.data?.user?.account_type ?? "freelancer";
     } catch {

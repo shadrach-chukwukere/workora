@@ -6,9 +6,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon } from "@/lib/icons";
 import type { PublicFreelancer } from "@/lib/api-data";
+import { serverApiBase } from "@/lib/api-base";
 
 const PAGE_SIZE = 9;
-const API = (process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") ?? "http://localhost:3010";
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.talent)[number]>(SORT_OPTIONS.talent.map((s) => [s.value, s]));
 const AVAILABILITY = new Map<string, (typeof AVAILABILITY_OPTIONS)[number]>(AVAILABILITY_OPTIONS.map((a) => [a.value, a]));
@@ -17,7 +17,7 @@ const CATEGORIES = new Map(CATEGORY_BASE.map((c) => [c.id, c]));
 /** Best-effort public GET with 30s revalidation. Returns null when the API is down or the envelope is bad. */
 async function fetchPublic<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API}${path}`, { next: { revalidate: 30 } });
+    const res = await fetch(`${serverApiBase}${path}`, { next: { revalidate: 30 } });
     if (!res.ok) return null;
     const envelope = (await res.json()) as { success: boolean; data?: T };
     if (!envelope.success || envelope.data === undefined) return null;

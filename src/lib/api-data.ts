@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
+import { serverApiBase } from "@/lib/api-base";
 
 /** Server-side call to the Fastify API, with cookies forwarded so auth'd reads work. */
-const API = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
 
 export async function apiServer<T = unknown>(path: string, opts: { public?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {};
@@ -17,7 +17,7 @@ export async function apiServer<T = unknown>(path: string, opts: { public?: bool
       // unauthenticated read
     }
   }
-  const res = await fetch(API + path, { headers, cache: "no-store" });
+  const res = await fetch(serverApiBase + path, { headers, cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`apiServer ${path} -> ${res.status}: ${text.slice(0, 200)}`);
