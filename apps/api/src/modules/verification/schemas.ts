@@ -3,6 +3,13 @@ import { z } from "zod";
 /** POST /verification-requests — freelancers only. */
 export const createVerificationRequestSchema = z.object({
   documentType: z.enum(["passport", "drivers-license", "national-id", "other"]),
+  documentKey: z.string().trim().min(1).max(512),
+  documentName: z.string().trim().min(1).max(180),
+});
+
+export const verificationDocumentSchema = z.object({
+  documentKey: z.string().trim().min(1).max(512),
+  documentName: z.string().trim().min(1).max(180),
 });
 
 /** POST /verification-requests/:id/reject */
@@ -21,6 +28,7 @@ export const listVerificationQuerySchema = z.object({
 });
 
 export type CreateVerificationRequestInput = z.infer<typeof createVerificationRequestSchema>;
+export type VerificationDocumentInput = z.infer<typeof verificationDocumentSchema>;
 export type RejectVerificationInput = z.infer<typeof rejectVerificationSchema>;
 export type RequestInfoVerificationInput = z.infer<typeof requestInfoVerificationSchema>;
 export type ListVerificationQuery = z.infer<typeof listVerificationQuerySchema>;

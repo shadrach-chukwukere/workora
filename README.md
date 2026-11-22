@@ -21,17 +21,17 @@ Workora is a freelance marketplace built to support the end-to-end working relat
 
 The repository contains a **Next.js web application** and a separate **Fastify API**. The API contract is documented in [`docs/api-contract.md`](docs/api-contract.md).
 
-> **Project status:** Workora is under active development. Payment and subscription flows include demo-mode behavior; do not treat demo transactions as real payments.
+> **Project status:** Workora is under active development. Milestone funding and freelancer transfers use Stripe when configured. Subscription flows remain demo-mode and must not be treated as real payments.
 
 ## Highlights
 
-- **Two-sided marketplace:** client and freelancer account types, searchable freelancer listings, and project discovery.
+- **Two-sided marketplace:** client and freelancer account types, searchable freelancer listings, and project discovery, with six launch-focus categories.
 - **Project workflow:** create, publish, update, close, and save projects; categorize work and associate skills.
 - **Proposals and hiring:** submit proposals, shortlist or reject candidates, and accept a proposal to start a contract.
 - **Contracts and milestones:** organize delivery into milestones, submit work, request revisions, and approve milestone completion.
 - **Communication:** conversations, message history, unread counts, and notifications.
-- **Profiles and trust:** freelancer and client profiles, reviews, portfolio entries, and freelancer verification requests.
-- **Payments and plans:** payment methods, transaction history, subscriptions, and invoices, with demo-mode payment handling.
+- **Profiles and trust:** freelancer and client profiles, reviews, portfolio entries, private identity-document review, and curated freelancer placement.
+- **Payments and plans:** Stripe Checkout milestone funding, signed payment webhooks, Stripe Connect onboarding/transfers, and transaction history; subscriptions remain demo-mode.
 - **Operations:** admin views and workflows for users, projects, contracts, transactions, disputes, reviews, categories, and reports.
 - **Typed validation:** TypeScript throughout, with Zod used by the API and frontend forms.
 
@@ -101,7 +101,15 @@ npm run migrate
 npm run dev
 ```
 
-The API listens on `http://localhost:3010` by default. See [`apps/api/.env.example`](apps/api/.env.example) for all available settings, including CORS, email, payments, and object storage.
+The API listens on `http://localhost:3010` by default. See [`apps/api/src/config/env.ts`](apps/api/src/config/env.ts) for available settings, including CORS, email, payments, and object storage.
+
+### Payments and private verification documents
+
+Real milestone payments require `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` on the API. Configure Stripe to send Checkout completion/expiration, asynchronous payment, and connected-account update events to `/api/v1/webhooks/payments`. Set `WEB_APP_URL` to the deployed web origin so Checkout and Connect return to the correct pages. Workora uses USD for the selected launch configuration; the platform's Stripe Connect country and eligibility must also be set before production onboarding.
+
+Identity-document uploads require a private S3-compatible bucket and the API's `S3_*` settings. Allow browser `PUT` uploads from the web origin in the bucket's CORS policy. Verification documents are never returned as public URLs; verification admins receive short-lived download links with attachment disposition.
+
+Run the API seed after migrations to initialize the launch categories and starter category-to-skill mappings. Admins can add/remove categories from launch focus and curate freelancer listings in the admin console.
 
 ### 3. Configure and start the web app
 

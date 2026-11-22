@@ -120,7 +120,13 @@ export default function FreelancerSettingsPage() {
       {!loading && me ? (
         <>
           {tab === "profile" ? <ProfileTab me={me} onSaved={load} /> : null}
-          {tab === "freelancer" ? <FreelancerTab me={me} onSaved={load} /> : null}
+          {tab === "freelancer" ? (
+            <>
+              <FreelancerTab me={me} onSaved={load} />
+              <StripePayoutCard />
+              <IdentityVerificationCard />
+            </>
+          ) : null}
         </>
       ) : null}
     </div>
@@ -323,6 +329,245 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
         </Button>
       </div>
     </form>
+  );
+}
+
+interface StripePayoutStatus {
+  connected: boolean;
+  detailsSubmitted: boolean;
+  payoutsEnabled: boolean;
+}
+
+function StripePayoutCard() {
+  const [country, setCountry] = useState("");
+  const [status, setStatus] = useState<StripePayoutStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadStatus() {
+    try {
+      const res = await fetch("/api/v1/payments/connect/status", { credentials: "include", cache: "no-store" });
+      setStatus(await readEnvelope<StripePayoutStatus>(res));
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load payout status");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadStatus();
+  }, []);
+
+  async function beginOnboarding() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/v1/payments/connect/onboarding", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ country: country.trim().toUpperCase() }),
+      });
+      const data = await readEnvelope<{ url: string }>(res);
+      window.location.assign(data.url);
+    } catch (cause) {
+      toast.error("Could not start Stripe onboarding", {
+        description: cause instanceof Error ? cause.message : "Please try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white p-6">
+      <h2 className="text-sm font-semibold text-neutral-900">Payout setup</h2>
+      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+        Connect a Stripe account to receive approved milestone transfers. Stripe collects and verifies payout details.
+      </p>
+      {loading ? <p className="mt-4 text-sm text-neutral-500">Checking Stripe status…</p> : null}
+      {!loading && error ? <p className="mt-4 text-sm text-rose-700" role="alert">{error}</p> : null}
+      {!loading && status ? (
+        <div className="mt-4 flex flex-col gap-4">
+          <p className={`text-sm font-medium ${status.payoutsEnabled ? "text-emerald-700" : "text-amber-700"}`}>
+            {status.payoutsEnabled
+              ? "Stripe payouts are ready."
+              : status.connected && status.detailsSubmitted
+                ? "Stripe is reviewing your payout details."
+                : status.connected
+                  ? "Finish Stripe onboarding to receive payouts."
+                  : "Stripe payout account not connected."}
+          </p>
+          {!status.payoutsEnabled ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <Field label="Stripe account country" required hint="Enter the two-letter country code where your payout account is based (for example, US or GB).">
+                <Input
+                  id="stripe-account-country"
+                  autoComplete="country"
+                  maxLength={2}
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value.replace(/[^a-z]/gi, "").slice(0, 2).toUpperCase())}
+                />
+              </Field>
+              <Button
+                size="md"
+                disabled={country.length !== 2 || busy}
+                loading={busy}
+                onClick={() => void beginOnboarding()}
+              >
+                {status.connected ? "Continue Stripe setup" : "Connect Stripe"}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+interface VerificationRequestItem {
+  id: string;
+  status: "pending" | "info_requested" | "approved" | "rejected";
+  document_type: string;
+  submitted_at: string;
+  notes: string | null;
+}
+
+function IdentityVerificationCard() {
+  const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
+  const [documentType, setDocumentType] = useState("national-id");
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadRequests() {
+    try {
+      const res = await fetch("/api/v1/verification-requests/me", { credentials: "include", cache: "no-store" });
+      const data = await readEnvelope<{ requests: VerificationRequestItem[] }>(res);
+      setRequests(data.requests);
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load verification status");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadRequests();
+  }, []);
+
+  const latest = requests[0];
+  const canSubmit = !latest || latest.status === "rejected";
+  const canResubmit = latest?.status === "info_requested";
+
+  async function submitDocument() {
+    if (!file || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const presignResponse = await fetch("/api/v1/uploads/presign", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ scope: "verification", mimeType: file.type, sizeBytes: file.size }),
+      });
+      const upload = await readEnvelope<{
+        uploadUrl: string | null;
+        key: string | null;
+        configured: boolean;
+      }>(presignResponse);
+      if (!upload.configured || !upload.uploadUrl || !upload.key) {
+        throw new Error("Private document storage is not configured.");
+      }
+
+      const uploaded = await fetch(upload.uploadUrl, {
+        method: "PUT",
+        headers: { "content-type": file.type },
+        body: file,
+      });
+      if (!uploaded.ok) {
+        throw new Error("Document upload failed. Try again.");
+      }
+
+      const path = canResubmit
+        ? `/api/v1/verification-requests/${encodeURIComponent(latest.id)}/document`
+        : "/api/v1/verification-requests";
+      const requestResponse = await fetch(path, {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...(canSubmit ? { documentType } : {}),
+          documentKey: upload.key,
+          documentName: file.name,
+        }),
+      });
+      await readEnvelope(requestResponse);
+      setFile(null);
+      toast.success(canResubmit ? "Document resubmitted for review" : "Identity verification submitted");
+      await loadRequests();
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Could not submit your document";
+      setError(message);
+      toast.error("Verification submission failed", { description: message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white p-6">
+      <h2 className="text-sm font-semibold text-neutral-900">Identity verification</h2>
+      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+        Upload an identity document for private admin review. Documents are stored privately and are not shown on your public profile.
+      </p>
+      {loading ? <p className="mt-4 text-sm text-neutral-500">Checking verification status…</p> : null}
+      {!loading && latest ? (
+        <div className="mt-4 rounded-lg bg-neutral-50 p-4">
+          <p className="text-sm font-medium capitalize text-neutral-800">{latest.status.replace("_", " ")}</p>
+          {latest.notes ? <p className="mt-1 text-sm text-neutral-600">{latest.notes}</p> : null}
+          {latest.status === "approved" ? <p className="mt-1 text-xs text-emerald-700">Your identity is verified.</p> : null}
+        </div>
+      ) : null}
+      {!loading && (canSubmit || canResubmit) ? (
+        <div className="mt-4 flex flex-col gap-4">
+          {canSubmit ? (
+            <Field label="Document type" required>
+              <select
+                id="verification-document-type"
+                value={documentType}
+                onChange={(event) => setDocumentType(event.target.value)}
+                className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900"
+              >
+                <option value="national-id">National ID</option>
+                <option value="passport">Passport</option>
+                <option value="drivers-license">Driver's license</option>
+                <option value="other">Other government ID</option>
+              </select>
+            </Field>
+          ) : null}
+          <Field label="Identity document" required hint="JPEG, PNG, WebP or PDF · maximum 10 MB">
+            <Input
+              id="verification-document-file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            />
+          </Field>
+          {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
+          <div className="flex justify-end">
+            <Button size="md" disabled={!file || busy} loading={busy} onClick={() => void submitDocument()}>
+              {canResubmit ? "Resubmit document" : "Submit for verification"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {!loading && error && !canSubmit && !canResubmit ? <p className="mt-4 text-sm text-rose-700" role="alert">{error}</p> : null}
+    </section>
   );
 }
 

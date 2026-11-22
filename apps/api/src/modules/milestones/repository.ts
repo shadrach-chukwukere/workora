@@ -90,6 +90,15 @@ export async function markMilestonePaid(trx: Transaction<DB>, milestoneId: strin
     .executeTakeFirstOrThrow();
 }
 
+export async function markMilestoneApproved(trx: Transaction<DB>, milestoneId: string) {
+  return trx
+    .updateTable("contract_milestones")
+    .set({ status: "approved", approved_at: new Date() })
+    .where("id", "=", milestoneId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
 export async function markMilestoneRevision(trx: Transaction<DB>, milestoneId: string) {
   return trx
     .updateTable("contract_milestones")
@@ -154,6 +163,7 @@ export async function insertTransaction(
     status?: "pending" | "completed" | "failed" | undefined;
     counterpartyId?: string | null | undefined;
     contractId?: string | null | undefined;
+    paymentId?: string | null | undefined;
     description: string;
   },
 ) {
@@ -167,6 +177,7 @@ export async function insertTransaction(
       status: input.status ?? "completed",
       counterparty_id: input.counterpartyId ?? null,
       contract_id: input.contractId ?? null,
+      payment_id: input.paymentId ?? null,
       description: input.description,
     })
     .returningAll()

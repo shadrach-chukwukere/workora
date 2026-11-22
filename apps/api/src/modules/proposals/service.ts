@@ -6,6 +6,7 @@ import type { AuthedUser } from "../../middleware/authenticate.js";
 import { parsePage } from "../common/index.js";
 import type { CreateProposalInput, MyProposalsQuery } from "./schemas.js";
 import * as repo from "./repository.js";
+import * as emailNotify from "../../services/notifications.js";
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: string }).code === "23505";

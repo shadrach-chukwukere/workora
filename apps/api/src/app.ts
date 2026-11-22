@@ -3,6 +3,7 @@ import cors from "@fastify/cors"; // <-- Import fastify cors
 import { env } from "./config/env.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { registerSecurityPlugins } from "./plugins/security.js";
+import rawBodyPlugin from "./plugins/raw-body.js";
 import { ok } from "./utils/response.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { auth } from "./modules/auth/auth.js";
@@ -34,6 +35,7 @@ export async function buildApp(options: { logger?: boolean } = {}) {
   // NOTE: better-auth handles its own body reading, so no wildcard parser here.
 
   await registerSecurityPlugins(app);
+  await app.register(rawBodyPlugin);
   registerErrorHandler(app);
 
   // Register Fastify CORS plugin correctly

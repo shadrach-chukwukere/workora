@@ -22,6 +22,7 @@ interface VerificationRequest {
   user_id: string;
   status: "pending" | "info_requested" | "approved" | "rejected";
   document_type: string;
+  has_document: boolean;
   submitted_at: string;
   decided_at: string | null;
   notes: string | null;
@@ -43,14 +44,14 @@ export default function AdminVerificationPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/verification-requests?status=pending", { cache: "no-store", credentials: "include" });
+        const res = await fetch("/api/v1/verification-requests?status=pending", { cache: "no-store", credentials: "include" });
         if (!res.ok) {
           if (cancelled) return;
           setError(res.status === 403 ? "Admin verification permission is required for this queue." : "Could not load the verification queue.");
           return;
         }
         const pending = (await res.json()) as { data?: { requests: VerificationRequest[] } };
-        const infoRes = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/verification-requests?status=info_requested", { cache: "no-store", credentials: "include" });
+        const infoRes = await fetch("/api/v1/verification-requests?status=info_requested", { cache: "no-store", credentials: "include" });
         const infoRequested = infoRes.ok ? ((await infoRes.json()) as { data?: { requests: VerificationRequest[] } }).data?.requests ?? [] : [];
         if (cancelled) return;
         setItems([...(pending.data?.requests ?? []), ...infoRequested]);
@@ -112,6 +113,35 @@ export default function AdminVerificationPage() {
     );
   }
 
+  async function openDocument(row: VerificationRequest) {
+    const documentWindow = window.open("about:blank", "_blank");
+    if (!documentWindow) {
+      toast.error("Allow pop-ups to review the private identity document");
+      return;
+    }
+    documentWindow.opener = null;
+    try {
+      const res = await fetch(`/api/v1/verification-requests/${encodeURIComponent(row.id)}/document`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const envelope = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        message?: string;
+        data?: { downloadUrl: string };
+      } | null;
+      if (!res.ok || !envelope?.success || !envelope.data?.downloadUrl) {
+        documentWindow.close();
+        toast.error(envelope?.message ?? "Could not open the identity document");
+        return;
+      }
+      documentWindow.location.replace(envelope.data.downloadUrl);
+    } catch {
+      documentWindow.close();
+      toast.error("Could not open the identity document", { description: "Network error. Try again." });
+    }
+  }
+
   async function confirmReject() {
     if (!rejectTarget) return;
     await callAdmin(
@@ -128,7 +158,7 @@ export default function AdminVerificationPage() {
     if (!infoTarget || draft.length === 0) return;
     setBusy(true);
     try {
-      const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") }/api/v1/verification-requests/${encodeURIComponent(infoTarget.id)}/request-info`, {
+      const res = await fetch(`/api/v1/verification-requests/${encodeURIComponent(infoTarget.id)}/request-info`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",
@@ -245,10 +275,17 @@ export default function AdminVerificationPage() {
                   <div className="mt-2">
                     <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
                   </div>
+                  {v.has_document ? (
+                    <Button variant="secondary" size="sm" className="mt-3" onClick={() => void openDocument(v)}>
+                      Review private document
+                    </Button>
+                  ) : (
+                    <p className="mt-3 text-xs text-rose-700">No identity document is attached.</p>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2 md:flex-col md:items-stretch">
-                <Button size="sm" onClick={() => approve(v)} disabled={busy}>
+                <Button size="sm" onClick={() => approve(v)} disabled={busy || !v.has_document}>
                   Approve
                 </Button>
                 <Button

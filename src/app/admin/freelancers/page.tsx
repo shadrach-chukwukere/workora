@@ -32,6 +32,7 @@ interface PublicFreelancer {
  hourly_rate_minor: number | string | null;
  availability: string | null;
  verified_identity: boolean | null;
+ is_featured: boolean;
  rating_avg: string | number | null;
  rating_count: number | string | null;
  completed_count: number | string | null;
@@ -118,6 +119,22 @@ export default function AdminFreelancersPage() {
  }
  }
 
+ async function toggleCuration(row: PublicFreelancer) {
+ setActingId(row.id);
+ try {
+ await api(`/api/v1/admin/freelancers/${encodeURIComponent(row.id)}/curation`, {
+ method: "PATCH",
+ body: { is_featured: !row.is_featured },
+ });
+ setRows((current) => current?.map((item) => item.id === row.id ? { ...item, is_featured: !row.is_featured } : item) ?? null);
+ toast.success(row.is_featured ? "Removed from curated talent" : "Added to curated talent");
+ } catch (err) {
+ toast.error(err instanceof Error ? err.message : "Could not update curation");
+ } finally {
+ setActingId(null);
+ }
+ }
+
  if (forbidden) return <AdminAccessCard message={forbidden} />;
 
  return (
@@ -185,6 +202,7 @@ export default function AdminFreelancersPage() {
  <TH align="right">Completed</TH>
  <TH>Verified</TH>
  <TH>Availability</TH>
+ <TH>Curated</TH>
  <TH>Account</TH>
  <TH align="right">Actions</TH>
  </THead>
@@ -237,8 +255,13 @@ export default function AdminFreelancersPage() {
  <span className="text-sm text-neutral-400">—</span>
  )}
  </TD>
+ <TD>{r.is_featured ? <Badge tone="brand">Curated</Badge> : <span className="text-sm text-neutral-400">—</span>}</TD>
  <TD><Badge tone={meta.tone}>{meta.label}</Badge></TD>
  <TD align="right">
+ <div className="flex justify-end gap-2">
+ <Button variant="secondary" size="sm" disabled={actingId === r.id} onClick={() => void toggleCuration(r)}>
+ {r.is_featured ? "Uncurate" : "Curate"}
+ </Button>
  <Button
  variant="secondary"
  size="sm"
@@ -247,6 +270,7 @@ export default function AdminFreelancersPage() {
  >
  {suspendedOrRestricted ? "Activate" : "Suspend"}
  </Button>
+ </div>
  </TD>
  </TR>
  );

@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { ok, parsePage, requireAuth } from "../common/index.js";
+import { ok, parsePage, requireAccountType, requireAuth } from "../common/index.js";
 import { db } from "../../database/connection.js";
 import { env } from "../../config/env.js";
-import { addPaymentMethodSchema, initializePaymentSchema, transactionsQuerySchema, verifyPaymentSchema } from "./schemas.js";
+import { AppError } from "../../plugins/error-handler.js";
+import { stripe } from "../../services/stripe.js";
+import { addPaymentMethodSchema, connectOnboardingSchema, initializePaymentSchema, transactionsQuerySchema, verifyPaymentSchema } from "./schemas.js";
 import * as service from "./service.js";
 import * as repo from "./repository.js";
 
@@ -14,49 +16,8 @@ function validationError(reply: import("fastify").FastifyReply, message: string,
   });
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function demoAuthorizePage(title: string, detail: string, okOutcome: boolean): string {
-  const accent = okOutcome ? "#0f9d63" : "#b45309";
-  const appUrl = escapeHtml(env.WEB_APP_URL);
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)} · Workora (demo)</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0b1220; color: #e5e9f0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    .card { max-width: 440px; padding: 36px 40px; border-radius: 18px; background: #131c2e; border: 1px solid #23304d; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
-    .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #0b1220; background: ${accent}; margin-bottom: 14px; font-weight: 700; }
-    h1 { font-size: 22px; margin: 0 0 10px; }
-    p { color: #a7b1c6; line-height: 1.55; font-size: 14px; margin: 0 0 22px; }
-    a { display: inline-block; padding: 11px 22px; border-radius: 10px; background: #4f7cff; color: #fff; text-decoration: none; font-weight: 600; }
-    a:hover { background: #6b90ff; }
-    small { display: block; margin-top: 18px; color: #5c6882; font-size: 11px; }
-  </style>
-</head>
-<body>
-  <main class="card">
-    <span class="badge">Demo mode</span>
-    <h1>${escapeHtml(title)}</h1>
-    <p>${escapeHtml(detail)}</p>
-    <a href="${appUrl}">Back to Workora</a>
-    <small>No real payment was processed. This workspace runs with synthetic demo payments only.</small>
-  </main>
-</body>
-</html>`;
-}
-
 export default async function paymentsRoutes(app: FastifyInstance) {
-  /** GET /api/v1/payments/methods — own methods. Lazily seeds one demo VISA ····4169 for new users. */
+  /** GET /api/v1/payments/methods — own real payment methods. */
   app.get("/payments/methods", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.currentUser!;
     const instance = await db();
@@ -64,7 +25,7 @@ export default async function paymentsRoutes(app: FastifyInstance) {
     reply.send(ok({ methods }));
   });
 
-  /** POST /api/v1/payments/methods — synthetic demo method; no PAN is accepted or stored. */
+  /** POST /api/v1/payments/methods — direct card storage is disabled. */
   app.post("/payments/methods", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.currentUser!;
     const parsed = addPaymentMethodSchema.safeParse(request.body);
@@ -74,7 +35,7 @@ export default async function paymentsRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const method = await service.addPaymentMethod(instance, user.id, parsed.data);
-    reply.status(201).send(ok({ method }, "Demo payment method added"));
+    reply.status(201).send(ok({ method }, "Payment method added"));
   });
 
   /** DELETE /api/v1/payments/methods/:id — own methods only. */
@@ -85,11 +46,7 @@ export default async function paymentsRoutes(app: FastifyInstance) {
     reply.send(ok(null, "Payment method removed"));
   });
 
-  /**
-   * POST /api/v1/payments/initialize — DEMO MODE ONLY.
-   * Creates a pending payment with a synthetic provider_ref and returns a local authorize URL.
-   * No Stripe/Paystack API call is made.
-   */
+  /** POST /api/v1/payments/initialize — hosted Stripe Checkout for milestone funding. */
   app.post("/payments/initialize", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.currentUser!;
     const parsed = initializePaymentSchema.safeParse(request.body);
@@ -99,36 +56,10 @@ export default async function paymentsRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const result = await service.initializePayment(instance, user.id, parsed.data);
-    reply.status(201).send(ok(result, "Demo payment initialized"));
+    reply.status(201).send(ok(result, "Stripe Checkout session created"));
   });
 
-  /**
-   * GET /api/v1/payments/demo-authorizations/:id/authorize — PUBLIC demo checkout page.
-   * Flips the payment to succeeded and, when milestone-linked, runs the milestone pay pipeline
-   * (in_review → approved → paid, both-side transactions, platform fee, contract events) in ONE transaction.
-   */
-  app.get("/payments/demo-authorizations/:id/authorize", async (request: FastifyRequest, reply) => {
-    const instance = await db();
-    const result = await service.authorizeDemoPayment(instance, (request.params as { id: string }).id);
-
-    reply.type("text/html; charset=utf-8");
-    switch (result.outcome) {
-      case "authorized":
-        reply.send(demoAuthorizePage("Demo payment authorized", "Your demo payment was authorized successfully. If it funded a milestone, the milestone has moved through approved to paid.", true));
-        return;
-      case "already_authorized":
-        reply.send(demoAuthorizePage("Demo payment already authorized", "This demo payment was already authorized. No duplicate transaction was created.", true));
-        return;
-      case "not_pending":
-        reply.status(409).send(demoAuthorizePage("Payment not payable", `This demo payment is currently '${result.payment?.status ?? "unknown"}' and cannot be authorized.`, false));
-        return;
-      default:
-        reply.status(404).send(demoAuthorizePage("Payment not found", "We could not find a demo payment for this link. It may have been created against a different workspace.", false));
-        return;
-    }
-  });
-
-  /** POST /api/v1/payments/verify — own payments only; demo semantics: known provider_ref resolves to stored status. */
+  /** POST /api/v1/payments/verify — own payment by Stripe Checkout session id. */
   app.post("/payments/verify", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.currentUser!;
     const parsed = verifyPaymentSchema.safeParse(request.body);
@@ -141,19 +72,49 @@ export default async function paymentsRoutes(app: FastifyInstance) {
     reply.send(ok(result));
   });
 
-  /**
-   * POST /api/v1/webhooks/payments — PUBLIC, DEMO-ONLY.
-   * No signature verification is performed. Hard-fails when NODE_ENV=production.
-   * Parses the provider reference, flips a matching pending payment to succeeded and runs
-   * the milestone pay pipeline. Always responds { received: true } for processable payloads.
-   */
+  /** POST /api/v1/webhooks/payments — Stripe-signed payment and connected-account events. */
   app.post("/webhooks/payments", async (request, reply) => {
+    if (!stripe || !env.STRIPE_WEBHOOK_SECRET) {
+      throw new AppError(503, "SERVICE_UNAVAILABLE", "Stripe webhook signing is not configured");
+    }
+    const signature = request.headers["stripe-signature"];
+    if (typeof signature !== "string" || !request.rawBody) {
+      throw new AppError(400, "BAD_REQUEST", "Stripe signature or raw request body is missing");
+    }
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(request.rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
+    } catch (error) {
+      request.log.warn({ err: error }, "invalid Stripe webhook signature");
+      throw new AppError(400, "BAD_REQUEST", "Invalid Stripe webhook signature");
+    }
     const instance = await db();
-    const result = await service.handleDemoWebhook(instance, request.body);
-    reply.send(ok({ received: result.received, duplicate: result.duplicate, providerRef: result.providerRef, status: result.paymentStatus }, "Webhook received"));
+    const result = await service.handleStripeWebhook(instance, event);
+    reply.send(ok(result, "Webhook received"));
   });
 
-  /** GET /api/v1/payments/transactions — paginated own transactions + demo earnings breakdown. */
+  /** GET /api/v1/payments/connect/status — freelancer's Stripe payout readiness. */
+  app.get("/payments/connect/status", { preHandler: [requireAuth, requireAccountType("freelancer")] }, async (request, reply) => {
+    const user = request.currentUser!;
+    const instance = await db();
+    const status = await service.getStripePayoutStatus(instance, user.id);
+    reply.send(ok(status));
+  });
+
+  /** POST /api/v1/payments/connect/onboarding — creates a Stripe Express onboarding link. */
+  app.post("/payments/connect/onboarding", { preHandler: [requireAuth, requireAccountType("freelancer")] }, async (request, reply) => {
+    const parsed = connectOnboardingSchema.safeParse(request.body);
+    if (!parsed.success) {
+      validationError(reply, "Invalid onboarding country", { issues: parsed.error.issues });
+      return;
+    }
+    const user = request.currentUser!;
+    const instance = await db();
+    const onboarding = await service.startStripePayoutOnboarding(instance, user.id, parsed.data.country);
+    reply.send(ok(onboarding, "Stripe onboarding link created"));
+  });
+
+  /** GET /api/v1/payments/transactions — paginated own transactions and earnings breakdown. */
   app.get("/payments/transactions", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.currentUser!;
     const query = request.query as Record<string, string | undefined>;

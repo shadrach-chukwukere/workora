@@ -16,12 +16,17 @@ export function findOpenRequestForUser(db: Conn, userId: string) {
     .executeTakeFirst();
 }
 
-export function insertVerificationRequest(db: Conn, row: { userId: string; documentType: string }) {
+export function insertVerificationRequest(
+  db: Conn,
+  row: { userId: string; documentType: string; documentKey: string; documentName: string },
+) {
   return db
     .insertInto("verification_requests")
     .values({
       user_id: row.userId,
       document_type: row.documentType,
+      document_url: row.documentKey,
+      document_name: row.documentName,
       status: "pending",
     })
     .returningAll()
@@ -31,7 +36,7 @@ export function insertVerificationRequest(db: Conn, row: { userId: string; docum
 export function listRequestsForUser(db: Conn, userId: string) {
   return db
     .selectFrom("verification_requests")
-    .selectAll()
+    .select(["id", "status", "document_type", "submitted_at", "decided_at", "notes"])
     .where("user_id", "=", userId)
     .orderBy("submitted_at", "desc")
     .execute();
@@ -50,6 +55,7 @@ export function listRequestsForAdmin(db: Conn, status?: VerificationStatus, limi
       "vr.decided_at",
       "vr.decided_by",
       "vr.notes",
+      sql<boolean>`(vr.document_url IS NOT NULL)`.as("has_document"),
       "u.name as user_name",
       "u.image as user_image",
       "u.account_type as user_account_type",
@@ -76,12 +82,30 @@ export function findRequestDetail(db: Conn, id: string) {
       "vr.decided_at",
       "vr.decided_by",
       "vr.notes",
+      sql<boolean>`(vr.document_url IS NOT NULL)`.as("has_document"),
       "u.name as user_name",
       "u.email as user_email",
       "u.image as user_image",
       "u.account_type as user_account_type",
     ])
     .where("vr.id", "=", id)
+    .executeTakeFirst();
+}
+
+export function updateRequestDocument(db: Conn, id: string, documentKey: string, documentName: string) {
+  return db
+    .updateTable("verification_requests")
+    .set({
+      document_url: documentKey,
+      document_name: documentName,
+      status: "pending",
+      decided_at: null,
+      decided_by: null,
+      notes: null,
+    })
+    .where("id", "=", id)
+    .where("status", "=", "info_requested")
+    .returningAll()
     .executeTakeFirst();
 }
 

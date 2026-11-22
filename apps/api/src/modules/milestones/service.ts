@@ -1,8 +1,11 @@
 import { db } from "../../database/connection.js";
-import { badRequest, conflict, forbidden, notFound } from "../../plugins/error-handler.js";
+import { badRequest, conflict, forbidden, notFound, serviceUnavailable } from "../../plugins/error-handler.js";
 import type { AuthedUser } from "../../middleware/authenticate.js";
 import type { CreateMilestoneInput, RequestRevisionInput, SubmitMilestoneInput } from "./schemas.js";
+import { stripe } from "../../services/stripe.js";
 import * as repo from "./repository.js";
+import * as paymentRepo from "../payments/repository.js";
+import * as emailNotify from "../../services/notifications.js";
 
 const PLATFORM_FEE_RATE_BPS = 800; // 8%
 
@@ -96,7 +99,7 @@ export async function listMilestones(user: AuthedUser, contractId: string) {
   return { milestones };
 }
 
-/** POST /contracts/:contractId/milestones/:milestoneId/submit — freelancer; upcoming|revision -> in_review. */
+/** POST /contracts/:contractId/milestones/:milestoneId/submit — freelancer; funded|revision -> in_review. */
 export async function submitMilestone(user: AuthedUser, contractId: string, milestoneId: string, input: SubmitMilestoneInput) {
   const dbi = await db();
   const contract = await loadContractForUser(dbi, user, contractId);
@@ -120,8 +123,8 @@ export async function submitMilestone(user: AuthedUser, contractId: string, mile
     if (!milestone || milestone.contract_id !== contractId) {
       throw notFound("Milestone not found");
     }
-    if (milestone.status !== "upcoming" && milestone.status !== "revision") {
-      throw conflict("Only upcoming or revision milestones can be submitted", { status: milestone.status });
+    if (milestone.status !== "funded" && milestone.status !== "revision") {
+      throw conflict("Only funded or revision milestones can be submitted", { status: milestone.status });
     }
 
     const updated = await repo.markMilestoneInReview(trx, milestone.id);
@@ -155,7 +158,7 @@ export async function submitMilestone(user: AuthedUser, contractId: string, mile
   });
 }
 
-/** POST /contracts/:contractId/milestones/:milestoneId/approve — client; in_review -> paid (demo payment), fully atomic. */
+/** POST /contracts/:contractId/milestones/:milestoneId/approve — client; releases the funded Stripe charge. */
 export async function approveMilestone(user: AuthedUser, contractId: string, milestoneId: string) {
   const dbi = await db();
   const contract = await loadContractForUser(dbi, user, contractId);
@@ -167,7 +170,96 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
     throw conflict("Milestones can only be approved on active contracts", { status: contract.status });
   }
 
-  return dbi.transaction().execute(async (trx) => {
+  const milestoneBeforeApproval = await loadMilestoneForContract(dbi, contractId, milestoneId);
+  if (milestoneBeforeApproval.status === "paid") {
+    return { milestone: milestoneBeforeApproval, payment: { alreadyPaid: true } };
+  }
+  if (milestoneBeforeApproval.status !== "in_review" && milestoneBeforeApproval.status !== "approved") {
+    throw conflict("Only milestones in review can be approved", { status: milestoneBeforeApproval.status });
+  }
+  if (!stripe) {
+    throw serviceUnavailable("Stripe payments are not configured. Set STRIPE_SECRET_KEY on the API.");
+  }
+
+  const payment = await paymentRepo.findSuccessfulMilestonePayment(dbi, milestoneId);
+  if (!payment || Number(payment.amount_minor) !== Number(milestoneBeforeApproval.amount_minor)) {
+    throw conflict("This milestone has no matching successful Stripe payment");
+  }
+  const connectedAccount = await paymentRepo.findFreelancerStripeAccount(dbi, contract.freelancer_id);
+  if (!connectedAccount?.stripe_account_id) {
+    throw conflict("The freelancer must finish Stripe payout onboarding before funds can be released");
+  }
+  const stripeAccount = await stripe.accounts.retrieve(connectedAccount.stripe_account_id);
+  if (!stripeAccount.payouts_enabled || stripeAccount.capabilities?.transfers !== "active") {
+    throw conflict("The freelancer's Stripe account is not ready to receive payouts");
+  }
+
+  const paymentMetadata =
+    payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata)
+      ? payment.metadata as Record<string, unknown>
+      : {};
+  const paymentIntentId = paymentMetadata.paymentIntentId;
+  if (typeof paymentIntentId !== "string") {
+    throw conflict("The Stripe payment is missing its payment intent reference");
+  }
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if (paymentIntent.status !== "succeeded") {
+    throw conflict("Stripe has not confirmed the milestone payment");
+  }
+  const latestCharge = paymentIntent.latest_charge;
+  const sourceTransaction = typeof latestCharge === "string" ? latestCharge : latestCharge?.id;
+  if (!sourceTransaction) {
+    throw conflict("Stripe has not provided a charge to transfer");
+  }
+
+  const grossMinor = Number(milestoneBeforeApproval.amount_minor);
+  const feeMinor = Math.round((grossMinor * PLATFORM_FEE_RATE_BPS) / 10_000);
+  const netMinor = grossMinor - feeMinor;
+  const currency = contract.currency.trim();
+  const approvalState = await dbi.transaction().execute(async (trx) => {
+    const lockedContract = await repo.lockContractById(trx, contractId);
+    if (!lockedContract || lockedContract.status !== "active") {
+      throw conflict("Milestones can only be approved on active contracts", { status: lockedContract?.status });
+    }
+    const lockedMilestone = await repo.lockMilestoneById(trx, milestoneId);
+    if (!lockedMilestone || lockedMilestone.contract_id !== contractId) {
+      throw notFound("Milestone not found");
+    }
+    if (lockedMilestone.status === "paid") {
+      return "paid" as const;
+    }
+    if (lockedMilestone.status === "in_review") {
+      await repo.markMilestoneApproved(trx, milestoneId);
+      await repo.insertContractEvent(trx, {
+        contractId,
+        actorId: user.id,
+        kind: "milestone.approved",
+        payload: { milestoneId, amountMinor: grossMinor, approvedBy: user.id },
+      });
+      return "approved" as const;
+    }
+    if (lockedMilestone.status === "approved") {
+      return "approved" as const;
+    }
+    throw conflict("Only milestones in review can be approved", { status: lockedMilestone.status });
+  });
+  if (approvalState === "paid") {
+    return { milestone: await loadMilestoneForContract(dbi, contractId, milestoneId), payment: { alreadyPaid: true } };
+  }
+
+  const transfer = await stripe.transfers.create(
+    {
+      amount: netMinor,
+      currency: currency.toLowerCase(),
+      destination: connectedAccount.stripe_account_id,
+      source_transaction: sourceTransaction,
+      transfer_group: `contract-${contractId}`,
+      metadata: { milestoneId, workoraPaymentId: payment.id },
+    },
+    { idempotencyKey: `workora-release-${milestoneId}` },
+  );
+
+  await dbi.transaction().execute(async (trx) => {
     const lockedContract = await repo.lockContractById(trx, contractId);
     if (!lockedContract) {
       throw notFound("Contract not found");
@@ -179,15 +271,14 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
     if (!milestone || milestone.contract_id !== contractId) {
       throw notFound("Milestone not found");
     }
-    if (milestone.status !== "in_review") {
-      throw conflict("Only milestones in review can be approved", { status: milestone.status });
+    if (milestone.status === "paid") {
+      return;
+    }
+    if (milestone.status !== "approved") {
+      throw conflict("Milestone approval state changed before payout", { status: milestone.status });
     }
 
-    const grossMinor = milestone.amount_minor;
-    const feeMinor = Math.round((grossMinor * PLATFORM_FEE_RATE_BPS) / 10_000);
-    const netMinor = grossMinor - feeMinor;
     const currency = lockedContract.currency;
-
     const updated = await repo.markMilestonePaid(trx, milestone.id);
 
     await repo.insertPlatformFee(trx, {
@@ -205,6 +296,7 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
       currency,
       counterpartyId: lockedContract.freelancer_id,
       contractId,
+      paymentId: payment.id,
       description: `Milestone payment for "${milestone.title}"`,
     });
     await repo.insertTransaction(trx, {
@@ -214,6 +306,7 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
       currency,
       counterpartyId: lockedContract.client_id,
       contractId,
+      paymentId: payment.id,
       description: `Milestone earnings for "${milestone.title}" (net of 8% platform fee)`,
     });
     await repo.insertTransaction(trx, {
@@ -223,6 +316,7 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
       currency,
       counterpartyId: null,
       contractId,
+      paymentId: payment.id,
       description: `Platform commission (8%) on milestone "${milestone.title}"`,
     });
 
@@ -232,14 +326,17 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
     await repo.insertContractEvent(trx, {
       contractId,
       actorId: user.id,
-      kind: "milestone.approved",
-      payload: { milestoneId: milestone.id, amountMinor: grossMinor, approvedBy: user.id },
-    });
-    await repo.insertContractEvent(trx, {
-      contractId,
-      actorId: user.id,
       kind: "milestone.paid",
-      payload: { milestoneId: milestone.id, amountMinor: grossMinor, feeMinor, netMinor, rateBps: PLATFORM_FEE_RATE_BPS, currency },
+      payload: {
+        milestoneId: milestone.id,
+        amountMinor: grossMinor,
+        feeMinor,
+        netMinor,
+        rateBps: PLATFORM_FEE_RATE_BPS,
+        currency,
+        provider: "stripe",
+        transferId: transfer.id,
+      },
     });
 
     await repo.insertNotification(trx, {
@@ -252,8 +349,15 @@ export async function approveMilestone(user: AuthedUser, contractId: string, mil
       entityId: milestone.id,
     });
 
-    return { milestone: updated, payment: { amountMinor: grossMinor, feeMinor, netMinor, rateBps: PLATFORM_FEE_RATE_BPS, currency } };
+    await paymentRepo.updatePaymentMetadata(trx, payment.id, { transferId: transfer.id });
+    return updated;
   });
+
+  const paidMilestone = await loadMilestoneForContract(dbi, contractId, milestoneId);
+  return {
+    milestone: paidMilestone,
+    payment: { amountMinor: grossMinor, feeMinor, netMinor, rateBps: PLATFORM_FEE_RATE_BPS, currency, transferId: transfer.id },
+  };
 }
 
 /** POST /contracts/:contractId/milestones/:milestoneId/request-revision — client; in_review -> revision. */

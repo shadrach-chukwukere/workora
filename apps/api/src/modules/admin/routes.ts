@@ -88,6 +88,43 @@ export default async function adminRoutes(app: FastifyInstance) {
     reply.send(ok({ users: rows.map((r) => ({ ...r })) }));
   });
 
+  /** PATCH /admin/freelancers/:id/curation — set editorial placement for launch talent. */
+  app.patch("/admin/freelancers/:id/curation", { preHandler: [requirePermission("admin.users")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = request.body as { is_featured?: unknown; featured_rank?: unknown };
+    if (
+      typeof body.is_featured !== "boolean" ||
+      (body.featured_rank !== undefined &&
+        (typeof body.featured_rank !== "number" ||
+          !Number.isInteger(body.featured_rank) ||
+          body.featured_rank < 0 ||
+          body.featured_rank > 9999))
+    ) {
+      reply.status(400).send({
+        success: false,
+        message: "is_featured must be a boolean and featured_rank must be an integer from 0 to 9999",
+        error: { code: "VALIDATION_ERROR", details: {} },
+      });
+      return;
+    }
+
+    const instance = await db();
+    const updated = await instance
+      .updateTable("freelancer_profiles")
+      .set({
+        is_featured: body.is_featured,
+        ...(typeof body.featured_rank === "number" ? { featured_rank: body.featured_rank } : {}),
+      })
+      .where("user_id", "=", id)
+      .returning("user_id")
+      .executeTakeFirst();
+    if (!updated) {
+      reply.status(404).send({ success: false, message: "Freelancer profile not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+    reply.send(ok({ user_id: updated.user_id }, body.is_featured ? "Freelancer featured" : "Freelancer removed from curation"));
+  });
+
   /** GET /admin/projects — every project across the platform, optional status/q/categoryId filters. */
   app.get("/admin/projects", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
@@ -264,11 +301,12 @@ export default async function adminRoutes(app: FastifyInstance) {
   app.get("/admin/categories", { preHandler: [requireAccountType("admin")] }, async (_request, reply) => {
     const instance = await db();
     const rows = await sql<{
-      id: string; slug: string; name: string; description: string; kind: string; sort_order: number; projects_count: string; skills_count: string;
+      id: string; slug: string; name: string; description: string; kind: string; sort_order: number;
+      is_launch_focus: boolean; launch_rank: number; projects_count: string; skills_count: string;
     }>`
-      SELECT c.id, c.slug, c.name, c.description, c.kind, c.sort_order,
+      SELECT c.id, c.slug, c.name, c.description, c.kind, c.sort_order, c.is_launch_focus, c.launch_rank,
              (SELECT COUNT(*) FROM projects p WHERE p.category_id = c.id)::text AS projects_count,
-             (SELECT COUNT(*) FROM freelancer_skills fs WHERE fs.skill_id = c.id)::text AS skills_count
+             (SELECT COUNT(*) FROM category_skills cs WHERE cs.category_id = c.id)::text AS skills_count
       FROM categories c
       ORDER BY c.sort_order, c.name
     `.execute(instance).then((r) => r.rows);
@@ -294,13 +332,21 @@ export default async function adminRoutes(app: FastifyInstance) {
   /** PATCH /admin/categories/:id — update name/description/sort_order. */
   app.patch("/admin/categories/:id", { preHandler: [requirePermission("admin.moderation")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as { name?: string; description?: string; sort_order?: number };
+    const body = request.body as {
+      name?: string;
+      description?: string;
+      sort_order?: number;
+      is_launch_focus?: boolean;
+      launch_rank?: number;
+    };
     const instance = await db();
     const updated = await sql<{ id: string }>`
       UPDATE categories
       SET name = COALESCE(${body.name?.trim() ?? null}, name),
           description = COALESCE(${body.description?.trim() ?? null}, description),
-          sort_order = COALESCE(${body.sort_order ?? null}, sort_order)
+          sort_order = COALESCE(${body.sort_order ?? null}, sort_order),
+          is_launch_focus = COALESCE(${body.is_launch_focus ?? null}, is_launch_focus),
+          launch_rank = COALESCE(${body.launch_rank ?? null}, launch_rank)
       WHERE id = ${id}
       RETURNING id
     `.execute(instance).then((r) => r.rows[0]);

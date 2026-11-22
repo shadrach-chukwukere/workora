@@ -27,6 +27,8 @@ interface AdminCategory {
  description: string | null;
  kind: string;
  sort_order: number | string;
+ is_launch_focus: boolean;
+ launch_rank: number | string;
  projects_count: number | string;
  skills_count: number | string;
 }
@@ -66,6 +68,19 @@ export default function AdminCategoriesPage() {
  useEffect(() => {
  void load();
  }, [load]);
+
+ async function toggleLaunchFocus(category: AdminCategory) {
+ try {
+ await api(`/api/v1/admin/categories/${encodeURIComponent(category.id)}`, {
+ method: "PATCH",
+ body: { is_launch_focus: !category.is_launch_focus },
+ });
+ toast.success(category.is_launch_focus ? "Category removed from launch focus" : "Category added to launch focus");
+ await load();
+ } catch (err) {
+ toast.error(err instanceof Error ? err.message : "Could not update launch focus");
+ }
+ }
 
  if (forbidden) return <AdminAccessCard message={forbidden} />;
 
@@ -143,6 +158,10 @@ export default function AdminCategoriesPage() {
  <span className="font-mono text-[11px]">{c.slug}</span>
  </Badge>
  <span className="text-xs text-neutral-400">sort {n(c.sort_order)}</span>
+ {c.is_launch_focus ? <Badge tone="success">Launch focus · {n(c.launch_rank)}</Badge> : <Badge tone="neutral">Not in launch</Badge>}
+ <Button variant="secondary" size="sm" onClick={() => void toggleLaunchFocus(c)}>
+ {c.is_launch_focus ? "Remove from launch" : "Add to launch"}
+ </Button>
  </div>
  </article>
  ))}

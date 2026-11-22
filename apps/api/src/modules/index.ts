@@ -15,6 +15,7 @@ const routeModules = [
   { name: "disputes", path: "./disputes/routes.js" },
   { name: "subscriptions", path: "./subscriptions/routes.js" },
   { name: "verification", path: "./verification/routes.js" },
+  { name: "uploads", path: "./uploads/routes.js" },
   { name: "payments", path: "./payments/routes.js" },
   { name: "admin", path: "./admin/routes.js" },
   { name: "reports", path: "./reports/routes.js" },

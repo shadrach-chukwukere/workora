@@ -128,7 +128,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
     const verified = request.query.verified === "true" ? true : request.query.verified === "false" ? false : undefined;
     const minRate = request.query.min_rate ? Number(request.query.min_rate) : undefined;
     const maxRate = request.query.max_rate ? Number(request.query.max_rate) : undefined;
-    const sort = String(request.query.sort ?? "rating");
+    const sort = String(request.query.sort ?? "recommended");
     const page = Math.max(1, Number(request.query.page ?? 1) || 1);
     const perPage = Math.min(50, Math.max(1, Number(request.query.perPage ?? 20) || 20));
 
@@ -146,6 +146,13 @@ export default async function freelancersRoutes(app: FastifyInstance) {
           eb("u.name", "ilike", `%${q}%`),
           eb("fp.headline", "ilike", `%${q}%`),
           eb("fp.about", "ilike", `%${q}%`),
+          eb("fp.user_id", "in", (subquery) =>
+            subquery
+              .selectFrom("freelancer_skills as fs")
+              .innerJoin("skills as s", "s.id", "fs.skill_id")
+              .where("s.name", "ilike", `%${q}%`)
+              .select("fs.freelancer_id"),
+          ),
         ]),
       );
     }
@@ -153,8 +160,14 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       builder = builder.where("fp.user_id", "in", (eb) =>
         eb
           .selectFrom("freelancer_skills as fs")
-          .innerJoin("skills as s", "s.id", "fs.skill_id")
-          .where("s.slug", "=", categorySlug)
+          .innerJoin("category_skills as cs", "cs.skill_id", "fs.skill_id")
+          .where("cs.category_id", "in", (categories) =>
+            categories
+              .selectFrom("categories")
+              .select("id")
+              .where("slug", "=", categorySlug)
+              .where("is_launch_focus", "=", true),
+          )
           .select("fs.freelancer_id"),
       );
     }
@@ -176,6 +189,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
         "fp.availability",
         "fp.experience_level",
         "fp.verified_identity",
+        "fp.is_featured",
         "fp.rating_avg",
         "fp.rating_count",
         "fp.completed_count",
@@ -192,8 +206,21 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       case "newest":
         rowsBuilder.orderBy("u.created_at", "desc");
         break;
-      default:
+      case "rating":
         rowsBuilder.orderBy("fp.rating_avg", "desc");
+        rowsBuilder.orderBy("fp.rating_count", "desc");
+        break;
+      default:
+        rowsBuilder.orderBy("fp.is_featured", "desc");
+        rowsBuilder.orderBy("fp.featured_rank", "asc");
+        rowsBuilder.orderBy("fp.verified_identity", "desc");
+        rowsBuilder.orderBy(
+          sql<number>`((COALESCE(fp.rating_avg, 4.0) * fp.rating_count) + 20.0) / (fp.rating_count + 5.0)`,
+          "desc",
+        );
+        rowsBuilder.orderBy("fp.completed_count", "desc");
+        rowsBuilder.orderBy("fp.response_time_hours", "asc");
+        rowsBuilder.orderBy("u.id", "asc");
     }
 
     const [{ count }] = await countBuilder.execute();

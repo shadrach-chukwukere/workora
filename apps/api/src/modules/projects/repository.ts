@@ -287,6 +287,16 @@ export async function categoryExists(db: Db, categoryId: string): Promise<boolea
   return row !== undefined;
 }
 
+export async function launchCategoryExists(db: Db, categoryId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("categories")
+    .select("id")
+    .where("id", "=", categoryId)
+    .where("is_launch_focus", "=", true)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Client summary + skills (project detail)                                    */
 /* -------------------------------------------------------------------------- */

@@ -9,6 +9,8 @@ import * as m0004 from "./migrations/0004_marketplace.js";
 import * as m0005 from "./migrations/0005_money.js";
 import * as m0006 from "./migrations/0006_communication.js";
 import * as m0007 from "./migrations/0007_trust_admin.js";
+import * as m0008 from "./migrations/0008_verification_docs.js";
+import * as m0009 from "./migrations/0009_launch_connect.js";
 
 export const migrations: Record<string, Migration> = {
   "0001_extensions": m0001,
@@ -18,6 +20,8 @@ export const migrations: Record<string, Migration> = {
   "0005_money": m0005,
   "0006_communication": m0006,
   "0007_trust_admin": m0007,
+  "0008_verification_docs": m0008,
+  "0009_launch_connect": m0009,
 };
 
 const provider: MigrationProvider = {

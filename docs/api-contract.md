@@ -29,17 +29,17 @@ Known working routes (tested 2026-11-08):
 - GET    /api/v1/users/:id             -> { user }
 
 ## Catalog (public)
-- GET /api/v1/categories               -> { categories[{id,slug,name,description,sort_order,kind}] }
+- GET /api/v1/categories               -> active launch-focus categories only
 - GET /api/v1/skills                   -> { skills[{id,slug,name}] }
 - GET /api/v1/skills/:slug             -> { }
 - GET /api/v1/subscription-plans       -> { plans[{id,code,name,audience,price,interval,features,is_highlighted,is_active,sort_order}] }
-- GET /api/v1/freelancers              -> query: q, category, availability, rate (0-25|25-50|50-90|90-999), sort (recommended|rating|rate-asc|rate-desc|projects), page, perPage
+- GET /api/v1/freelancers              -> query: q, category (launch category slug), availability, min_rate, max_rate, sort (recommended|rating|rate_asc|rate_desc|newest), page, perPage; recommended favors curated, verified, confidence-adjusted ratings, completed work and response time
 - GET /api/v1/freelancers/:id          (public profile – not yet implemented; use /users/:id instead)
 
 ## Projects (public list + ownership)
 - GET  /api/v1/projects                -> public list (open only)
 - GET  /api/v1/projects/:id
-- POST /api/v1/projects                -> client only; { title, summary, description, category_id, budget_type, budget_min_minor, budget_max_minor, experience_level, duration_bucket, deadline? }
+- POST /api/v1/projects                -> client only; new projects must use a launch-focus category
 - PUT  /api/v1/projects/:id            -> owner client only; partial update
 - POST /api/v1/projects/:id/publish    -> owner client only
 - POST /api/v1/projects/:id/close      -> owner client or admin
@@ -68,7 +68,7 @@ Known working routes (tested 2026-11-08):
 - POST   /api/v1/contracts/:contractId/milestones                -> client only; { title, description, amountMinor, dueDate?, sequencing? }
 - GET    /api/v1/contracts/:contractId/milestones                -> participants
 - POST   /api/v1/contracts/:contractId/milestones/:milestoneId/submit         -> freelancer; in_review
-- POST   /api/v1/contracts/:contractId/milestones/:milestoneId/approve        -> client; pays atomically (8% fee, both-side transactions)
+- POST   /api/v1/contracts/:contractId/milestones/:milestoneId/approve        -> client; transfers the funded Stripe charge to the freelancer's connected account (8% platform fee)
 - POST   /api/v1/contracts/:contractId/milestones/:milestoneId/request-revision -> client; { note }
 - GET    /api/v1/contracts/:contractId/milestones/:milestoneId/deliverables  -> participants
 
@@ -96,18 +96,17 @@ Known working routes (tested 2026-11-08):
 - DELETE /api/v1/reviews/:id                  -> author or admin
 - GET    /api/v1/reviews/:id
 
-## Payments (demo mode – no real money)
-- GET    /api/v1/payments/methods            -> own methods
-- POST   /api/v1/payments/methods            -> { provider, brand?, lastFour?, expMonth?, expYear? }
-- DELETE /api/v1/payments/methods/:id
-- POST   /api/v1/payments/initialize         -> { kind, amountMinor, currency?, contractId?, milestoneId? }
-- GET    /api/v1/payments/demo-authorizations/:id/authorize -> PUBLIC HTML page (flip to succeeded)
-- POST   /api/v1/payments/verify             -> { reference }
-- POST   /api/v1/webhooks/payments           -> PUBLIC, DEMO ONLY (throws in production)
+## Payments
+- POST   /api/v1/payments/initialize         -> client only; milestone-only; returns a hosted Stripe Checkout URL after validating the exact milestone amount and currency
+- POST   /api/v1/payments/verify             -> { reference }; reads the caller's stored payment status, but does not confirm payment by itself
+- POST   /api/v1/webhooks/payments           -> Stripe-signed webhook; marks milestones funded only after successful payment confirmation
+- POST   /api/v1/payments/connect/onboarding -> freelancer only; { country: ISO 3166-1 alpha-2 code }; returns a Stripe Express onboarding link
+- GET    /api/v1/payments/connect/status     -> freelancer's Stripe onboarding/payout status
 - GET    /api/v1/payments/transactions       -> ?type, ?status, ?dateFrom, ?dateTo
 - GET    /api/v1/payments/transactions/:id
+- Direct card storage, subscriptions and top-ups are not supported by the real-money payment flow.
 
-## Subscriptions (demo)
+## Subscriptions (demo only)
 - GET    /api/v1/subscription-plans
 - POST   /api/v1/subscriptions          -> { planId, interval? }
 - GET    /api/v1/subscriptions/me
@@ -116,9 +115,12 @@ Known working routes (tested 2026-11-08):
 - GET    /api/v1/subscriptions/:id/invoices
 
 ## Verification
-- POST   /api/v1/verification-requests           -> freelancer only; { documentType }
+- POST   /api/v1/uploads/presign                 -> authenticated; verification scope returns a private upload URL and object key
+- POST   /api/v1/verification-requests           -> freelancer only; { documentType, documentKey, documentName }
+- POST   /api/v1/verification-requests/:id/document -> freelancer only; replace document after an admin requests more information
 - GET    /api/v1/verification-requests/me
 - GET    /api/v1/verification-requests           -> admin only
+- GET    /api/v1/verification-requests/:id/document -> verification admin only; short-lived private download URL
 - POST   /api/v1/verification-requests/:id/approve     -> admin
 - POST   /api/v1/verification-requests/:id/reject      -> admin; { reason }
 - POST   /api/v1/verification-requests/:id/request-info -> admin; { notes }
@@ -169,5 +171,7 @@ Known working routes (tested 2026-11-08):
 - GET /api/v1/admin/categories               -> categories + projects_count + skills_count
 - POST /api/v1/admin/categories              -> { slug, name, ... } — admin.moderation permission
 - PATCH /api/v1/admin/categories/:id         -> { name?, description?, sort_order? } — admin.moderation
+- PATCH /api/v1/admin/categories/:id         -> may also set { is_launch_focus?, launch_rank? } — admin.moderation
+- PATCH /api/v1/admin/freelancers/:id/curation -> { is_featured, featured_rank? } — admin.users; controls curated placement
 - GET /api/v1/admin/analytics/monthly?months=12 -> { months: [{ month, signups, projectsPosted, contractsStarted, volumeMinor }] }
 - GET /api/v1/admin/users accepts accountType=freelancer|client|admin

@@ -10,6 +10,7 @@ export function listPaymentMethods(db: Conn, userId: string) {
     .selectFrom("payment_methods")
     .selectAll()
     .where("user_id", "=", userId)
+    .where("provider_method_id", "not like", "demo-%")
     .orderBy("is_default", "desc")
     .orderBy("created_at", "asc")
     .execute();
@@ -112,6 +113,118 @@ export function findPaymentById(db: Conn, id: string) {
   return db.selectFrom("payments").selectAll().where("id", "=", id).executeTakeFirst();
 }
 
+export function findMilestonePayment(db: Conn, milestoneId: string) {
+  return db
+    .selectFrom("payments")
+    .selectAll()
+    .where("milestone_id", "=", milestoneId)
+    .where("kind", "=", "milestone")
+    .orderBy("created_at", "desc")
+    .executeTakeFirst();
+}
+
+export function findSuccessfulMilestonePayment(db: Conn, milestoneId: string) {
+  return db
+    .selectFrom("payments")
+    .selectAll()
+    .where("milestone_id", "=", milestoneId)
+    .where("kind", "=", "milestone")
+    .where("status", "=", "succeeded")
+    .orderBy("created_at", "desc")
+    .executeTakeFirst();
+}
+
+export function updatePaymentCheckoutSession(db: Conn, id: string, sessionId: string, checkoutUrl: string) {
+  return db
+    .updateTable("payments")
+    .set({
+      provider_ref: sessionId,
+      metadata: sql`metadata || ${JSON.stringify({ checkoutUrl })}::jsonb`,
+      updated_at: new Date(),
+    })
+    .where("id", "=", id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function updatePaymentMetadata(db: Conn, id: string, values: Record<string, unknown>) {
+  return db
+    .updateTable("payments")
+    .set({
+      metadata: sql`metadata || ${JSON.stringify(values)}::jsonb`,
+      updated_at: new Date(),
+    })
+    .where("id", "=", id)
+    .execute();
+}
+
+export function markPaymentFailed(db: Conn, id: string) {
+  return db
+    .updateTable("payments")
+    .set({ status: "failed", updated_at: new Date() })
+    .where("id", "=", id)
+    .where("status", "=", "pending")
+    .execute();
+}
+
+export function findUserEmail(db: Conn, userId: string) {
+  return db
+    .selectFrom("users")
+    .select(["email", "name"])
+    .where("id", "=", userId)
+    .executeTakeFirst();
+}
+
+export function findFreelancerStripeAccount(db: Conn, userId: string) {
+  return sql<{ stripe_account_id: string | null; stripe_details_submitted: boolean; stripe_payouts_enabled: boolean }>`
+    SELECT stripe_account_id, stripe_details_submitted, stripe_payouts_enabled
+    FROM freelancer_profiles
+    WHERE user_id = ${userId}
+  `.execute(db).then((result) => result.rows[0]);
+}
+
+export function setFreelancerStripeAccount(db: Conn, userId: string, accountId: string) {
+  return sql`
+    UPDATE freelancer_profiles
+    SET stripe_account_id = ${accountId}, updated_at = now()
+    WHERE user_id = ${userId}
+  `.execute(db);
+}
+
+export function updateFreelancerStripeStatus(
+  db: Conn,
+  accountId: string,
+  detailsSubmitted: boolean,
+  payoutsEnabled: boolean,
+) {
+  return sql`
+    UPDATE freelancer_profiles
+    SET stripe_details_submitted = ${detailsSubmitted},
+        stripe_payouts_enabled = ${payoutsEnabled},
+        updated_at = now()
+    WHERE stripe_account_id = ${accountId}
+  `.execute(db);
+}
+
+export function findMilestoneWithContract(db: Conn, milestoneId: string) {
+  return db
+    .selectFrom("contract_milestones as m")
+    .innerJoin("contracts as c", "c.id", "m.contract_id")
+    .select([
+      "m.id as milestone_id",
+      "m.contract_id as contract_id",
+      "m.title as milestone_title",
+      "m.amount_minor as milestone_amount_minor",
+      "m.status as milestone_status",
+      "c.client_id as client_id",
+      "c.freelancer_id as freelancer_id",
+      "c.currency as contract_currency",
+      "c.title_snapshot as contract_title",
+    ])
+    .where("m.id", "=", milestoneId)
+    .executeTakeFirst();
+}
+
 export function findPaymentByProviderRef(db: Conn, providerRef: string) {
   return db.selectFrom("payments").selectAll().where("provider_ref", "=", providerRef).executeTakeFirst();
 }
@@ -135,25 +248,6 @@ export function markPaymentSucceeded(db: Conn, id: string) {
     .executeTakeFirst();
 }
 
-export function findMilestoneWithContract(db: Conn, milestoneId: string) {
-  return db
-    .selectFrom("contract_milestones as m")
-    .innerJoin("contracts as c", "c.id", "m.contract_id")
-    .select([
-      "m.id as milestone_id",
-      "m.contract_id as contract_id",
-      "m.title as milestone_title",
-      "m.amount_minor as milestone_amount_minor",
-      "m.status as milestone_status",
-      "c.client_id as client_id",
-      "c.freelancer_id as freelancer_id",
-      "c.currency as contract_currency",
-      "c.title_snapshot as contract_title",
-    ])
-    .where("m.id", "=", milestoneId)
-    .executeTakeFirst();
-}
-
 export function findContractById(db: Conn, id: string) {
   return db.selectFrom("contracts").selectAll().where("id", "=", id).executeTakeFirst();
 }
@@ -161,8 +255,8 @@ export function findContractById(db: Conn, id: string) {
 export function setMilestoneStatus(
   db: Conn,
   milestoneId: string,
-  status: "approved" | "paid",
-  timestampColumn: "approved_at" | "paid_at",
+  status: "funded" | "approved" | "paid",
+  timestampColumn: "funded_at" | "approved_at" | "paid_at",
 ) {
   return db
     .updateTable("contract_milestones")

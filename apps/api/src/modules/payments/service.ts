@@ -1,55 +1,35 @@
 import crypto from "node:crypto";
 import { env } from "../../config/env.js";
-import { AppError, notFound } from "../../plugins/error-handler.js";
+import { AppError, badRequest, conflict, forbidden, notFound, serviceUnavailable } from "../../plugins/error-handler.js";
 import type { DB } from "../../database/types.js";
 import type { Kysely } from "kysely";
+import type Stripe from "stripe";
+import { stripe } from "../../services/stripe.js";
 import * as repo from "./repository.js";
 
-/**
- * PAYMENTS ARE IN DEMO MODE FOR THIS WORKSPACE.
- * No Stripe/Paystack API call is ever made. Every external interaction is replaced
- * by a local state transition plus a synthetic reference. Do not enable this in production.
- */
-
-// Platform commission applied by the demo milestone-pay pipeline (10%).
-const PLATFORM_FEE_BPS = 1000;
+const PLATFORM_FEE_BPS = 800;
 
 type Conn = Kysely<DB>;
 
+function requireStripe(): NonNullable<typeof stripe> {
+  if (!stripe) {
+    throw serviceUnavailable("Stripe payments are not configured. Set STRIPE_SECRET_KEY on the API.");
+  }
+  return stripe;
+}
+
 export async function listOwnPaymentMethods(db: Conn, userId: string) {
-  // DEMO UX: lazily seed one demo VISA ····4169 the first time a brand-new user lists methods.
-  await repo.seedDemoPaymentMethodIfEmpty(db, userId);
   return repo.listPaymentMethods(db, userId);
 }
 
 export async function addPaymentMethod(
   db: Conn,
   userId: string,
-  input: { provider: "stripe" | "paystack"; brand?: string; lastFour?: string; expMonth?: number; expYear?: number },
+  _input: { provider: "stripe" | "paystack"; brand?: string; lastFour?: string; expMonth?: number; expYear?: number },
 ) {
-  const lastFour = input.lastFour ?? String(crypto.randomInt(0, 10000)).padStart(4, "0");
-  const brand = input.brand?.trim() || (input.provider === "stripe" ? "VISA (demo)" : "Card (demo)");
-  // Synthetic provider token — NEVER a real PAN. e.g. demo-visa-4169 / demo-paystack-a1b2
-  const brandSlug =
-    brand
-      .split(" ")[0]!
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "") || input.provider;
-  const token = input.provider === "stripe" && brandSlug === "visa"
-    ? `demo-visa-${lastFour}`
-    : `demo-${input.provider}-${crypto.randomBytes(2).toString("hex")}`;
-
-  const existing = await repo.countPaymentMethods(db, userId);
-  return repo.insertPaymentMethod(db, {
-    userId,
-    provider: input.provider,
-    providerMethodId: token,
-    brand,
-    lastFour,
-    expMonth: input.expMonth ?? 12,
-    expYear: input.expYear ?? new Date().getFullYear() + 3,
-    isDefault: existing === 0,
-  });
+  void db;
+  void userId;
+  throw serviceUnavailable("Payment methods must be added through Stripe Checkout; direct card entry is not supported.");
 }
 
 export async function removePaymentMethod(db: Conn, userId: string, id: string) {
@@ -72,224 +52,278 @@ export async function initializePayment(
     milestoneId?: string;
   },
 ) {
-  // Resolve the milestone link first so we can derive the contract when only one side is given.
-  let contractId = input.contractId ?? null;
-  let milestoneId = input.milestoneId ?? null;
-
-  if (milestoneId) {
-    const milestone = await repo.findMilestoneWithContract(db, milestoneId);
-    if (!milestone) {
-      throw notFound("Milestone not found");
-    }
-    if (contractId && contractId !== milestone.contract_id) {
-      throw new AppError(400, "BAD_REQUEST", "contractId does not match the contract of milestoneId");
-    }
-    contractId = milestone.contract_id;
-  }
-  if (contractId) {
-    const contract = await repo.findContractById(db, contractId);
-    if (!contract) {
-      throw notFound("Contract not found");
-    }
+  const stripeClient = requireStripe();
+  if (input.kind !== "milestone" || !input.milestoneId) {
+    throw badRequest("Only contract milestone payments are supported.");
   }
 
-  // DEMO MODE: provider_ref is synthetic; no Stripe/Paystack call is performed.
-  const provider = "stripe" as const;
-  const providerRef = `demo_${crypto.randomUUID()}`;
-
-  const payment = await repo.insertPayment(db, {
-    userId,
-    provider,
-    kind: input.kind,
-    providerRef,
-    amountMinor: input.amountMinor,
-    currency: input.currency,
-    contractId,
-    milestoneId,
-    metadata: { demo: true, initiatedBy: userId },
-  });
-
-  const authorizationUrl = `${env.BASE_URL}/api/v1/payments/demo-authorizations/${payment.id}/authorize`;
-  return { payment, authorizationUrl, demo: true as const };
-}
-
-/**
- * DEMO authorize handler. Flips the payment to succeeded and — when the payment is linked to a
- * milestone — runs the same in_review → approved → paid pipeline the milestones module uses,
- * all inside ONE database transaction:
- *   milestone status changes + timestamps, contract_events rows, transactions rows on both
- *   sides, a platform_fees row, and profile counter updates.
- */
-export async function authorizeDemoPayment(db: Conn, paymentId: string, actorId: string | null = null) {
-  return db.transaction().execute(async (trx) => {
-    const payment = await repo.findPaymentById(trx, paymentId);
-    if (!payment) {
-      return { outcome: "not_found" as const, payment: null };
-    }
-    if (payment.status === "succeeded") {
-      // Idempotent: re-visiting the authorize link must not double-pay the milestone.
-      return { outcome: "already_authorized" as const, payment };
-    }
-    if (payment.status !== "pending") {
-      return { outcome: "not_pending" as const, payment };
-    }
-
-    const succeeded = (await repo.markPaymentSucceeded(trx, payment.id)) ?? { ...payment, status: "succeeded" as const };
-
-    if (payment.milestone_id) {
-      await runMilestonePayPipeline(trx, payment.id, payment.milestone_id, actorId ?? payment.user_id);
-    }
-    return { outcome: "authorized" as const, payment: succeeded };
-  });
-}
-
-/** Shared milestone approve+pay pipeline (demo). Caller MUST wrap this in a transaction. */
-export async function runMilestonePayPipeline(trx: Conn, paymentId: string, milestoneId: string, actorId: string | null) {
-  const milestone = await repo.findMilestoneWithContract(trx, milestoneId);
+  const milestone = await repo.findMilestoneWithContract(db, input.milestoneId);
   if (!milestone) {
     throw notFound("Milestone not found");
   }
-
-  // Idempotency: if the milestone already reached paid, do nothing further.
-  if (milestone.milestone_status === "paid") {
-    return;
+  if (milestone.client_id !== userId) {
+    throw forbidden("Only the contract client can fund this milestone");
   }
-
-  // 1) in_review → approved
-  if (milestone.milestone_status === "in_review") {
-    await repo.setMilestoneStatus(trx, milestone.milestone_id, "approved", "approved_at");
-    await repo.insertContractEvent(trx, {
-      contractId: milestone.contract_id,
-      actorId,
-      kind: "milestone_approved",
-      payload: { milestoneId: milestone.milestone_id, paymentId, demo: true },
+  if (input.contractId && input.contractId !== milestone.contract_id) {
+    throw badRequest("contractId does not match the contract of milestoneId");
+  }
+  if (milestone.milestone_status !== "upcoming") {
+    throw conflict("Only an upcoming milestone can be funded", { status: milestone.milestone_status });
+  }
+  if (Number(milestone.milestone_amount_minor) <= 0) {
+    throw badRequest("Milestone amount must be greater than zero");
+  }
+  if (input.amountMinor !== Number(milestone.milestone_amount_minor)) {
+    throw badRequest("Payment amount does not match the milestone amount", {
+      expectedAmountMinor: Number(milestone.milestone_amount_minor),
     });
-  } else if (milestone.milestone_status !== "approved") {
-    throw new AppError(409, "CONFLICT", `Milestone cannot be paid from status '${milestone.milestone_status}'`);
+  }
+  if (input.currency.toUpperCase() !== milestone.contract_currency.trim().toUpperCase()) {
+    throw badRequest("Payment currency does not match the contract currency");
   }
 
-  // 2) approved → paid
-  await repo.setMilestoneStatus(trx, milestone.milestone_id, "paid", "paid_at");
-  await repo.insertContractEvent(trx, {
-    contractId: milestone.contract_id,
-    actorId,
-    kind: "milestone_paid",
-    payload: { milestoneId: milestone.milestone_id, paymentId, amountMinor: milestone.milestone_amount_minor, demo: true },
-  });
+  const existing = await repo.findMilestonePayment(db, milestone.milestone_id);
+  if (existing?.status === "succeeded") {
+    throw conflict("This milestone has already been funded");
+  }
+  if (existing?.status === "pending") {
+    const metadata =
+      existing.metadata && typeof existing.metadata === "object" && !Array.isArray(existing.metadata)
+        ? existing.metadata as Record<string, unknown>
+        : {};
+    if (typeof metadata.checkoutUrl !== "string") {
+      throw conflict("A checkout session is still being prepared for this milestone");
+    }
+    const session = await stripeClient.checkout.sessions.retrieve(existing.provider_ref);
+    if (session.status === "open" && session.url) {
+      return { paymentId: existing.id, checkoutUrl: session.url, provider: "stripe" as const };
+    }
+    if (session.status === "complete") {
+      throw conflict("Payment confirmation is still processing. Refresh the contract shortly.");
+    }
+    await repo.markPaymentFailed(db, existing.id);
+  }
 
-  // 3) money movement: platform fee, both-side ledger rows, profile counters
-  const amount = milestone.milestone_amount_minor;
-  const fee = Math.floor((amount * PLATFORM_FEE_BPS) / 10000);
-  const net = amount - fee;
-  const currency = milestone.contract_currency;
+  const payer = await repo.findUserEmail(db, userId);
+  if (!payer) {
+    throw notFound("Client account not found");
+  }
 
-  await repo.insertPlatformFee(trx, {
+  const paymentId = crypto.randomUUID();
+  const currency = milestone.contract_currency.trim().toLowerCase();
+  const payment = await repo.insertPayment(db, {
+    userId,
+    provider: "stripe",
+    kind: "milestone",
+    providerRef: `workora_${paymentId}`,
+    amountMinor: Number(milestone.milestone_amount_minor),
+    currency: currency.toUpperCase(),
     contractId: milestone.contract_id,
     milestoneId: milestone.milestone_id,
-    amountMinor: fee,
-    rateBps: PLATFORM_FEE_BPS,
-    currency,
+    metadata: { initiatedBy: userId },
   });
 
-  await repo.insertTransaction(trx, {
-    userId: milestone.client_id,
-    type: "payment",
-    amountMinor: -amount,
-    currency,
-    counterpartyId: milestone.freelancer_id,
-    contractId: milestone.contract_id,
-    paymentId,
-    description: `Milestone payment · ${milestone.milestone_title}`,
-  });
+  try {
+    const checkout = await stripeClient.checkout.sessions.create(
+      {
+        mode: "payment",
+        customer_email: payer.email,
+        client_reference_id: payment.id,
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency,
+              unit_amount: Number(milestone.milestone_amount_minor),
+              product_data: {
+                name: `${milestone.contract_title}: ${milestone.milestone_title}`,
+              },
+            },
+          },
+        ],
+        metadata: {
+          workoraPaymentId: payment.id,
+          milestoneId: milestone.milestone_id,
+          contractId: milestone.contract_id,
+        },
+        payment_intent_data: {
+          transfer_group: `contract-${milestone.contract_id}`,
+          metadata: {
+            workoraPaymentId: payment.id,
+            milestoneId: milestone.milestone_id,
+            contractId: milestone.contract_id,
+          },
+        },
+        success_url: `${env.WEB_APP_URL}/client/contracts?funding=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${env.WEB_APP_URL}/client/contracts?funding=cancelled`,
+      },
+      { idempotencyKey: `workora-checkout-${payment.id}` },
+    );
+    if (!checkout.url) {
+      throw new Error("Stripe did not return a hosted Checkout URL");
+    }
 
-  await repo.insertTransaction(trx, {
-    userId: milestone.freelancer_id,
-    type: "milestone",
-    amountMinor: net,
-    currency,
-    counterpartyId: milestone.client_id,
-    contractId: milestone.contract_id,
-    paymentId,
-    description: `Milestone payout · ${milestone.milestone_title} (net of 10% platform fee)`,
-  });
-
-  await repo.bumpFreelancerEarnings(trx, milestone.freelancer_id, net);
-  await repo.bumpClientSpend(trx, milestone.client_id, amount);
+    await repo.updatePaymentCheckoutSession(db, payment.id, checkout.id, checkout.url);
+    return { paymentId: payment.id, checkoutUrl: checkout.url, provider: "stripe" as const };
+  } catch (error) {
+    await repo.markPaymentFailed(db, payment.id);
+    throw error;
+  }
 }
 
-/** POST /payments/verify — demo semantics: a known provider_ref resolves to its stored status. */
+export async function startStripePayoutOnboarding(db: Conn, userId: string, country: string) {
+  const stripeClient = requireStripe();
+  const profile = await repo.findFreelancerStripeAccount(db, userId);
+  if (!profile) {
+    throw notFound("Freelancer profile not found");
+  }
+
+  let accountId = profile.stripe_account_id;
+  if (!accountId) {
+    const user = await repo.findUserEmail(db, userId);
+    if (!user) {
+      throw notFound("Freelancer account not found");
+    }
+    const account = await stripeClient.accounts.create({
+      type: "express",
+      country,
+      email: user.email,
+      capabilities: { transfers: { requested: true } },
+      metadata: { workoraUserId: userId },
+    });
+    accountId = account.id;
+    await repo.setFreelancerStripeAccount(db, userId, accountId);
+  }
+
+  const accountLink = await stripeClient.accountLinks.create({
+    account: accountId,
+    refresh_url: `${env.WEB_APP_URL}/freelancer/settings?payments=refresh`,
+    return_url: `${env.WEB_APP_URL}/freelancer/settings?payments=return`,
+    type: "account_onboarding",
+  });
+  return { url: accountLink.url, expiresAt: accountLink.expires_at };
+}
+
+export async function getStripePayoutStatus(db: Conn, userId: string) {
+  const stripeClient = requireStripe();
+  const profile = await repo.findFreelancerStripeAccount(db, userId);
+  if (!profile) {
+    throw notFound("Freelancer profile not found");
+  }
+  if (!profile.stripe_account_id) {
+    return { connected: false, detailsSubmitted: false, payoutsEnabled: false };
+  }
+  const account = await stripeClient.accounts.retrieve(profile.stripe_account_id);
+  const detailsSubmitted = account.details_submitted ?? false;
+  const payoutsEnabled = account.payouts_enabled ?? false;
+  await repo.updateFreelancerStripeStatus(db, account.id, detailsSubmitted, payoutsEnabled);
+  return { connected: true, detailsSubmitted, payoutsEnabled };
+}
+
+export async function handleStripeWebhook(db: Conn, event: Stripe.Event) {
+  return db.transaction().execute(async (trx) => {
+    const result = await repo.insertProcessedWebhook(
+      trx,
+      event.id,
+      "stripe",
+      JSON.parse(JSON.stringify(event)) as Record<string, unknown>,
+    );
+    if (result.rows.length === 0) {
+      return { received: true as const, duplicate: true };
+    }
+
+    if (event.type === "account.updated") {
+      const account = event.data.object as Stripe.Account;
+      await repo.updateFreelancerStripeStatus(
+        trx,
+        account.id,
+        account.details_submitted ?? false,
+        account.payouts_enabled ?? false,
+      );
+      return { received: true as const, duplicate: false };
+    }
+
+    if (
+      event.type !== "checkout.session.completed" &&
+      event.type !== "checkout.session.async_payment_succeeded" &&
+      event.type !== "checkout.session.async_payment_failed" &&
+      event.type !== "checkout.session.expired"
+    ) {
+      return { received: true as const, duplicate: false };
+    }
+
+    const session = event.data.object as Stripe.Checkout.Session;
+    const paymentId = session.metadata?.workoraPaymentId;
+    if (!paymentId) {
+      return { received: true as const, duplicate: false };
+    }
+    const payment = await repo.findPaymentById(trx, paymentId);
+    if (!payment || payment.provider !== "stripe" || payment.provider_ref !== session.id) {
+      throw new AppError(400, "BAD_REQUEST", "Checkout session does not match a Workora payment");
+    }
+
+    if (event.type === "checkout.session.async_payment_failed" || event.type === "checkout.session.expired") {
+      await repo.markPaymentFailed(trx, payment.id);
+      return { received: true as const, duplicate: false };
+    }
+    if (session.payment_status !== "paid") {
+      return { received: true as const, duplicate: false };
+    }
+    if (session.amount_total !== Number(payment.amount_minor) || session.currency?.toUpperCase() !== payment.currency.trim().toUpperCase()) {
+      throw new AppError(400, "BAD_REQUEST", "Stripe amount or currency does not match the Workora payment");
+    }
+    const paymentIntentId =
+      typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+    if (!paymentIntentId) {
+      throw new AppError(400, "BAD_REQUEST", "Stripe Checkout did not return a payment intent for a paid session");
+    }
+
+    if (payment.status === "succeeded") {
+      return { received: true as const, duplicate: false };
+    }
+    if (payment.status !== "pending") {
+      throw conflict("Payment is no longer pending", { status: payment.status });
+    }
+    await repo.markPaymentSucceeded(trx, payment.id);
+    await repo.updatePaymentMetadata(trx, payment.id, { paymentIntentId });
+
+    if (payment.milestone_id) {
+      const milestone = await repo.findMilestoneWithContract(trx, payment.milestone_id);
+      if (!milestone) {
+        throw notFound("Milestone not found for the successful payment");
+      }
+      if (milestone.milestone_status === "upcoming") {
+        await repo.setMilestoneStatus(trx, milestone.milestone_id, "funded", "funded_at");
+        await repo.insertContractEvent(trx, {
+          contractId: milestone.contract_id,
+          actorId: null,
+          kind: "milestone.funded",
+          payload: { milestoneId: milestone.milestone_id, paymentId: payment.id, provider: "stripe" },
+        });
+      } else if (milestone.milestone_status !== "funded") {
+        throw conflict("Milestone is not eligible for funding", { status: milestone.milestone_status });
+      }
+    }
+    return { received: true as const, duplicate: false };
+  });
+}
+
+/** POST /payments/verify — a known Stripe Checkout session resolves to its stored status. */
 export async function verifyPaymentReference(db: Conn, userId: string, reference: string) {
   const payment = await repo.findPaymentOwnedByProviderRef(db, reference, userId);
   if (!payment) {
     throw notFound("No payment found for that reference");
   }
-  return { reference, status: payment.status, payment };
-}
-
-/**
- * Demo webhook processor. UNSAFE BY DESIGN — no signature verification is performed because
- * this is a strictly demo-mode environment file. Hard-fails in production.
- */
-export async function handleDemoWebhook(db: Conn, rawBody: unknown, providerHint: "stripe" | "paystack" = "stripe") {
-  if (env.NODE_ENV === "production") {
-    throw new Error("Demo payments webhook cannot run in production: no signature verification is implemented");
-  }
-
-  const providerRef = extractProviderRef(rawBody);
-  if (!providerRef) {
-    throw new AppError(400, "BAD_REQUEST", "Webhook payload did not include a provider reference");
-  }
-
-  const deliveryId = `demo-webhook-${providerRef}`;
-  const payload = (rawBody && typeof rawBody === "object" ? rawBody : { raw: rawBody }) as Record<string, unknown>;
-
-  // Idempotent demo dedupe: one delivery per provider_ref.
-  const already = await repo.processedWebhookExists(db, deliveryId);
-  let payment = null;
-  if (!already) {
-    const found = await repo.findPaymentByProviderRef(db, providerRef);
-    const provider = found?.provider ?? providerHint;
-    await repo.insertProcessedWebhook(db, deliveryId, provider, payload);
-    if (found && found.status === "pending") {
-      await db.transaction().execute(async (trx) => {
-        await repo.markPaymentSucceeded(trx, found.id);
-        if (found.milestone_id) {
-          await runMilestonePayPipeline(trx, found.id, found.milestone_id, null);
-        }
-      });
-      payment = { ...found, status: "succeeded" as const };
-    } else {
-      payment = found ?? null;
-    }
-  } else {
-    payment = await repo.findPaymentByProviderRef(db, providerRef);
-  }
-
-  return { received: true as const, duplicate: Boolean(already), providerRef, paymentStatus: payment?.status ?? null };
-}
-
-/** Pull a provider reference out of a few plausible demo webhook envelope shapes. */
-export function extractProviderRef(body: unknown): string | null {
-  const seen = new Set<unknown>();
-  const queue: unknown[] = [body];
-  while (queue.length > 0) {
-    const node = queue.shift();
-    if (!node || typeof node !== "object" || seen.has(node)) continue;
-    seen.add(node);
-    const record = node as Record<string, unknown>;
-    for (const key of ["provider_ref", "providerRef", "reference"]) {
-      const value = record[key];
-      if (typeof value === "string" && value.trim().length > 0) {
-        return value.trim();
-      }
-    }
-    for (const key of ["data", "event", "object"]) {
-      if (record[key] && typeof record[key] === "object") {
-        queue.push(record[key]);
-      }
-    }
-  }
-  return null;
+  return {
+    reference,
+    status: payment.status,
+    payment: {
+      id: payment.id,
+      status: payment.status,
+      amount_minor: payment.amount_minor,
+      currency: payment.currency,
+    },
+  };
 }
 
 export async function listOwnTransactions(

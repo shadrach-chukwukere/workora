@@ -1,5 +1,6 @@
 import { AppError, conflict, notFound } from "../../plugins/error-handler.js";
 import { sendEmail } from "../../services/email.js";
+import { assertVerificationUpload } from "../../services/storage.js";
 import type { Kysely } from "kysely";
 import type { DB } from "../../database/types.js";
 import * as repo from "./repository.js";
@@ -16,13 +17,86 @@ type Conn = Kysely<DB>;
 export async function createVerificationRequest(
   db: Conn,
   userId: string,
-  input: { documentType: "passport" | "drivers-license" | "national-id" | "other" },
+  input: {
+    documentType: "passport" | "drivers-license" | "national-id" | "other";
+    documentKey: string;
+    documentName: string;
+  },
 ) {
+  const profile = await db
+    .selectFrom("freelancer_profiles")
+    .select("verified_identity")
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  if (!profile) {
+    throw notFound("Freelancer profile not found");
+  }
+  if (profile.verified_identity) {
+    throw conflict("Your identity is already verified");
+  }
   const open = await repo.findOpenRequestForUser(db, userId);
   if (open) {
     throw conflict("You already have an open verification request", { openRequestId: open.id, status: open.status });
   }
-  return repo.insertVerificationRequest(db, { userId, documentType: input.documentType });
+  await assertVerificationUpload(userId, input.documentKey);
+  const request = await repo.insertVerificationRequest(db, {
+    userId,
+    documentType: input.documentType,
+    documentKey: input.documentKey,
+    documentName: input.documentName,
+  });
+  return ownRequest(request);
+}
+
+export async function replaceVerificationDocument(
+  db: Conn,
+  userId: string,
+  requestId: string,
+  documentKey: string,
+  documentName: string,
+) {
+  const request = await repo.findRequestById(db, requestId);
+  if (!request || request.user_id !== userId) {
+    throw notFound("Verification request not found");
+  }
+  if (request.status !== "info_requested") {
+    throw conflict("A new document can only be uploaded when more information was requested", { status: request.status });
+  }
+  await assertVerificationUpload(userId, documentKey);
+  const updated = await repo.updateRequestDocument(db, requestId, documentKey, documentName);
+  if (!updated) {
+    throw conflict("Verification request changed while the document was being uploaded");
+  }
+  return ownRequest(updated);
+}
+
+export async function getVerificationDocumentKey(db: Conn, requestId: string) {
+  const request = await repo.findRequestById(db, requestId);
+  if (!request) {
+    throw notFound("Verification request not found");
+  }
+  if (!request.document_url) {
+    throw notFound("No identity document is attached to this request");
+  }
+  return { key: request.document_url, name: request.document_name };
+}
+
+function ownRequest(request: {
+  id: string;
+  status: string;
+  document_type: string;
+  submitted_at: Date;
+  decided_at: Date | null;
+  notes: string | null;
+}) {
+  return {
+    id: request.id,
+    status: request.status,
+    document_type: request.document_type,
+    submitted_at: request.submitted_at,
+    decided_at: request.decided_at,
+    notes: request.notes,
+  };
 }
 
 export function listOwnVerificationRequests(db: Conn, userId: string) {
@@ -62,6 +136,9 @@ export async function approveVerificationRequest(db: Conn, adminId: string, id: 
     throw notFound("Verification request not found");
   }
   assertDecidable(existing, "approve");
+  if (!existing.document_url) {
+    throw conflict("A verification request without an identity document cannot be approved");
+  }
 
   const updated = await db.transaction().execute(async (trx) => {
     const decided = await repo.setRequestDecision(trx, id, {

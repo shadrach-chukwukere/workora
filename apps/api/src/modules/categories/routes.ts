@@ -8,6 +8,8 @@ export default async function categoriesRoutes(app: FastifyInstance) {
     const rows = await instance
       .selectFrom("categories")
       .select(["id", "slug", "name", "description", "parent_id", "kind", "sort_order"])
+      .where("is_launch_focus", "=", true)
+      .orderBy("launch_rank")
       .orderBy("sort_order")
       .execute();
     reply.send(ok({ categories: rows }));

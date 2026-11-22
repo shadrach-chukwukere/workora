@@ -92,6 +92,16 @@ export interface FreelancerProfilesTable {
   experience_level: "entry" | "intermediate" | "expert" | null;
   verified_identity: Generated<boolean>;
   verified_at: Date | null;
+  is_featured: Generated<boolean>;
+  featured_rank: Generated<number>;
+  stripe_account_id: string | null;
+  stripe_details_submitted: Generated<boolean>;
+  stripe_payouts_enabled: Generated<boolean>;
+  skills_count: Generated<number>;
+  portfolio_count: Generated<number>;
+  has_about: Generated<boolean>;
+  has_rate: Generated<boolean>;
+  has_location: Generated<boolean>;
   rating_avg: string | null;
   rating_count: Generated<number>;
   completed_count: Generated<number>;
@@ -123,6 +133,8 @@ export interface CategoriesTable {
   parent_id: string | null;
   kind: Generated<"category" | "specialty">;
   sort_order: Generated<number>;
+  is_launch_focus: Generated<boolean>;
+  launch_rank: Generated<number>;
   created_at: Timestamp;
 }
 
@@ -135,6 +147,11 @@ export interface SkillsTable {
 
 export interface FreelancerSkillsTable {
   freelancer_id: string;
+  skill_id: string;
+}
+
+export interface CategorySkillsTable {
+  category_id: string;
   skill_id: string;
 }
 
@@ -545,6 +562,9 @@ export interface VerificationRequestsTable {
   user_id: string;
   status: Generated<"pending" | "info_requested" | "approved" | "rejected">;
   document_type: string;
+  document_url: string | null;
+  document_name: string | null;
+  profile_completeness: Generated<number>;
   submitted_at: Timestamp;
   decided_at: Date | null;
   decided_by: string | null;
@@ -611,6 +631,7 @@ export interface DB {
   freelancer_profiles: FreelancerProfilesTable;
   client_profiles: ClientProfilesTable;
   categories: CategoriesTable;
+  category_skills: CategorySkillsTable;
   skills: SkillsTable;
   freelancer_skills: FreelancerSkillsTable;
   portfolio_projects: PortfolioProjectsTable;

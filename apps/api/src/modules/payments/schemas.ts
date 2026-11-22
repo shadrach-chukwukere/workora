@@ -44,7 +44,12 @@ export const transactionsQuerySchema = z.object({
     .optional(),
 });
 
+export const connectOnboardingSchema = z.object({
+  country: z.string().trim().regex(/^[A-Za-z]{2}$/, "country must be an ISO 3166-1 alpha-2 code").transform((value) => value.toUpperCase()),
+});
+
 export type AddPaymentMethodInput = z.infer<typeof addPaymentMethodSchema>;
 export type InitializePaymentInput = z.infer<typeof initializePaymentSchema>;
 export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;
 export type TransactionsQuery = z.infer<typeof transactionsQuerySchema>;
+export type ConnectOnboardingInput = z.infer<typeof connectOnboardingSchema>;

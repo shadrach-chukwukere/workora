@@ -122,14 +122,53 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
         `/api/v1/contracts/${encodeURIComponent(approveTarget.contractId)}/milestones/${encodeURIComponent(approveTarget.milestoneId)}/approve`,
       );
       if (result.ok) {
-        toast.success(`Milestone approved. ${formatMoney(approveTarget.amountMinor / 100)} moved from escrow to the freelancer.`);
+        toast.success(`Milestone released. ${formatMoney(approveTarget.amountMinor / 100)} was sent to the freelancer's Stripe balance.`);
         setApproveTarget(null);
         router.refresh();
       } else {
-        toast.error("Could not approve", { description: result.message ?? "Only milestones in review can be approved." });
+        toast.error("Could not release funds", { description: result.message ?? "Check the milestone and payout setup, then try again." });
       }
     } catch {
       toast.error("Could not approve", { description: "Network error. Please try again." });
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function fundMilestone(contract: ContractItem, milestone: MilestoneRow) {
+    if (actionPending) return;
+    setActionPending(true);
+    try {
+      const res = await fetch("/api/v1/payments/initialize", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          kind: "milestone",
+          amountMinor: Number(milestone.amount_minor),
+          currency: contract.currency,
+          contractId: contract.id,
+          milestoneId: milestone.id,
+        }),
+      });
+      const envelope = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        message?: string;
+        data?: { checkoutUrl?: string };
+      } | null;
+      if (res.status === 401 || res.status === 403) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok || !envelope?.success || !envelope.data?.checkoutUrl) {
+        toast.error("Could not start secure checkout", {
+          description: envelope?.message ?? "Stripe Checkout is currently unavailable.",
+        });
+        return;
+      }
+      window.location.assign(envelope.data.checkoutUrl);
+    } catch {
+      toast.error("Could not start secure checkout", { description: "Network error. Please try again." });
     } finally {
       setActionPending(false);
     }
@@ -262,6 +301,11 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-3">
                       <StatusBadge status={milestone.status} meta={MILESTONE_META} />
+                      {milestone.status === "upcoming" ? (
+                        <Button size="sm" disabled={actionPending} onClick={() => void fundMilestone(contract, milestone)}>
+                          Fund milestone
+                        </Button>
+                      ) : null}
                       {milestone.status === "in_review" ? (
                         <>
                           <Button
@@ -289,6 +333,22 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
                             Approve
                           </Button>
                         </>
+                      ) : null}
+                      {milestone.status === "approved" ? (
+                        <Button
+                          size="sm"
+                          disabled={actionPending}
+                          onClick={() =>
+                            setApproveTarget({
+                              contractId: contract.id,
+                              milestoneId: milestone.id,
+                              amountMinor: Number(milestone.amount_minor),
+                              title: milestone.title,
+                            })
+                          }
+                        >
+                          Retry release
+                        </Button>
                       ) : null}
                     </div>
                   </li>
@@ -384,9 +444,9 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
         open={approveTarget !== null}
         onClose={() => (actionPending ? undefined : setApproveTarget(null))}
         loading={actionPending}
-        title={`Approve and release ${approveTarget ? formatMoney(approveTarget.amountMinor / 100) : ""}?`}
-        description="Funds move from escrow to the freelancer. Approval is final."
-        confirmLabel="Approve and release"
+        title={`Release ${approveTarget ? formatMoney(approveTarget.amountMinor / 100) : ""} to the freelancer?`}
+        description="Stripe transfers the approved milestone to the freelancer's connected account. This cannot be undone."
+        confirmLabel="Release funds"
         tone="brand"
         onConfirm={approveMilestoneConfirmed}
       />

@@ -19,18 +19,23 @@ function assertOwnerOrAdmin(project: { clientId: string }, user: AuthedUser): vo
   }
 }
 
-async function checkCategory(db: Db, categoryId: string | undefined): Promise<void> {
+async function checkCategory(db: Db, categoryId: string | undefined, launchFocusOnly = false): Promise<void> {
   if (!categoryId) return;
-  const exists = await repo.categoryExists(db, categoryId);
+  const exists = launchFocusOnly
+    ? await repo.launchCategoryExists(db, categoryId)
+    : await repo.categoryExists(db, categoryId);
   if (!exists) {
     throw new AppError(400, "VALIDATION_ERROR", "Validation failed", {
-      issues: [{ path: "categoryId", message: "Category not found" }],
+      issues: [{
+        path: "categoryId",
+        message: launchFocusOnly ? "Category is not currently accepting new projects" : "Category not found",
+      }],
     });
   }
 }
 
 export async function createProject(db: Db, user: AuthedUser, input: ProjectBody) {
-  await checkCategory(db, input.categoryId);
+  await checkCategory(db, input.categoryId, true);
   const id = await repo.insertProject(db, user.id, input, "open");
   const project = await repo.findProjectById(db, id);
   if (!project) {

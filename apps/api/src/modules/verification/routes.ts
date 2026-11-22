@@ -1,11 +1,14 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { ok, requireAccountType, requireAuth, requirePermission } from "../common/index.js";
 import { db } from "../../database/connection.js";
+import { AppError } from "../../plugins/error-handler.js";
+import { presignDownload } from "../../services/storage.js";
 import {
   createVerificationRequestSchema,
   listVerificationQuerySchema,
   rejectVerificationSchema,
   requestInfoVerificationSchema,
+  verificationDocumentSchema,
 } from "./schemas.js";
 import * as service from "./service.js";
 
@@ -34,6 +37,25 @@ export default async function verificationRoutes(app: FastifyInstance) {
     const instance = await db();
     const requestRow = await service.createVerificationRequest(instance, user.id, parsed.data);
     reply.status(201).send(ok({ request: requestRow }, "Verification request submitted"));
+  });
+
+  /** POST /api/v1/verification-requests/:id/document — replace a document requested by an admin. */
+  app.post("/verification-requests/:id/document", { preHandler: [requireAuth, requireAccountType("freelancer")] }, async (request, reply) => {
+    const parsed = verificationDocumentSchema.safeParse(request.body);
+    if (!parsed.success) {
+      validationError(reply, "Invalid verification document", { issues: parsed.error.issues });
+      return;
+    }
+    const user = request.currentUser!;
+    const instance = await db();
+    const updated = await service.replaceVerificationDocument(
+      instance,
+      user.id,
+      (request.params as { id: string }).id,
+      parsed.data.documentKey,
+      parsed.data.documentName,
+    );
+    reply.send(ok({ request: updated }, "Verification document resubmitted"));
   });
 
   /** GET /api/v1/verification-requests/me — own requests, newest first. */
@@ -95,5 +117,17 @@ export default async function verificationRoutes(app: FastifyInstance) {
     const instance = await db();
     const detail = await service.getVerificationRequestDetail(instance, (request.params as { id: string }).id);
     reply.send(ok({ request: detail }));
+  });
+
+  /** GET /api/v1/verification-requests/:id/document — short-lived private download for verification admins. */
+  app.get("/verification-requests/:id/document", { preHandler: [...adminPreHandlers] }, async (request: FastifyRequest, reply) => {
+    const instance = await db();
+    const document = await service.getVerificationDocumentKey(instance, (request.params as { id: string }).id);
+    const signed = await presignDownload(document.key);
+    if (!signed) {
+      throw new AppError(503, "SERVICE_UNAVAILABLE", "Private document storage is not configured");
+    }
+    reply.header("Cache-Control", "no-store");
+    reply.send(ok({ ...signed, name: document.name }));
   });
 }

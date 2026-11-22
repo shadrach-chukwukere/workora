@@ -2,10 +2,6 @@ import { redirect } from "next/navigation";
 import { apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { PaymentsClient } from "./payments-client";
 
-interface MethodsResponse {
-  methods: { id: string; user_id: string; provider: string; provider_method_id: string | null; brand: string | null; last_four: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean; created_at: string }[];
-}
-
 interface TransactionsResponse {
   transactions: { id: string; type: string; status: string; amount_minor: string | number; currency: string; description: string; created_at: string; contract_id: string | null }[];
 }
@@ -32,12 +28,10 @@ function isAuth(error: unknown): boolean {
 export default async function ClientPaymentsPage() {
   const cookie = await sessionCookie();
 
-  let methodsRes: MethodsResponse;
   let transactionsRes: TransactionsResponse;
   let contractsRes: ContractsResponse;
   try {
-    [methodsRes, transactionsRes, contractsRes] = await Promise.all([
-      apiServer<MethodsResponse>("/api/v1/payments/methods", undefined, cookie),
+    [transactionsRes, contractsRes] = await Promise.all([
       apiServer<TransactionsResponse>("/api/v1/payments/transactions?limit=6", undefined, cookie),
       apiServer<ContractsResponse>("/api/v1/contracts", undefined, cookie),
     ]);
@@ -79,7 +73,6 @@ export default async function ClientPaymentsPage() {
 
   return (
     <PaymentsClient
-      methods={methodsRes.methods ?? []}
       recentTransactions={transactionsRes.transactions ?? []}
       lifetimeSpendMinor={lifetimeSpendMinor}
       escrowTotalMinor={escrowTotalMinor}

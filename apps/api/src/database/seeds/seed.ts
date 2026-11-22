@@ -95,6 +95,28 @@ export async function seed(db: Kysely<DB>): Promise<void> {
     await sql`INSERT INTO categories (slug, name, description) VALUES (${category.slug}, ${category.name}, ${category.description}) ON CONFLICT DO NOTHING`.execute(db);
   }
 
+  await sql`
+    UPDATE categories
+    SET is_launch_focus = true,
+        launch_rank = CASE slug
+          WHEN 'web-development' THEN 1
+          WHEN 'product-design' THEN 2
+          WHEN 'marketing' THEN 3
+          WHEN 'mobile-development' THEN 4
+          WHEN 'writing-editing' THEN 5
+          WHEN 'video-photography' THEN 6
+          ELSE launch_rank
+        END
+    WHERE slug IN (
+      'web-development',
+      'product-design',
+      'marketing',
+      'mobile-development',
+      'writing-editing',
+      'video-photography'
+    )
+  `.execute(db);
+
   const skills = [
     { slug: "next-js", name: "Next.js" },
     { slug: "typescript", name: "TypeScript" },
@@ -108,6 +130,25 @@ export async function seed(db: Kysely<DB>): Promise<void> {
   for (const skill of skills) {
     await sql`INSERT INTO skills (slug, name) VALUES (${skill.slug}, ${skill.name}) ON CONFLICT DO NOTHING`.execute(db);
   }
+
+  await sql`
+    INSERT INTO category_skills (category_id, skill_id)
+    SELECT c.id, s.id
+    FROM (VALUES
+      ('web-development', 'next-js'),
+      ('web-development', 'typescript'),
+      ('web-development', 'postgres'),
+      ('web-development', 'react'),
+      ('web-development', 'aws'),
+      ('product-design', 'figma'),
+      ('mobile-development', 'typescript'),
+      ('mobile-development', 'react'),
+      ('data-ai-ml', 'python')
+    ) AS mapping(category_slug, skill_slug)
+    JOIN categories c ON c.slug = mapping.category_slug
+    JOIN skills s ON s.slug = mapping.skill_slug
+    ON CONFLICT DO NOTHING
+  `.execute(db);
 
   /* ---------------------------- subscription plans ------------------------ */
   const plans = [
