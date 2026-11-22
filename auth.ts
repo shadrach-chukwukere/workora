@@ -36,28 +36,3 @@ export const auth = betterAuth({
     'https://workora.com',
   ],
 });
-
-// Helper functions - use these in your login form
-export function signInWithGoogle() {
-  window.location.href = `/api/auth/signin/google`;
-  return false;
-}
-
-export function signInWithGitHub() {
-  window.location.href = `/api/auth/signin/github`;
-  return false;
-}
-
-export function signOut() {
-  window.location.href = `/api/auth/sign-out`;
-  return false;
-}
-
-// Helper to get current session
-export async function getCurrentSession() {
-  const res = await fetch('/api/auth/session', {
-    credentials: 'include',
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
