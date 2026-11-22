@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     const cookie = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ');
 
     // Exchange OAuth code for session
-    const res = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/auth/session`, {
+    // Use the same base URL as auth.ts
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://workora-phi.vercel.app';
+    
+    const res = await fetch(`${baseUrl}/api/auth/session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

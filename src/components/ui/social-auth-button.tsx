@@ -1,7 +1,8 @@
 import { Button } from "./button";
 
 /**
- * Google OAuth button - styled with Google's primary colors
+ * Modern Google OAuth button - premium gradient design
+ * Clean rounded corners with Google's primary colors
  */
 export function GoogleAuthButton({
   className,
@@ -27,7 +28,8 @@ export function GoogleAuthButton({
 }
 
 /**
- * GitHub OAuth button - styled with GitHub's colors
+ * Modern GitHub OAuth button - premium dark mode design
+ * Clean rounded corners with GitHub's dark theme colors
  */
 export function GitHubAuthButton({
   className,
