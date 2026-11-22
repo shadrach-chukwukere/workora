@@ -2,7 +2,7 @@ import { Button } from "./button";
 
 /**
  * Modern Google OAuth button - styled with Google's primary colors
- * Premium gradient background with hover effects
+ * Red background with white text, premium hover effect
  */
 export function GoogleAuthButton({
   className,
@@ -14,11 +14,15 @@ export function GoogleAuthButton({
   size?: "sm" | "md" | "lg";
   onClick: () => void;
 }) {
+  // Google red: bg-red-500 text-white hover:bg-red-600
+  const googleClassName = className
+    ? `${className} bg-red-500 text-white hover:bg-red-600`
+    : `bg-red-500 text-white hover:bg-red-600`;
   return (
     <Button
       type="button"
       size={size}
-      className={className}
+      className={googleClassName}
       onClick={onClick}
       {...props}
     >
@@ -29,7 +33,7 @@ export function GoogleAuthButton({
 
 /**
  * Modern GitHub OAuth button - styled with GitHub's colors
- * Premium dark mode background with hover effects
+ * Dark background with white text, premium hover effect
  */
 export function GitHubAuthButton({
   className,
@@ -41,11 +45,15 @@ export function GitHubAuthButton({
   size?: "sm" | "md" | "lg";
   onClick: () => void;
 }) {
+  // GitHub dark: bg-gray-800 text-white hover:bg-gray-700
+  const githubClassName = className
+    ? `${className} bg-gray-800 text-white hover:bg-gray-700`
+    : `bg-gray-800 text-white hover:bg-gray-700`;
   return (
     <Button
       type="button"
       size={size}
-      className={className}
+      className=githubClassName
       onClick={onClick}
       {...props}
     >
