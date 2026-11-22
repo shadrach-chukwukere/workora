@@ -14,14 +14,42 @@ import {
   Icon,
 } from "@/lib/icons";
 import type { Role } from "@/lib/types";
-// Social login handlers - redirect to OAuth providers
-const signInWithGoogle = () => {
-  window.location.href = "/api/auth/google";
-};
+/**
+ * Social sign-in via Better Auth. The request is same-origin (relative URL) so
+ * the OAuth state cookie is stored on this site and survives the provider
+ * round trip; next.config.ts proxies /api/auth/* to the backend.
+ */
+async function startSocialSignIn(provider: "google" | "github") {
+  try {
+    const origin = window.location.origin;
+    const res = await fetch("/api/auth/sign-in/social", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        provider,
+        callbackURL: `${origin}/workspace`,
+        errorCallbackURL: `${origin}/login?error=social_failed`,
+      }),
+    });
+    const body = (await res.json().catch(() => null)) as {
+      url?: string;
+      message?: string;
+    } | null;
+    if (!res.ok || !body?.url) {
+      toast.error(
+        body?.message ?? "Social sign-in isn't available right now. Try email instead.",
+      );
+      return;
+    }
+    window.location.href = body.url;
+  } catch {
+    toast.error("Sign-in failed. Check your connection and try again.");
+  }
+}
 
-const signInWithGitHub = () => {
-  window.location.href = "/api/auth/github";
-};
+const signInWithGoogle = () => startSocialSignIn("google");
+const signInWithGitHub = () => startSocialSignIn("github");
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
