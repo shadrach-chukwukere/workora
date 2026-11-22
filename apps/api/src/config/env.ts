@@ -12,6 +12,11 @@ const envSchema = z.object({
   AUTH_BASE_URL: z.string().url(),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters; generate a random one"),
   CORS_ORIGINS: z.string().min(1),
+  /** Social sign-in. A provider is only enabled when both its id and secret are set. */
+  GOOGLE_CLIENT_ID: z.string().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().default(""),
+  GITHUB_CLIENT_ID: z.string().default(""),
+  GITHUB_CLIENT_SECRET: z.string().default(""),
   RESEND_API_KEY: z.string().default(""),
   EMAIL_FROM: z.string().min(1).default("Workora <no-reply@example.com>"),
   STRIPE_SECRET_KEY: z.string().default(""),
