@@ -53,7 +53,7 @@ export function GitHubAuthButton({
     <Button
       type="button"
       size={size}
-      className=githubClassName
+      className={githubClassName}
       onClick={onClick}
       {...props}
     >
