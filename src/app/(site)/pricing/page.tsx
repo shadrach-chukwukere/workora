@@ -1,12 +1,30 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-blocks";
 import { Icon, ArrowRight02Icon, CheckmarkCircle02Icon } from "@/lib/icons";
 import { PLATFORM_FEE_PERCENT } from "@/lib/constants";
 import { apiServer } from "@/lib/api-data";
-import type { PublicPlan } from "@/lib/api-data";
+import { getSessionAccount } from "@/components/layout/session-guard";
 import PricingClient from "./pricing-client";
+
+interface PublicPlan {
+  id: string;
+  code: string;
+  name: string;
+  audience: "freelancer" | "client";
+  price_minor: number;
+  currency: string;
+  interval: "monthly" | "annual";
+  features: string[];
+  is_highlighted: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
 
 export default async function PricingPage() {
   let plans: PublicPlan[] | null = null;
+  const account = await getSessionAccount();
   try {
     const data = await apiServer<{ plans: PublicPlan[] }>("/api/v1/subscription-plans", { public: true });
     plans = data.plans;
@@ -32,7 +50,7 @@ export default async function PricingPage() {
               rewriting your process.
             </p>
           </div>
-          <Button href="/contact" size="lg" className="shrink-0">
+          <Button variant="secondary" size="lg" href="/contact">
             Talk to sales
             <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} />
           </Button>
@@ -57,10 +75,7 @@ export default async function PricingPage() {
           </div>
           <div className="flex flex-col gap-3">
             {FAQ.map((item) => (
-              <details
-                key={item.question}
-                className="rounded-xl border border-neutral-200 bg-white px-5 py-4"
-              >
+              <details className="rounded-xl border border-neutral-200 bg-white px-5 py-4" key={item.question}>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-neutral-900 [&::-webkit-details-marker]:hidden">
                   {item.question}
                   <span
@@ -90,13 +105,33 @@ export default async function PricingPage() {
             No credit card to join. Profiles, proposals and milestone payments work from day one.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Button href="/register" size="lg">
-              Create your account
-              <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} />
-            </Button>
-            <Button href="/about" variant="ghost" size="lg">
-              How Workora works
-            </Button>
+            {account ? (
+              <>
+                <Button href={`/${account.role}/settings`} size="lg">
+                  Manage account
+                  <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-1.5" />
+                </Button>
+                <Button href="/about" variant="ghost" size="lg">
+                  How Workora works
+                  <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-1.5" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button href="/register" size="lg">
+                  Create your account
+                  <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-1.5" />
+                </Button>
+                <Button href="/login" size="lg" variant="secondary">
+                  Log in
+                  <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-1.5" />
+                </Button>
+                <Button href="/about" variant="ghost" size="lg">
+                  How Workora works
+                  <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-1.5" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </section>

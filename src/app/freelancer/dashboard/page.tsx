@@ -6,6 +6,8 @@ import { EarningsAreaChart } from "@/components/ui/charts";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { Monogram } from "@/components/ui/logo";
+import { StatusTimeline } from "@/components/ui/status-timeline";
+import { SkeletonCard, SkeletonStatGrid } from "@/components/ui/skeleton-card";
 import {
   Alert02Icon,
   ArrowRight02Icon,
@@ -23,6 +25,7 @@ import { PROPOSAL_STATUS_META } from "@/lib/constants";
 import type { ProposalStatus } from "@/lib/types";
 import { redirect } from "next/navigation";
 import { formatDateShort, formatMoney, formatPercent, formatRelative } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface MeResponse {
   user: {
@@ -160,18 +163,11 @@ export default async function FreelancerDashboard() {
     const details = await Promise.all(
       activeList.map((list) =>
         apiOptional(
-          apiServer<{ contract: ContractDetail }>(
-            `/api/v1/contracts/${encodeURIComponent(list.id)}`,
-            undefined,
-            cookie,
-          ),
+          apiServer<{ contract: ContractDetail }>(`/api/v1/contracts/${encodeURIComponent(list.id)}`, undefined, cookie),
         ),
       ),
     );
-    activeContracts = activeList.map((list, i) => ({
-      list,
-      milestones: details[i]?.contract.milestones ?? [],
-    }));
+    activeContracts = activeList.map((list, i) => ({ list, milestones: details[i]?.contract.milestones ?? [] }));
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
     throw error;
@@ -220,6 +216,8 @@ export default async function FreelancerDashboard() {
       return (slug === "web-development" || slug === "data-ai") && !bidProjectIds.has(p.id);
     })
     .slice(0, 3);
+
+  const hasData = true;
 
   return (
     <div className="flex flex-col gap-6">
@@ -274,7 +272,13 @@ export default async function FreelancerDashboard() {
           </div>
           <ul className="divide-y divide-neutral-100">
             {activeContracts.length === 0 ? (
-              <li className="px-5 py-6 text-sm text-neutral-500">No active contracts right now.</li>
+              <li className="px-5 py-12 text-center text-sm text-neutral-500">
+                <span className="mb-3 inline-flex size-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
+                  <Icon icon={HandshakeIcon} size={20} strokeWidth={1.8} />
+                </span>
+                <p className="mt-3">No active contracts right now.</p>
+                <p className="mt-1 text-xs text-neutral-400">Accepted proposals become contracts you can fund from here.</p>
+              </li>
             ) : null}
             {activeContracts.map(({ list: contract, milestones }) => {
               const total = milestones.length;
@@ -285,7 +289,7 @@ export default async function FreelancerDashboard() {
               const counterpartName = contract.counterpart?.company_name ?? contract.counterpart?.name ?? "Client";
               return (
                 <li key={contract.id}>
-                  <Link href="/freelancer/contracts" className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50">
+                  <Link href={`/freelancer/contracts/${contract.id}`} className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50">
                     <span aria-hidden className="mt-0.5 hidden bg-neutral-100 p-2 rounded-lg text-neutral-600 sm:inline-flex">
                       <Icon icon={HandshakeIcon} size={18} strokeWidth={1.8} />
                     </span>
@@ -320,6 +324,24 @@ export default async function FreelancerDashboard() {
                       </div>
                     </div>
                   </Link>
+
+                  {/* Milestone timeline for this contract */}
+                  {milestones.length > 0 && (
+                    <div className="border-t border-neutral-100 bg-neutral-50/40">
+                      <div className="px-5 py-4">
+                        <StatusTimeline
+                          milestones={milestones.filter((m) => m.status !== "cancelled").map((m) => ({
+                            id: m.id,
+                            title: m.title,
+                            status: m.status as "upcoming" | "funded" | "in_review" | "revision" | "approved" | "paid",
+                            dueDate: m.due_date,
+                            amount: Number(m.amount_minor) / 100,
+                          }))}
+                          compact
+                        />
+                      </div>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -499,9 +521,7 @@ function AttentionItem({
     <Link href={href} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50">
       <span
         aria-hidden
-        className={`mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full ${
-          tone === "warning" ? "bg-amber-100 text-amber-800" : tone === "brand" ? "bg-brand-100 text-brand-700" : "bg-neutral-100 text-neutral-600"
-        }`}
+        className={`mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full ${tone === "warning" ? "bg-amber-100 text-amber-800" : tone === "brand" ? "bg-brand-100 text-brand-700" : "bg-neutral-100 text-neutral-600"}`}
       >
         {icon}
       </span>

@@ -16,6 +16,14 @@ import {
   StarIcon,
 } from "@/lib/icons";
 import type { Role } from "@/lib/types";
+// Social login handlers - use direct API calls
+const signInWithGoogle = () => {
+  window.location.href = '/api/auth/signin/google';
+};
+
+const signInWithGitHub = () => {
+  window.location.href = '/api/auth/signin/github';
+};
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -157,6 +165,26 @@ export default function LoginForm({
               Sign in
             </Button>
           </form>
+
+          {/* Social login buttons */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="lg"
+              className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
+              onClick={signInWithGoogle}
+            >
+              <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-2" /> Sign in with Google
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
+              onClick={signInWithGitHub}
+            >
+              <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-2" /> Sign in with GitHub
+            </Button>
+          </div>
 
           <p className="mt-4 border-t border-neutral-200 pt-4 text-sm text-neutral-600 text-center">
             New to Workora?{" "}

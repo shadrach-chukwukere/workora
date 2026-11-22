@@ -6,7 +6,7 @@ export interface NavItem {
  label: string;
  icon: string;
  /** Which runtime counter drives the badge. */
- badge?: "messages" | "proposals" | "review" | "verification" | "disputes" | "flagged";
+ badge?: "messages" | "proposals" | "review" | "verification" | "disputes" | "flagged" | "notifications";
  exact?: boolean;
 }
 
@@ -27,6 +27,7 @@ export const freelancerNav: NavSection[] = [
  { href: "/freelancer/proposals", label: "Proposals", icon: "SentIcon", badge: "proposals" },
  { href: "/freelancer/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
  { href: "/freelancer/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
+{ href: "/notifications", label: "Notifications", icon: "Notification01Icon", badge: "notifications" },
  ],
  },
  {
@@ -59,6 +60,7 @@ export const clientNav: NavSection[] = [
  { href: "/client/proposals", label: "Proposals", icon: "File02Icon" },
  { href: "/client/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
  { href: "/client/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
+{ href: "/notifications", label: "Notifications", icon: "Notification01Icon", badge: "notifications" },
  ],
  },
  {

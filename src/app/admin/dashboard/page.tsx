@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { VolumeTrendChart } from "@/components/admin/volume-chart";
 import { AdminAccessCard } from "@/components/admin/admin-access";
+import { DataTable } from "@/components/ui/data-table";
+import { SkeletonStatGrid } from "@/components/ui/skeleton-card";
 import {
   Alert02Icon,
   ArrowRight02Icon,
@@ -19,6 +21,7 @@ import {
 } from "@/lib/icons";
 import { ApiServerError, apiOptional, apiServer, isAuthError, sessionCookie } from "@/lib/api-server";
 import { formatMoney, formatNumber, formatRelative } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface Overview {
   users: { freelancers: string | number; clients: string | number; admins: string | number; new_this_month: string | number; total: string | number };
@@ -274,9 +277,7 @@ function AttentionRow({
       <Link href={href} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50">
         <span
           aria-hidden
-          className={`mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full ${
-            tone === "warning" ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-700"
-          }`}
+          className={`mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full ${tone === "warning" ? "bg-amber-100 text-amber-800" : "bg-brand-100 text-brand-700"}`}
         >
           {icon}
         </span>

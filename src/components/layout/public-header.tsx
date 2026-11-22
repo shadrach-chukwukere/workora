@@ -66,7 +66,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
         Skip to content
       </a>
 
-      <header className="sticky top-0 z-40 border-neutral-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/92">
+      <header className="sticky top-0 z-40 border-neutral-200 bg-white/50 backdrop-blur supports-backdrop-filter:bg-white/92">
         <div className="container-page flex h-16 items-center gap-x-6">
           {/* Brand - left, generous whitespace around it */}
           <div className="flex shrink-0 items-center gap-2.5">

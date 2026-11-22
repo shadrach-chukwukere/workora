@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { Progress } from "@/components/ui/progress";
 import { Monogram } from "@/components/ui/logo";
+import { StatusTimeline } from "@/components/ui/status-timeline";
 import {
   ArrowRight02Icon,
   Briefcase02Icon,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/icons";
 import { apiOptional, apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { formatDateShort, formatMoney, formatRelative } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface MeResponse {
   user: { id: string; name: string };
@@ -149,18 +151,11 @@ export default async function ClientDashboard() {
     const details = await Promise.all(
       activeList.map((list) =>
         apiOptional(
-          apiServer<{ contract: { milestones: MilestoneRow[] } }>(
-            `/api/v1/contracts/${encodeURIComponent(list.id)}`,
-            undefined,
-            cookie,
-          ),
+          apiServer<{ contract: { milestones: MilestoneRow[] } }>(`/api/v1/contracts/${encodeURIComponent(list.id)}`, undefined, cookie),
         ),
       ),
     );
-    activeContracts = activeList.map((list, i) => ({
-      list,
-      milestones: details[i]?.contract.milestones ?? [],
-    }));
+    activeContracts = activeList.map((list, i) => ({ list, milestones: details[i]?.contract.milestones ?? [] }));
   } catch (error) {
     if (isAuth(error)) redirect("/login");
     throw error;
@@ -252,7 +247,7 @@ export default async function ClientDashboard() {
                 const title = list.project?.title ?? list.title_snapshot;
                 const counterpartName = list.counterpart?.company_name ?? list.counterpart?.name ?? "Freelancer";
                 return (
-                  <li key={list.id} className="flex items-center gap-4 px-5 py-4">
+                  <li key={list.id} className="flex items-start gap-4 px-5 py-4">
                     <Monogram name={title} size={36} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-neutral-900">{title}</p>
@@ -274,8 +269,12 @@ export default async function ClientDashboard() {
                 );
               })}
               {activeContracts.length === 0 ? (
-                <li className="px-5 py-6 text-sm text-neutral-500">
-                  No active contracts. Accepted proposals become contracts you can fund from here.
+                <li className="px-5 py-12 text-center text-sm text-neutral-500">
+                  <span className="mb-3 inline-flex size-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
+                    <Icon icon={Briefcase02Icon} size={20} strokeWidth={1.8} />
+                  </span>
+                  <p className="mt-3">No active contracts.</p>
+                  <p className="mt-1 text-xs text-neutral-400">Accepted proposals become contracts you can fund from here.</p>
                 </li>
               ) : null}
             </ul>

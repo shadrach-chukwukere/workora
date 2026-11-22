@@ -20,6 +20,9 @@ import {
   TextIcon,
   Video01Icon,
   SmartPhone01Icon,
+  Briefcase02Icon,
+  Building01Icon,
+  UserMultiple02Icon,
   type IconName,
 } from "@/lib/icons";
 import { apiServerOr } from "@/lib/api-data";
@@ -31,6 +34,7 @@ import { BriefcaseBusinessIcon, ArrowUpRightIcon, UserRoundIcon, BookmarkIcon, C
 import { HugeiconsIcon } from "@hugeicons/react";
 import HowItWorks from "@/components/layout/HowItWorks";
 import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
+import { CATEGORY_BASE } from "@/lib/constants";
 
 const WORDMARKS = [
   "Loopwork",
@@ -115,7 +119,7 @@ export default async function Home() {
       <a href="#main-content" className="skip-link" />
 
       {/* Hero */}
-      <Hero />
+      <Hero account={account} />
 
       <TrustedByMarquee wordmarks={WORDMARKS} />
 
@@ -317,78 +321,69 @@ export default async function Home() {
         </ul>
       </section>
 
-  
-{/* How Workora works */}
+      {/* How Workora works */}
 
-<HowItWorks/>
+      {/* Trust & Security */}
+      <section className="container-page pb-20">
+        <div className="border-t border-neutral-200 pt-12 sm:pt-16">
+          <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-20">
 
-      {/* Trust band */}
-
-{/* Workora Protection */}
-
-{/* Trust & Security */}
-<section className="container-page pb-20">
-  <div className="border-t border-neutral-200 pt-12 sm:pt-16">
-    <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-20">
-
-      <div>
-
-        <h2 className="mt-5 max-w-sm text-3xl font-semibold leading-tight tracking-[-0.045em] text-neutral-950 sm:text-4xl">
-          Work with confidence. Every step.
-        </h2>
-
-        <p className="mt-4 max-w-sm text-sm leading-6 text-neutral-500">
-          Your projects, payments and partnerships deserve a platform built on trust.
-        </p>
-      </div>
-
-      <div className="divide-y divide-neutral-100">
-        {[
-          {
-            icon: ShieldCheckIcon,
-            title: "Milestone protection",
-            description: "Payments are funded before work begins and released upon client approval.",
-          },
-          {
-            icon: LockKeyIcon,
-            title: "Secure payments",
-            description: "Transactions are handled through our payment provider.",
-          },
-          {
-            icon: ScaleIcon,
-            title: "Fair dispute resolution",
-            description: "Disagreements receive a human review from our trust team.",
-          },
-          {
-            icon: Wallet02Icon,
-            title: "Transparent pricing",
-            description: "8% freelancer fee on released milestones. No additional client platform fee.",
-          },
-        ].map(({ icon, title, description }) => (
-          <div key={title} className="flex gap-4 py-5 first:pt-0 last:pb-0">
-            <Icon
-              icon={icon}
-              size={21}
-              strokeWidth={1.6}
-              className="mt-0.5 shrink-0 text-neutral-500"
-            />
             <div>
-              <h3 className="text-sm font-semibold text-neutral-900">
-                {title}
-              </h3>
-              <p className="mt-1 text-sm leading-6 text-neutral-500">
-                {description}
+
+              <h2 className="mt-5 max-w-sm text-3xl font-semibold leading-tight tracking-[-0.045em] text-neutral-950 sm:text-4xl">
+                Work with confidence. Every step.
+              </h2>
+
+              <p className="mt-4 max-w-sm text-sm leading-6 text-neutral-500">
+                Your projects, payments and partnerships deserve a platform built on trust.
               </p>
             </div>
+
+            <div className="divide-y divide-neutral-100">
+              {[
+                {
+                  icon: ShieldCheckIcon,
+                  title: "Milestone protection",
+                  description: "Payments are funded before work begins and released upon client approval.",
+                },
+                {
+                  icon: LockKeyIcon,
+                  title: "Secure payments",
+                  description: "Transactions are handled through our payment provider.",
+                },
+                {
+                  icon: ScaleIcon,
+                  title: "Fair dispute resolution",
+                  description: "Disagreements receive a human review from our trust team.",
+                },
+                {
+                  icon: Wallet02Icon,
+                  title: "Transparent pricing",
+                  description: "8% freelancer fee on released milestones. No additional client platform fee.",
+                },
+              ].map(({ icon, title, description }) => (
+                <div key={title} className="flex gap-4 py-5 first:pt-0 last:pb-0">
+                  <Icon
+                    icon={icon}
+                    size={21}
+                    strokeWidth={1.6}
+                    className="mt-0.5 shrink-0 text-neutral-500"
+                  />
+                  <div>
+                    <h3 className="text-sm font-semibold text-neutral-900">
+                      {title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-neutral-500">
+                      {description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
-        ))}
-      </div>
-
-    </div>
-  </div>
-</section>
-
-
+        </div>
+      </section>
 
 
       {/* Final CTA */}
@@ -427,14 +422,14 @@ export default async function Home() {
 function categoryIcon(slug: string): IconName {
   const map: Record<string, IconName> = {
     "web-development": SourceCodeIcon,
-    "product-design": PaletteIcon,
-    marketing: MarketingIcon,
-    "writing-editing": TextIcon,
+    "mobile-development": SmartPhone01Icon,
+    "ui-ux-design": PaletteIcon,
+    "brand-graphic-design": PaletteIcon,
+    "writing-translation": TextIcon,
+    "digital-marketing": MarketingIcon,
     "data-ai": ChartLineIcon,
     "video-audio": Video01Icon,
-    "mobile-development": SmartPhone01Icon,
-    "business-admin": TerminalIcon,
-    "education-coaching": SchoolIcon,
+    "virtual-assistance": Briefcase02Icon,
   };
   return map[slug] ?? GridViewIcon;
 }

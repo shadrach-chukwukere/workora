@@ -6,7 +6,7 @@ export default function TrustedByMarquee({ wordmarks }: { wordmarks: string[] })
   const [paused, setPaused] = useState(false);
 
   return (
-    <section className="border-y border-neutral-100 bg-[#FAFAFA]">
+    <section className="mb-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-7 px-6 py-10 sm:px-10 lg:py-12">
         <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
           Trusted by ambitious teams worldwide
@@ -24,7 +24,7 @@ export default function TrustedByMarquee({ wordmarks }: { wordmarks: string[] })
                   {wordmarks.map((name) => (
                     <li
                       key={name}
-                      className="whitespace-nowrap text-[17px] font-semibold tracking-[-0.045em] text-neutral-400 transition-colors duration-200 hover:text-neutral-800 sm:text-[19px]"
+                      className="whitespace-nowrap text-[19px] font-semibold tracking-[-0.045em] text-neutral-400 transition-colors duration-200 hover:text-neutral-800 sm:text-[21px] font-mono"
                     >
                       {name}
                     </li>
@@ -33,14 +33,6 @@ export default function TrustedByMarquee({ wordmarks }: { wordmarks: string[] })
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            className="trusted-marquee__control"
-            aria-pressed={paused}
-            onClick={() => setPaused((value) => !value)}
-          >
-            {paused ? "Resume scrolling" : "Pause scrolling"}
-          </button>
         </div>
       </div>
     </section>

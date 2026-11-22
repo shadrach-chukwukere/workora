@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postbuild": "next-sitemap"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.3",
@@ -14,11 +15,13 @@
     "@hugeicons/react": "^1.1.10",
     "@tailwindcss/postcss": "^4.3.5",
     "@tanstack/react-table": "^9.3.1",
+    "better-auth": "^1.7.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "geist": "^1.9.2",
     "next": "^16.4.5",
+    "paystack": "^2.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.91.0",
@@ -33,6 +36,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "next-sitemap": "^4.2.3",
     "typescript": "^5.9.0"
   }
 }

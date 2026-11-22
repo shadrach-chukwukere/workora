@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 
 export const metadata: Metadata = {
  title: {
@@ -30,7 +31,7 @@ export default function RootLayout({
  return (
  <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
  <body className="min-h-dvh bg-white font-sans text-neutral-900 antialiased">
- {children}
+ <ThemeProvider defaultTheme="system">{children}</ThemeProvider>
  <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font-geist-sans)" } }} />
  </body>
  </html>

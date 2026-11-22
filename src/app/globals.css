@@ -39,6 +39,37 @@
   --radius-container: 12px;
   --radius-overlay: 16px;
   --radius-pill: 9999px;
+
+  /* Dark mode surface tokens - neutral dark slate, tinted shadows. */
+  --color-surface-dark: #0f1115;
+  --color-surface-muted-dark: #16181d;
+  --color-surface-hover-dark: #1c1f26;
+  --color-border-dark: #2d3138;
+  --color-border-hover-dark: #424750;
+  --color-text-dark: #f3f4f6;
+  --color-text-secondary-dark: #c9ccd2;
+  --color-text-tertiary-dark: #8e939c;
+  --color-text-inverse-dark: #111827;
+  --shadow-dropdown-dark: 0 10px 30px -12px rgba(0, 0, 0, 0.45), 0 2px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-overlay-dark: 0 24px 60px -20px rgba(0, 0, 0, 0.55), 0 8px 24px -12px rgba(0, 0, 0, 0.35);
+}
+
+/* Dark mode - applied via .dark class on <html> by the theme provider.
+   Overrides the CSS custom properties defined in @theme above. */
+@layer base {
+  .dark {
+    --color-surface: var(--color-surface-dark);
+    --color-surface-muted: var(--color-surface-muted-dark);
+    --color-surface-hover: var(--color-surface-hover-dark);
+    --color-border: var(--color-border-dark);
+    --color-border-hover: var(--color-border-hover-dark);
+    --color-text: var(--color-text-dark);
+    --color-text-secondary: var(--color-text-secondary-dark);
+    --color-text-tertiary: var(--color-text-tertiary-dark);
+    --color-text-inverse: var(--color-text-inverse-dark);
+    --shadow-dropdown: var(--shadow-dropdown-dark);
+    --shadow-overlay: var(--shadow-overlay-dark);
+  }
 }
 
 @layer components {
