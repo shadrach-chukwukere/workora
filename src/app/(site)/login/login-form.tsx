@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { GoogleAuthButton, GitHubAuthButton } from "@/components/ui/social-auth-button";
 import { Field, Input } from "@/components/ui/form";
 import { Logo } from "@/components/ui/logo";
 import { workspacePathForRole } from "@/lib/workspace";
@@ -152,22 +153,8 @@ export default function LoginForm({
 
           {/* Social login buttons */}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="lg"
-              className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
-              onClick={signInWithGoogle}
-            >
-              Sign in with Google
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
-              onClick={signInWithGitHub}
-            >
-              Sign in with GitHub
-            </Button>
+            <GoogleAuthButton onClick={signInWithGoogle} />
+            <GitHubAuthButton onClick={signInWithGitHub} />
           </div>
 
           <p className="mt-4 border-t border-neutral-200 pt-4 text-sm text-neutral-600 text-center">
