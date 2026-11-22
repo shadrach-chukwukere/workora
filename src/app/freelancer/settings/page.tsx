@@ -59,7 +59,7 @@ export default function FreelancerSettingsPage() {
   async function load() {
     setError(null);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", { credentials: "include", cache: "no-store" });
+      const res = await fetch("/api/v1/users/me", { credentials: "include", cache: "no-store" });
       if (res.status === 401) {
         router.push("/login");
         return;
@@ -159,7 +159,7 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
   const preview = (watch("image") ?? "").trim();
 
   async function onSubmit(values: ProfileValues) {
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", {
+    const res = await fetch("/api/v1/users/me", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -263,7 +263,7 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
   const availability = watch("availability");
 
   async function onSubmit(values: FreelancerValues) {
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/freelancers/me", {
+    const res = await fetch("/api/v1/freelancers/me", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
@@ -439,6 +439,7 @@ function IdentityVerificationCard() {
   const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
   const [documentType, setDocumentType] = useState("national-id");
   const [file, setFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -508,6 +509,7 @@ function IdentityVerificationCard() {
       });
       await readEnvelope(requestResponse);
       setFile(null);
+      setFileInputKey((key) => key + 1);
       toast.success(canResubmit ? "Document resubmitted for review" : "Identity verification submitted");
       await loadRequests();
     } catch (cause) {
@@ -552,6 +554,7 @@ function IdentityVerificationCard() {
           ) : null}
           <Field label="Identity document" required hint="JPEG, PNG, WebP or PDF · maximum 10 MB">
             <Input
+              key={fileInputKey}
               id="verification-document-file"
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -596,7 +599,7 @@ function PasswordCard() {
   });
 
   async function onSubmit(values: PasswordValues) {
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/change-password", {
+    const res = await fetch("/api/auth/change-password", {
       method: "POST",
       credentials: "include",
       headers: { "content-type": "application/json" },

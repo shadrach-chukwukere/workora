@@ -3,7 +3,10 @@ import { serverApiBase } from "@/lib/api-base";
 
 /** Server-side call to the Fastify API, with cookies forwarded so auth'd reads work. */
 
-export async function apiServer<T = unknown>(path: string, opts: { public?: boolean } = {}): Promise<T> {
+export async function apiServer<T = unknown>(
+  path: string,
+  opts: { public?: boolean; signal?: AbortSignal } = {},
+): Promise<T> {
   const headers: Record<string, string> = {};
   if (!opts.public) {
     try {
@@ -17,7 +20,7 @@ export async function apiServer<T = unknown>(path: string, opts: { public?: bool
       // unauthenticated read
     }
   }
-  const res = await fetch(serverApiBase + path, { headers, cache: "no-store" });
+  const res = await fetch(serverApiBase + path, { headers, cache: "no-store", signal: opts.signal });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`apiServer ${path} -> ${res.status}: ${text.slice(0, 200)}`);
@@ -82,7 +85,10 @@ export interface PublicPlan {
 /** Best-effort fetch: returns fallback instead of throwing so public pages still work offline. */
 export async function apiServerOr<T>(path: string, fallback: T, publicCall = true): Promise<T> {
   try {
-    return await apiServer<T>(path, { public: publicCall });
+    return await apiServer<T>(path, {
+      public: publicCall,
+      signal: AbortSignal.timeout(3000),
+    });
   } catch {
     return fallback;
   }

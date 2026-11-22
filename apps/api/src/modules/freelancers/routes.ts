@@ -207,7 +207,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
         rowsBuilder.orderBy("u.created_at", "desc");
         break;
       case "rating":
-        rowsBuilder.orderBy("fp.rating_avg", "desc");
+        rowsBuilder.orderBy(sql<number>`COALESCE(fp.rating_avg, 0)`, "desc");
         rowsBuilder.orderBy("fp.rating_count", "desc");
         break;
       default:

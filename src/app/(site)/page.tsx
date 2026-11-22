@@ -30,6 +30,7 @@ import Hero from "@/components/layout/Hero";
 import { BriefcaseBusinessIcon, ArrowUpRightIcon, UserRoundIcon, BookmarkIcon, CodeIcon, SendIcon, LaptopIcon, CheckCircle, LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import HowItWorks from "@/components/layout/HowItWorks";
+import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
 
 const WORDMARKS = [
   "Loopwork",
@@ -116,25 +117,7 @@ export default async function Home() {
       {/* Hero */}
       <Hero />
 
-      {/* Trusted by teams and companies */}
-      <section className="border-y border-neutral-100 bg-[#FAFAFA]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-7 px-6 py-10 sm:px-10 lg:py-12">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
-            Trusted by ambitious teams worldwide
-          </p>
-
-          <ul className="flex w-full flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14 lg:justify-between lg:gap-x-8">
-            {WORDMARKS.map((name) => (
-              <li
-                key={name}
-                className="text-[17px] font-semibold tracking-[-0.045em] text-neutral-400 transition-colors duration-200 hover:text-neutral-800 sm:text-[19px]"
-              >
-                {name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <TrustedByMarquee wordmarks={WORDMARKS} />
 
       {/* Categories - asymmetric: one featured + grid */}
       <section id="categories" className="container-page py-16">

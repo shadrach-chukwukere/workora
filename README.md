@@ -109,7 +109,7 @@ Real milestone payments require `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` 
 
 Identity-document uploads require a private S3-compatible bucket and the API's `S3_*` settings. Allow browser `PUT` uploads from the web origin in the bucket's CORS policy. Verification documents are never returned as public URLs; verification admins receive short-lived download links with attachment disposition.
 
-Run the API seed after migrations to initialize the launch categories and starter category-to-skill mappings. Admins can add/remove categories from launch focus and curate freelancer listings in the admin console.
+The migration marks existing catalog rows for launch and adds their starter category-to-skill mappings. For local development only, `npm run seed` also creates demo catalog and accounts; do not run that seed in production. Production launches need the launch catalog and curated profiles populated with real marketplace data. Admins can add/remove categories from launch focus and curate freelancer listings in the admin console.
 
 ### 3. Configure and start the web app
 

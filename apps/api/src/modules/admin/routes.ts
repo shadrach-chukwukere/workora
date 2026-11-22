@@ -91,7 +91,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   /** PATCH /admin/freelancers/:id/curation — set editorial placement for launch talent. */
   app.patch("/admin/freelancers/:id/curation", { preHandler: [requirePermission("admin.users")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const body = request.body as { is_featured?: unknown; featured_rank?: unknown };
+    const body = (request.body ?? {}) as { is_featured?: unknown; featured_rank?: unknown };
     if (
       typeof body.is_featured !== "boolean" ||
       (body.featured_rank !== undefined &&
@@ -113,7 +113,11 @@ export default async function adminRoutes(app: FastifyInstance) {
       .updateTable("freelancer_profiles")
       .set({
         is_featured: body.is_featured,
-        ...(typeof body.featured_rank === "number" ? { featured_rank: body.featured_rank } : {}),
+        ...(typeof body.featured_rank === "number"
+          ? { featured_rank: body.featured_rank }
+          : body.is_featured
+            ? {}
+            : { featured_rank: 100 }),
       })
       .where("user_id", "=", id)
       .returning("user_id")

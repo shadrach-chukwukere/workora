@@ -57,6 +57,25 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       PRIMARY KEY (category_id, skill_id)
     )
   `.execute(db);
+
+  await sql`
+    INSERT INTO category_skills (category_id, skill_id)
+    SELECT c.id, s.id
+    FROM (VALUES
+      ('web-development', 'next-js'),
+      ('web-development', 'typescript'),
+      ('web-development', 'postgres'),
+      ('web-development', 'react'),
+      ('web-development', 'aws'),
+      ('product-design', 'figma'),
+      ('mobile-development', 'typescript'),
+      ('mobile-development', 'react'),
+      ('data-ai-ml', 'python')
+    ) AS mapping(category_slug, skill_slug)
+    JOIN categories c ON c.slug = mapping.category_slug
+    JOIN skills s ON s.slug = mapping.skill_slug
+    ON CONFLICT DO NOTHING
+  `.execute(db);
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {

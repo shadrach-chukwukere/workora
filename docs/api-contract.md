@@ -170,8 +170,7 @@ Known working routes (tested 2026-11-08):
 - GET /api/v1/admin/subscriptions            -> subscriptions + plan + user
 - GET /api/v1/admin/categories               -> categories + projects_count + skills_count
 - POST /api/v1/admin/categories              -> { slug, name, ... } — admin.moderation permission
-- PATCH /api/v1/admin/categories/:id         -> { name?, description?, sort_order? } — admin.moderation
-- PATCH /api/v1/admin/categories/:id         -> may also set { is_launch_focus?, launch_rank? } — admin.moderation
+- PATCH /api/v1/admin/categories/:id         -> { name?, description?, sort_order?, is_launch_focus?, launch_rank? } — admin.moderation
 - PATCH /api/v1/admin/freelancers/:id/curation -> { is_featured, featured_rank? } — admin.users; controls curated placement
 - GET /api/v1/admin/analytics/monthly?months=12 -> { months: [{ month, signups, projectsPosted, contractsStarted, volumeMinor }] }
 - GET /api/v1/admin/users accepts accountType=freelancer|client|admin

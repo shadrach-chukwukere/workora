@@ -277,7 +277,7 @@ export default function AdminVerificationPage() {
                   </div>
                   {v.has_document ? (
                     <Button variant="secondary" size="sm" className="mt-3" onClick={() => void openDocument(v)}>
-                      Review private document
+                      Download private document
                     </Button>
                   ) : (
                     <p className="mt-3 text-xs text-rose-700">No identity document is attached.</p>
