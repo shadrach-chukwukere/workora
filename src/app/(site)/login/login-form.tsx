@@ -16,11 +16,11 @@ import {
 import type { Role } from "@/lib/types";
 // Social login handlers - redirect to OAuth providers
 const signInWithGoogle = () => {
-  window.location.href = '/api/auth/signin/google';
+  window.location.href = "/api/auth/google";
 };
 
 const signInWithGitHub = () => {
-  window.location.href = '/api/auth/signin/github';
+  window.location.href = "/api/auth/github";
 };
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
