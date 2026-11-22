@@ -1,51 +1,33 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { OAuth2Client } from 'google-auth-library';
+
+const oAuth2Client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${process.env.NEXT_PUBLIC_URL}/api/auth/callback/google`
+);
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
+    const { code } = await request.json();
 
-    if (!code) {
-      return NextResponse.redirect(new URL('/login?error=no_code', request.url));
-    }
+    const { tokens } = await oAuth2Client.getToken(code);
+    oAuth2Client.setCredentials(tokens);
 
-    const cookieStore = await cookies();
-    const cookie = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ');
+    // Get user info from Google
+    const response = await oAuth2Client.fetch('https://www.googleapis.com/oauth2/v2/userinfo');
+    const userInfo = response.data;
 
-    // Exchange OAuth code for session
-    // Use the same base URL as auth.ts
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://workora-phi.vercel.app';
+    // Here you would create/update the user in your database
+    // and create a session cookie
     
-    const res = await fetch(`${baseUrl}/api/auth/session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookie || '',
-      },
-      body: JSON.stringify({
-        code,
-        provider: 'google',
-        state,
-      }),
+    return NextResponse.json({ 
+      success: true,
+      user: userInfo,
+      tokens 
     });
-
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      console.error('Google OAuth token exchange error:', data);
-      return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
-    }
-
-    if (data.user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.redirect(new URL('/login', request.url));
   } catch (error) {
-    console.error('Google OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/login?error=unexpected', request.url));
+    console.error('Google callback error:', error);
+    return NextResponse.json({ error: 'auth_failed' }, { status: 500 });
   }
 }

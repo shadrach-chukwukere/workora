@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "geist": "^1.9.2",
+    "google-auth-library": "^11.3.4",
     "next": "^16.4.5",
     "paystack": "^2.0.1",
     "react": "^19.2.0",

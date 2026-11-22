@@ -1,51 +1,52 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
-export async function GET(request: Request) {
+const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
+const GITHUB_USER_INFO_URL = 'https://api.github.com/user';
+
+export async function POST(request: Request) {
   try {
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
+    const { code } = await request.json();
 
-    if (!code) {
-      return NextResponse.redirect(new URL('/login?error=no_code', request.url));
-    }
-
-    const cookieStore = await cookies();
-    const cookie = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ');
-
-    // Exchange OAuth code for session
-    // Use the same base URL as auth.ts
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://workora-phi.vercel.app';
-    
-    const res = await fetch(`${baseUrl}/api/auth/session`, {
+    // Exchange code for token
+    const tokenResponse = await fetch(GITHUB_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': cookie || '',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
-        code,
-        provider: 'github',
-        state,
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: code,
+        redirect_uri: `${process.env.NEXT_PUBLIC_URL}/api/auth/callback/github`,
       }),
     });
 
-    const data = await res.json();
+    const tokenData = await tokenResponse.text();
+    const params = new URLSearchParams(tokenData as string);
+    const accessToken = params.get('access_token');
 
-    if (!res.ok || data.error) {
-      console.error('GitHub OAuth token exchange error:', data);
-      return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
+    if (!accessToken) {
+      return NextResponse.json({ error: 'failed_to_get_token' }, { status: 500 });
     }
 
-    if (data.user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+    // Get user info from GitHub
+    const userResponse = await fetch(GITHUB_USER_INFO_URL, {
+      headers: {
+        Authorization: `token ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
 
-    return NextResponse.redirect(new URL('/login', request.url));
+    const userInfo = await userResponse.json();
+
+    return NextResponse.json({ 
+      success: true,
+      user: userInfo,
+      accessToken 
+    });
   } catch (error) {
-    console.error('GitHub OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/login?error=unexpected', request.url));
+    console.error('GitHub callback error:', error);
+    return NextResponse.json({ error: 'auth_failed' }, { status: 500 });
   }
 }
