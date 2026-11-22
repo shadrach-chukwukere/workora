@@ -1,32 +1,22 @@
 import { betterAuth } from 'better-auth';
 import * as process from 'process';
 
-// Better Auth configuration with Google and GitHub OAuth + Webhooks
+// Better Auth with Google and GitHub OAuth
+// The issuerBaseURL MUST match your deployed domain exactly
 export const auth = betterAuth({
-  // Base URL for the application - important for redirects
-  // This needs to match the domain configured in Google/GitHub developer consoles
-  issuerBaseURL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
+  // CRITICAL: Must match your Vercel domain exactly
+  issuerBaseURL: process.env.NEXT_PUBLIC_URL || 'https://workora-phi.vercel.app',
 
   social: {
     google: {
       enabled: true,
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      // The redirect URI must match what's configured in Google Cloud Console
-      // Format: {baseURL}/api/auth/callback/google
-      authorization: {
-        // Additional OAuth parameters if needed
-        params: {
-          prompt: 'select_account', // Force account selection prompt
-        },
-      },
     },
     github: {
       enabled: true,
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      // The redirect URI must match what's configured in GitHub developer settings
-      // Format: {baseURL}/api/auth/callback/github
     },
   },
 
@@ -35,46 +25,35 @@ export const auth = betterAuth({
     enabled: false,
   },
 
-  // Session configuration
+  // Session configuration - cookie settings managed by framework
   session: {
     // Cookie settings are managed by the framework
   },
 
   // Trusted origins for OAuth callbacks
   trustedOrigins: [
-    process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
-    'https://workora-phi.vercel.app',
+    process.env.NEXT_PUBLIC_URL || 'https://workora-phi.vercel.app',
     'https://workora.com',
   ],
-
-  // Webhook configuration for auth events
-  webhooks: {
-    signIn: '/api/auth/webhook/sign-in',
-    signOut: '/api/auth/webhook/sign-out',
-    signUp: '/api/auth/webhook/sign-up',
-  },
 });
 
-// Helper functions for social login
+// Helper functions - use these in your login form
 export function signInWithGoogle() {
-  // This will redirect to Google OAuth, then callback to /api/auth/callback/google
   window.location.href = `/api/auth/signin/google`;
   return false;
 }
 
 export function signInWithGitHub() {
-  // This will redirect to GitHub OAuth, then callback to /api/auth/callback/github
   window.location.href = `/api/auth/signin/github`;
   return false;
 }
 
 export function signOut() {
-  // Sign out from better auth
   window.location.href = `/api/auth/sign-out`;
   return false;
 }
 
-// Helper to get session from the API
+// Helper to get current session
 export async function getCurrentSession() {
   const res = await fetch('/api/auth/session', {
     credentials: 'include',
