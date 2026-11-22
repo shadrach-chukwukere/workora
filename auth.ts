@@ -26,11 +26,9 @@ export const auth = betterAuth({
     enabled: false,
   },
 
-  // Session configuration
+  // Session configuration - cookie settings managed by the framework
   session: {
     // Cookie settings are managed by the framework
-    // Ensure cookieDomain matches your deployed domain
-    cookieDomain: process.env.COOKIE_DOMAIN || 'workora-phi.vercel.app',
   },
 
   // Trusted origins for OAuth callbacks
