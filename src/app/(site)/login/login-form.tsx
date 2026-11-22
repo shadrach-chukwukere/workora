@@ -10,13 +10,10 @@ import { Logo } from "@/components/ui/logo";
 import { workspacePathForRole } from "@/lib/workspace";
 import {
   ArrowRight02Icon,
-  CheckmarkCircle02Icon,
   Icon,
-  ShieldCheckIcon,
-  StarIcon,
 } from "@/lib/icons";
 import type { Role } from "@/lib/types";
-// Social login handlers - use direct API calls
+// Social login handlers - redirect to OAuth providers
 const signInWithGoogle = () => {
   window.location.href = '/api/auth/signin/google';
 };
@@ -53,7 +50,7 @@ export default function LoginForm({
 
     setSubmitting(true);
     try {
-      const signIn = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-in/email", {
+      const signIn = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") + "/api/auth/sign-in/email", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -73,7 +70,7 @@ export default function LoginForm({
         return;
       }
 
-      const me = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", {
+      const me = await fetch(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com" + "/api/v1/users/me", {
         credentials: "include",
         cache: "no-store",
       });
@@ -93,24 +90,17 @@ export default function LoginForm({
 
   return (
     <div className="container-page py-10 sm:py-14">
-      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-2xl  border-neutral-200 bg-white lg:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl overflow-hidden rounded-2xl border-neutral-200 bg-white lg:grid-cols-2">
         {/* Brand panel */}
-
-        {/* Brand panel */}
-        <div className="relative hidden  overflow-hidden lg:block form-background">
-          {/* Dark gradient overlay */}
+        <div className="relative hidden overflow-hidden lg:block form-background">
           <div className="absolute inset-0 bg-linear-to-b from-black/75 via-black/30 to-black/5" />
-
-          {/* Brand content */}
           <div className="absolute inset-0 z-10 flex flex-col justify-between p-10 text-white">
             <div>
               <Logo href="/" className="[&_span]:text-white" />
-
               <h1 className="mt-10 max-w-sm text-3xl font-semibold leading-tight tracking-tight text-wrap-balance">
                 Briefs in. Milestones funded. Work released on approval.
               </h1>
             </div>
-
           </div>
         </div>
 
@@ -119,14 +109,8 @@ export default function LoginForm({
           <div className="lg:hidden">
             <Logo href="/" />
           </div>
-          <h2 className="text-2xl font-semibold tracking-tight text-neutral-900">
-            Sign in
-          </h2>
-          <form
-            onSubmit={onSubmit}
-            className="mt-6 flex flex-col gap-4"
-            noValidate
-          >
+          <h2 className="text-2xl font-semibold tracking-tight text-neutral-900">Sign in</h2>
+          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
             <Field label="Email" required error={errors.email}>
               <Input
                 type="email"
@@ -174,7 +158,7 @@ export default function LoginForm({
               className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
               onClick={signInWithGoogle}
             >
-              <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-2" /> Sign in with Google
+              Sign in with Google
             </Button>
             <Button
               type="button"
@@ -182,7 +166,7 @@ export default function LoginForm({
               className="w-full justify-start border border-neutral-200 bg-white px-4 py-3 text-left text-neutral-900 hover:bg-neutral-50"
               onClick={signInWithGitHub}
             >
-              <Icon icon={ArrowRight02Icon as any} size={16} strokeWidth={1.8} className="mr-2" /> Sign in with GitHub
+              Sign in with GitHub
             </Button>
           </div>
 
@@ -205,18 +189,3 @@ export default function LoginForm({
     </div>
   );
 }
-
-const TRUST_POINTS = [
-  {
-    icon: ShieldCheckIcon,
-    text: "Verified work samples and identities, reviewed before they go live.",
-  },
-  {
-    icon: CheckmarkCircle02Icon,
-    text: "Milestone funding with payment held until you approve the work.",
-  },
-  {
-    icon: StarIcon,
-    text: "Real rates and real reviews. Evidence, not promises.",
-  },
-];
