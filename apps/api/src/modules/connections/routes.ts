@@ -26,6 +26,36 @@ export default async function connectionsRoutes(app: FastifyInstance) {
     reply.send(ok({ ...result, page }));
   });
 
+  /** Public, paginated followers of any active freelancer/client. */
+  app.get("/connections/:userId/followers", async (request: FastifyRequest, reply: FastifyReply) => {
+    const { userId } = request.params as { userId: string };
+    const { limit, offset } = parsePage(request.query as { page?: string; perPage?: string; limit?: string });
+    const result = await service.listUserConnections(
+      await db(),
+      userId,
+      "followers",
+      request.currentUser?.id ?? null,
+      limit,
+      offset,
+    );
+    reply.send(ok(result));
+  });
+
+  /** Public, paginated people a freelancer/client follows. */
+  app.get("/connections/:userId/following", async (request: FastifyRequest, reply: FastifyReply) => {
+    const { userId } = request.params as { userId: string };
+    const { limit, offset } = parsePage(request.query as { page?: string; perPage?: string; limit?: string });
+    const result = await service.listUserConnections(
+      await db(),
+      userId,
+      "following",
+      request.currentUser?.id ?? null,
+      limit,
+      offset,
+    );
+    reply.send(ok(result));
+  });
+
   /** Connect to a profile. Idempotent. */
   app.post("/connections/:userId", { preHandler: requireAuth }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };

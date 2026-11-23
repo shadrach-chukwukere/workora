@@ -16,6 +16,8 @@ export interface ConnectionUser {
   headline: string | null;
   company_name: string | null;
   connected_at: string;
+  /** Whether the signed-in viewer follows this person; false when signed out. */
+  connected: boolean;
 }
 
 export interface ConnectionList {

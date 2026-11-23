@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,22 +21,34 @@ interface ConnectButtonProps {
   fullWidth?: boolean;
 }
 
-function Counts({ followers, following }: { followers: number; following: number }) {
+function Counts({
+  targetId,
+  followers,
+  following,
+}: {
+  targetId: string;
+  followers: number;
+  following: number;
+}) {
+  const listHref = (tab: "followers" | "following") =>
+    `/connections?user=${encodeURIComponent(targetId)}&tab=${tab}`;
+  const countClass = "connection-count-bump font-semibold text-neutral-900 tabular-nums";
+
   return (
     <div className="mt-3 flex items-center justify-center gap-4 text-[12px] text-neutral-500">
-      <span className="inline-flex items-center gap-1.5">
-        <strong key={`followers-${followers}`} className="connection-count-bump font-semibold text-neutral-900 tabular-nums">
+      <Link href={listHref("followers")} className="inline-flex items-center gap-1.5 transition-colors hover:text-brand-700" aria-label={`View ${followers} followers`}>
+        <strong key={`followers-${followers}`} className={countClass}>
           {followers}
         </strong>
         followers
-      </span>
+      </Link>
       <span aria-hidden className="h-3 w-px bg-neutral-200" />
-      <span className="inline-flex items-center gap-1.5">
-        <strong key={`following-${following}`} className="connection-count-bump font-semibold text-neutral-900 tabular-nums">
+      <Link href={listHref("following")} className="inline-flex items-center gap-1.5 transition-colors hover:text-brand-700" aria-label={`View ${following} following`}>
+        <strong key={`following-${following}`} className={countClass}>
           {following}
         </strong>
         following
-      </span>
+      </Link>
     </div>
   );
 }
@@ -130,7 +143,7 @@ export function ConnectButton({
           <Icon icon={UserMultiple02Icon} size={16} strokeWidth={1.8} />
           Your network
         </Button>
-        <Counts followers={followers} following={following} />
+        <Counts targetId={targetId} followers={followers} following={following} />
       </div>
     );
   }
@@ -142,7 +155,7 @@ export function ConnectButton({
           <Icon icon={PlusSignIcon} size={16} strokeWidth={1.8} />
           Connect
         </Button>
-        <Counts followers={followers} following={following} />
+        <Counts targetId={targetId} followers={followers} following={following} />
       </div>
     );
   }
@@ -187,7 +200,7 @@ export function ConnectButton({
         </span>
         <span className="relative">{connected ? "Connected" : "Connect"}</span>
       </Button>
-      <Counts followers={followers} following={following} />
+      <Counts targetId={targetId} followers={followers} following={following} />
     </div>
   );
 }

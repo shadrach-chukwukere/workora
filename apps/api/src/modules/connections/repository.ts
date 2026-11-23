@@ -16,6 +16,7 @@ export interface ConnectionUserRow {
   headline: string | null;
   company_name: string | null;
   connected_at: Date | string;
+  connected: boolean;
 }
 
 export async function getConnectionCounts(db: Db, userId: string) {
@@ -73,13 +74,23 @@ async function listRows(
   direction: "followers" | "following",
   limit: number,
   offset: number,
+  viewerId: string | null,
 ): Promise<ConnectionUserRow[]> {
   const joinColumn = direction === "followers" ? "c.follower_id" : "c.following_id";
   const whereColumn = direction === "followers" ? "c.following_id" : "c.follower_id";
+  // `connected` describes the viewer's relationship to each listed member, so
+  // a public viewer sees login prompts while a signed-in viewer can follow or
+  // unfollow directly from the list.
+  const connectedExpr = viewerId ? sql`vc.following_id IS NOT NULL` : sql`false`;
+  const viewerJoin = viewerId
+    ? sql`LEFT JOIN connections vc ON vc.follower_id = ${viewerId} AND vc.following_id = u.id`
+    : sql``;
   const result = await sql<ConnectionUserRow>`
-    SELECT u.id, u.name, u.image, u.account_type, fp.headline, cp.company_name, c.created_at AS connected_at
+    SELECT u.id, u.name, u.image, u.account_type, fp.headline, cp.company_name,
+           c.created_at AS connected_at, ${connectedExpr} AS connected
     FROM connections c
     JOIN users u ON u.id = ${sql.ref(joinColumn)}
+    ${viewerJoin}
     LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
     LEFT JOIN client_profiles cp ON cp.user_id = u.id
     WHERE ${sql.ref(whereColumn)} = ${userId} AND u.status = 'active'
@@ -106,9 +117,10 @@ export async function listConnections(
   direction: "followers" | "following",
   limit: number,
   offset: number,
+  viewerId: string | null = null,
 ) {
   const [rows, total] = await Promise.all([
-    listRows(db, userId, direction, limit, offset),
+    listRows(db, userId, direction, limit, offset, viewerId),
     countRows(db, userId, direction),
   ]);
   return {
@@ -121,6 +133,7 @@ export async function listConnections(
       headline: row.headline,
       company_name: row.company_name,
       connected_at: new Date(row.connected_at).toISOString(),
+      connected: Boolean(row.connected),
     })),
   };
 }

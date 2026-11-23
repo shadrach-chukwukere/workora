@@ -54,6 +54,20 @@ export async function listMyConnections(
   limit: number,
   offset: number,
 ) {
-  const result = await repo.listConnections(db, viewer.id, direction, limit, offset);
+  const result = await repo.listConnections(db, viewer.id, direction, limit, offset, viewer.id);
+  return { ...result, page: Math.floor(offset / limit) + 1, perPage: limit };
+}
+
+/** Public, paginated network view. `connected` is relative to the optional viewer. */
+export async function listUserConnections(
+  db: Db,
+  targetId: string,
+  direction: "followers" | "following",
+  viewerId: string | null,
+  limit: number,
+  offset: number,
+) {
+  await ensureConnectable(db, targetId);
+  const result = await repo.listConnections(db, targetId, direction, limit, offset, viewerId);
   return { ...result, page: Math.floor(offset / limit) + 1, perPage: limit };
 }
