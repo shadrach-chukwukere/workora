@@ -7,6 +7,36 @@ import { db } from "../../database/connection.js";
 /** Better Auth is constructed over the shared Kysely instance, with our table/column names. */
 const instance = await db();
 
+/**
+ * OAuth redirect URIs go through the web app origin (WEB_APP_URL) so the state
+ * cookie set at sign-in and the callback both land on the same origin, via the
+ * Next.js `/api/auth/*` rewrite. Register these exact URIs with each provider:
+ *   {WEB_APP_URL}/api/auth/callback/google
+ *   {WEB_APP_URL}/api/auth/callback/github
+ */
+const webOrigin = env.WEB_APP_URL.replace(/\/+$/, "");
+
+const socialProviders = {
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          redirectURI: `${webOrigin}/api/auth/callback/google`,
+        },
+      }
+    : {}),
+  ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+    ? {
+        github: {
+          clientId: env.GITHUB_CLIENT_ID,
+          clientSecret: env.GITHUB_CLIENT_SECRET,
+          redirectURI: `${webOrigin}/api/auth/callback/github`,
+        },
+      }
+    : {}),
+};
+
 export const auth = betterAuth({
   appName: "Workora",
   basePath: "/api/auth",
@@ -41,6 +71,8 @@ export const auth = betterAuth({
     },
   },
 
+  socialProviders,
+
   // Our snake_case schema, mapped here rather than renamed at the database
   user: {
     modelName: "users",
@@ -62,6 +94,12 @@ export const auth = betterAuth({
     },
   },
   account: {
+    // Let someone who signed up with email/password later use Google/GitHub
+    // with the same (provider-verified) email, instead of a duplicate-account error.
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "github"],
+    },
     modelName: "accounts",
     fields: {
       userId: "user_id",
