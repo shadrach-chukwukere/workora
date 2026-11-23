@@ -4,8 +4,11 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/ui/avatar";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { ContactLinks } from "@/components/profile/contact-links";
+import { ConnectButton } from "@/components/profile/connect-button";
+import { getSessionAccount } from "@/components/layout/session-guard";
 import { apiServerOr } from "@/lib/api-data";
 import type { ContactDetails } from "@/lib/contact";
+import type { ConnectionStatus } from "@/lib/connections";
 import { ArrowLeft02Icon, Building01Icon, Calendar03Icon, Icon } from "@/lib/icons";
 
 interface PublicClientResponse {
@@ -29,16 +32,16 @@ interface PublicClientResponse {
     website_url: string | null;
     portfolio_url: string | null;
   };
+  connections: { followersCount: number; followingCount: number };
 }
 
-async function getClient(id: string): Promise<PublicClientResponse["client"] | null> {
+async function getClient(id: string): Promise<PublicClientResponse | null> {
   if (!/^[0-9a-fA-F-]{36}$/.test(id)) return null;
-  const data = await apiServerOr<PublicClientResponse | null>(
+  return apiServerOr<PublicClientResponse | null>(
     `/api/v1/clients/${encodeURIComponent(id)}`,
     null,
     true,
   );
-  return data?.client ?? null;
 }
 
 export async function generateMetadata({
@@ -47,8 +50,9 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const client = await getClient(id);
-  if (!client) return { title: "Client not found" };
+  const data = await getClient(id);
+  if (!data) return { title: "Client not found" };
+  const client = data.client;
   return {
     title: `${client.company_name || client.name} · Client profile`,
     description: (client.about || "").slice(0, 160) || `Public client profile for ${client.name} on Workora.`,
@@ -61,8 +65,19 @@ export default async function ClientProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const client = await getClient(id);
-  if (!client) notFound();
+  const data = await getClient(id);
+  if (!data) notFound();
+  const { client, connections } = data;
+
+  const account = await getSessionAccount();
+  const isSelf = account?.userId === client.id;
+  const connectionStatus =
+    account && !isSelf
+      ? await apiServerOr<ConnectionStatus | null>(
+          `/api/v1/connections/${encodeURIComponent(client.id)}/status`,
+          null,
+        )
+      : null;
 
   const displayName = client.company_name || client.name;
   const memberSince = client.created_at ? new Date(client.created_at).getUTCFullYear() : null;
@@ -147,6 +162,21 @@ export default async function ClientProfilePage({
         </main>
 
         <aside className="flex flex-col gap-6">
+          <section className="rounded-xl border border-neutral-200 bg-white p-6">
+            <h2 className="text-sm font-semibold text-neutral-900">Follow this client</h2>
+            <div className="mt-3">
+              <ConnectButton
+                targetId={client.id}
+                targetName={displayName}
+                viewerId={account?.userId ?? null}
+                isSelf={isSelf}
+                initialConnected={connectionStatus?.connected ?? false}
+                initialFollowersCount={connectionStatus?.followersCount ?? connections.followersCount}
+                initialFollowingCount={connectionStatus?.followingCount ?? connections.followingCount}
+                fullWidth
+              />
+            </div>
+          </section>
           <ContactLinks contact={contact} />
           <section className="rounded-xl border border-brand-100 bg-brand-50/50 p-6">
             <h2 className="text-sm font-semibold text-brand-900">Working with this client</h2>

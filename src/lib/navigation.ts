@@ -42,6 +42,7 @@ export const freelancerNav: NavSection[] = [
  items: [
  { href: "/freelancer/portfolio", label: "Portfolio", icon: "Image02Icon" },
  { href: "/freelancer/reviews", label: "Reviews", icon: "StarIcon" },
+  { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
  { href: "/freelancer/settings", label: "Settings", icon: "Settings01Icon" },
  ],
  },
@@ -74,6 +75,7 @@ export const clientNav: NavSection[] = [
  title: "Reputation",
  items: [
  { href: "/client/reviews", label: "Reviews", icon: "StarIcon" },
+  { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
  { href: "/client/settings", label: "Settings", icon: "Settings01Icon" },
  ],
  },

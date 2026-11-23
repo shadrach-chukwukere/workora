@@ -258,6 +258,13 @@ export interface SavedProjectsTable {
   created_at: Timestamp;
 }
 
+/** follower_id follows following_id. Both sides are users (freelancer or client). */
+export interface ConnectionsTable {
+  follower_id: string;
+  following_id: string;
+  created_at: Timestamp;
+}
+
 export interface ProposalsTable {
   id: Generated<string>;
   project_id: string;
@@ -664,6 +671,7 @@ export interface DB {
   projects: ProjectsTable;
   project_skills: ProjectSkillsTable;
   saved_projects: SavedProjectsTable;
+  connections: ConnectionsTable;
   proposals: ProposalsTable;
   proposal_attachments: ProposalAttachmentsTable;
   contracts: ContractsTable;

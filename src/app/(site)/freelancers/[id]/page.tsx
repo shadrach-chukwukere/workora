@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { ShareProfileButton } from "@/components/share-profile-button";
+import { ConnectButton } from "@/components/profile/connect-button";
+import { getSessionAccount } from "@/components/layout/session-guard";
 import {
   ArrowLeft02Icon,
   ArrowUpRight02Icon,
@@ -18,6 +20,7 @@ import {
 import { apiServerOr } from "@/lib/api-data";
 import { ContactLinks } from "@/components/profile/contact-links";
 import type { ContactDetails } from "@/lib/contact";
+import type { ConnectionStatus } from "@/lib/connections";
 
 interface PublicProfile {
   user: { id: string; name: string; image: string | null; banner_url: string | null; created_at: string };
@@ -35,6 +38,7 @@ interface PublicProfile {
     completed_count: number;
   };
   contact: ContactDetails;
+  connections: { followersCount: number; followingCount: number };
   skills: { slug: string; name: string }[];
   portfolio: {
     id: string;
@@ -83,8 +87,17 @@ export default async function FreelancerPublicProfile({
     true,
   );
   const reviews = reviewsEnvelope.reviews ?? [];
+  const { user, profile, contact, connections, skills, portfolio, experience, education, certifications } = data;
 
-  const { user, profile, contact, skills, portfolio, experience, education, certifications } = data;
+  const account = await getSessionAccount();
+  const isSelf = account?.userId === user.id;
+  const connectionStatus =
+    account && !isSelf
+      ? await apiServerOr<ConnectionStatus | null>(
+          `/api/v1/connections/${encodeURIComponent(user.id)}/status`,
+          null,
+        )
+      : null;
   const hourly = profile.hourly_rate_minor != null ? profile.hourly_rate_minor / 100 : null;
   const availabilityLabel =
     profile.availability === "available" ? "Available now" : profile.availability === "limited" ? "Limited availability" : "Fully booked";
@@ -172,6 +185,16 @@ export default async function FreelancerPublicProfile({
             {availabilityLabel}
           </p>
           <div className="mt-5 flex flex-col gap-2">
+            <ConnectButton
+              targetId={user.id}
+              targetName={user.name}
+              viewerId={account?.userId ?? null}
+              isSelf={isSelf}
+              initialConnected={connectionStatus?.connected ?? false}
+              initialFollowersCount={connectionStatus?.followersCount ?? connections.followersCount}
+              initialFollowingCount={connectionStatus?.followingCount ?? connections.followingCount}
+              fullWidth
+            />
             <Button href="/client/post-project" size="md">
               Invite to project
             </Button>

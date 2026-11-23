@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { sql } from "kysely";
 import { ok, requireAuth } from "../common/index.js";
 import { db } from "../../database/connection.js";
+import { getConnectionCounts } from "../connections/repository.js";
 
 /** Public freelancer directory + owner profile edits. */
 export default async function freelancersRoutes(app: FastifyInstance) {
@@ -36,7 +37,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       reply.status(404).send({ success: false, message: "Freelancer not found", error: { code: "NOT_FOUND", details: {} } });
       return;
     }
-    const [skills, portfolio, experience, education, certifications] = await Promise.all([
+    const [skills, portfolio, experience, education, certifications, connections] = await Promise.all([
       sql<{ slug: string; name: string }>`
         SELECT s.slug, s.name FROM freelancer_skills fs JOIN skills s ON s.id = fs.skill_id WHERE fs.freelancer_id = ${id} ORDER BY s.name
       `.execute(instance).then((r) => r.rows),
@@ -52,6 +53,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       sql<{ id: string; name: string; issuer: string | null; year: number | null; credential_url: string | null }>`
         SELECT id, name, issuer, year, credential_url FROM certifications WHERE freelancer_id = ${id} ORDER BY created_at DESC
       `.execute(instance).then((r) => r.rows),
+      getConnectionCounts(instance, owner.id),
     ]);
     reply.send(ok({
       user: { id: owner.id, name: owner.name, image: owner.image, banner_url: owner.banner_url, created_at: owner.created_at.toISOString() },
@@ -83,6 +85,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       experience,
       education,
       certifications,
+      connections,
     }));
   });
 

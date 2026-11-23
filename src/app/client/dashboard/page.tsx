@@ -17,6 +17,8 @@ import {
 } from "@/lib/icons";
 import { apiOptional, apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { formatDateShort, formatMoney, formatRelative } from "@/lib/format";
+import type { ConnectionList } from "@/lib/connections";
+import { ConnectionsCard } from "@/components/profile/connections-card";
 import { cn } from "@/lib/utils";
 
 interface MeResponse {
@@ -137,14 +139,18 @@ export default async function ClientDashboard() {
   let transactionsRes: TransactionsResponse | null;
   let received: ReceivedProposalsResponse | null;
   let unread: NotificationsResponse | null;
+  let followersRes: ConnectionList | null;
+  let followingRes: ConnectionList | null;
   try {
-    [me, ownProjects, contractsRes, transactionsRes, received, unread] = await Promise.all([
+    [me, ownProjects, contractsRes, transactionsRes, received, unread, followersRes, followingRes] = await Promise.all([
       apiOptional(apiServer<MeResponse>("/api/v1/users/me", undefined, cookie)),
       apiOptional(apiServer<OwnProjectsResponse>("/api/v1/users/me/projects", undefined, cookie)),
       apiOptional(apiServer<ContractsResponse>("/api/v1/contracts", undefined, cookie)),
       apiOptional(apiServer<TransactionsResponse>("/api/v1/payments/transactions?limit=8", undefined, cookie)),
       apiOptional(apiServer<ReceivedProposalsResponse>("/api/v1/users/me/project-proposals", undefined, cookie)),
       apiOptional(apiServer<NotificationsResponse>("/api/v1/notifications?unread=true", undefined, cookie)),
+      apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/followers?perPage=4", undefined, cookie)),
+      apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/following?perPage=4", undefined, cookie)),
     ]);
   } catch (error) {
     if (isAuth(error)) redirect("/login");
@@ -350,6 +356,8 @@ export default async function ClientDashboard() {
               </Link>
             </section>
           ) : null}
+
+          <ConnectionsCard followers={followersRes} following={followingRes} />
 
           {/* Recent notifications */}
           <section className="card h-fit">

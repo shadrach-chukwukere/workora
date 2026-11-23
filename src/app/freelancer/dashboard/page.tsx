@@ -23,6 +23,8 @@ import {
 import { apiOptional, apiServer, isAuthError, monthlyEarnings, sessionCookie } from "@/lib/api-server";
 import { PROPOSAL_STATUS_META } from "@/lib/constants";
 import type { ProposalStatus } from "@/lib/types";
+import type { ConnectionList } from "@/lib/connections";
+import { ConnectionsCard } from "@/components/profile/connections-card";
 import { redirect } from "next/navigation";
 import { formatDateShort, formatMoney, formatPercent, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -142,8 +144,20 @@ export default async function FreelancerDashboard() {
   let conversationsRes: ConversationsResponse | null;
   let projectsRes: ProjectsResponse | null;
   let categoriesRes: CategoriesResponse | null;
+  let followersRes: ConnectionList | null;
+  let followingRes: ConnectionList | null;
   try {
-    [me, contractsRes, proposalsRes, transactionsRes, conversationsRes, projectsRes, categoriesRes] =
+    [
+      me,
+      contractsRes,
+      proposalsRes,
+      transactionsRes,
+      conversationsRes,
+      projectsRes,
+      categoriesRes,
+      followersRes,
+      followingRes,
+    ] =
       await Promise.all([
         apiServer<MeResponse>("/api/v1/users/me", undefined, cookie),
         apiOptional(apiServer<ContractsResponse>("/api/v1/contracts?status=active", undefined, cookie)),
@@ -152,6 +166,8 @@ export default async function FreelancerDashboard() {
         apiOptional(apiServer<ConversationsResponse>("/api/v1/conversations", undefined, cookie)),
         apiOptional(apiServer<ProjectsResponse>("/api/v1/projects", undefined, cookie)),
         apiOptional(apiServer<CategoriesResponse>("/api/v1/categories", undefined, cookie)),
+        apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/followers?perPage=4", undefined, cookie)),
+        apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/following?perPage=4", undefined, cookie)),
       ]);
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
@@ -449,6 +465,8 @@ export default async function FreelancerDashboard() {
             <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
           </Link>
         </section>
+
+        <ConnectionsCard followers={followersRes} following={followingRes} />
 
         {/* Reputation snapshot */}
         <section className="card flex flex-col p-5">

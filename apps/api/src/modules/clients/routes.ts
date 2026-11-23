@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { sql } from "kysely";
 import { ok } from "../common/index.js";
 import { db } from "../../database/connection.js";
+import { getConnectionCounts } from "../connections/repository.js";
 
 /** Public + authenticated client directory endpoints. */
 export default async function clientsRoutes(app: FastifyInstance) {
@@ -15,12 +16,13 @@ export default async function clientsRoutes(app: FastifyInstance) {
       FROM users u JOIN client_profiles cp ON cp.user_id = u.id
       WHERE u.id = ${(request.params as { id: string }).id} AND u.status = 'active' AND u.account_type = 'client'
     `.execute(instance);
-    const row = rows.rows[0];
+    const row = rows.rows[0] as { id: string } | undefined;
     if (!row) {
       reply.status(404).send({ success: false, message: "Client not found", error: { code: "NOT_FOUND", details: {} } });
       return;
     }
-    reply.send(ok({ client: row }));
+    const connections = await getConnectionCounts(instance, row.id as string);
+    reply.send(ok({ client: row, connections }));
   });
 
   /** PATCH /clients/me — update company details (client-only). */

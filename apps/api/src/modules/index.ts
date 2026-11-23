@@ -22,6 +22,7 @@ const routeModules = [
   { name: "freelancers", path: "./freelancers/routes.js" },
   { name: "clients", path: "./clients/routes.js" },
   { name: "passkeys", path: "./passkeys/routes.js" },
+  { name: "connections", path: "./connections/routes.js" },
 ] as const;
 
 export async function registerModules(app: FastifyInstance): Promise<void> {
