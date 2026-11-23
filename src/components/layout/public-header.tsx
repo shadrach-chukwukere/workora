@@ -27,9 +27,13 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (menuOpen) {
+      document.body.classList.add("menu-open");
+    } else {
+      document.body.classList.remove("menu-open");
+    }
     return () => {
-      document.body.style.overflow = "";
+      document.body.classList.remove("menu-open");
     };
   }, [menuOpen]);
 

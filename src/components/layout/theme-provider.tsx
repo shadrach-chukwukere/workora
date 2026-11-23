@@ -13,7 +13,21 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-export function ThemeProvider({ children, defaultTheme = "system" }: { children: ReactNode; defaultTheme?: Theme }) {
+/**
+ * Theme provider that avoids blocking back/forward cache restoration.
+ *
+ * - Reads the stored preference + system media query once in an effect.
+ * - Applies the dark class to <html> in the same effect.
+ * - Cleans up the matchMedia listener on unmount.
+ * - Never registers beforeunload/unload/unhandledrejection listeners.
+ */
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+}: {
+  children: ReactNode;
+  defaultTheme?: Theme;
+}) {
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
@@ -29,7 +43,9 @@ export function ThemeProvider({ children, defaultTheme = "system" }: { children:
 
     let resolved: "light" | "dark";
     if (theme === "system") {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
     } else {
       resolved = theme;
     }
@@ -41,6 +57,21 @@ export function ThemeProvider({ children, defaultTheme = "system" }: { children:
       document.documentElement.classList.remove("dark");
     }
     localStorage.setItem("workora-theme", theme);
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => {
+      if (theme === "system") {
+        const next = media.matches ? "dark" : "light";
+        setResolvedTheme(next);
+        if (next === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+    };
+    media.addEventListener("change", handler);
+    return () => media.removeEventListener("change", handler);
   }, [theme, mounted]);
 
   const setTheme = (next: Theme) => {
@@ -49,7 +80,8 @@ export function ThemeProvider({ children, defaultTheme = "system" }: { children:
 
   const toggleTheme = () => {
     setThemeState((prev) => {
-      const next: Theme = prev === "light" ? "dark" : prev === "dark" ? "system" : "light";
+      const next: Theme =
+        prev === "light" ? "dark" : prev === "dark" ? "system" : "light";
       return next;
     });
   };

@@ -108,6 +108,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* When the mobile menu is open, lock body scroll without inline styles. */
+body.menu-open {
+  overflow: hidden;
+}
+
 
 
 

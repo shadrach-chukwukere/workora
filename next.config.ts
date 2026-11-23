@@ -12,7 +12,36 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i.pravatar.cc" },
       { protocol: "https", hostname: "picsum.photos" },
       { protocol: "https", hostname: "fastly.picsum.photos" },
+      // SocialProofBadge hero avatars (unsplash)
+      { protocol: "https", hostname: "images.unsplash.com" },
+      // Vercel Blob - add your production blob hostname here after creating
+      // the blob store (e.g. { protocol: "https", hostname: "workora-blob.vercel.app" })
+      { protocol: "https", hostname: "localhost" },
+      { protocol: "http", hostname: "localhost" },
     ],
+    // Prefer AVIF/WebP, quality 85, and small device sizes to cut transfer.
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // Preconnect to the API origin so the first backend request is faster.
+          {
+            key: "Link",
+            value: `<${apiOrigin}>; rel=preconnect; crossorigin`,
+          },
+          // DNS-prefetch for the image host used by the hero social proof badge.
+          {
+            key: "Link",
+            value: `<https://images.unsplash.com>; rel=dns-prefetch`,
+          },
+        ],
+      },
+    ];
   },
   async rewrites() {
     return {
