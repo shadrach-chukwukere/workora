@@ -10,13 +10,21 @@ declare module "fastify" {
 export default fp(async function rawBodyPlugin(app: FastifyInstance) {
   app.removeContentTypeParser("application/json");
   app.addContentTypeParser("application/json", { parseAs: "buffer" }, function (req, body, done) {
+    const rawBody = body as Buffer;
+    req.rawBody = rawBody;
+    // The browser client always sends `content-type: application/json`, even for
+    // body-less requests (e.g. POST/DELETE /connections/:userId). Treat an empty
+    // body as "no body" instead of letting JSON.parse("") throw a 500.
+    if (rawBody.length === 0 || rawBody.toString().trim() === "") {
+      done(null, undefined);
+      return;
+    }
     try {
-      const rawBody = body as Buffer;
-      const parsed = JSON.parse(rawBody.toString());
-      req.rawBody = rawBody;
-      done(null, parsed);
-    } catch (err) {
-      done(err as Error, null);
+      done(null, JSON.parse(rawBody.toString()));
+    } catch {
+      const error = new Error("Invalid JSON body") as Error & { statusCode: number };
+      error.statusCode = 400;
+      done(error, undefined);
     }
   });
 });
