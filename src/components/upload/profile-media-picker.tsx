@@ -49,7 +49,7 @@ export function ProfileMediaPicker({
     .toUpperCase();
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn(isBanner ? "w-full" : "w-auto shrink-0", className)}>
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm",
