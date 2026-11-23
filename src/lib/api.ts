@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com";
+// Browser calls must stay same-origin so the Better Auth cookie is sent and
+// accepted. Next.js rewrites /api/* to the API; server code uses api-base.ts.
+const API_URL = "";
 
 /**
  * Client-side API helper. Browser code calls this with relative paths

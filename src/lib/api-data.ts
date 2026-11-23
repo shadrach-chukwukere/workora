@@ -66,6 +66,7 @@ export interface PublicFreelancer {
   rating_count: number;
   completed_count: number;
   location: string | null;
+  followers_count?: number;
 }
 
 export interface PublicPlan {

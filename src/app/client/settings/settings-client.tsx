@@ -128,7 +128,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
     if (savingBusiness) return;
     setSavingBusiness(true);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/clients/me", {
+      const res = await fetch(""  + "/api/v1/clients/me", {
         method: "PATCH",
         credentials: "include",
         headers: { "content-type": "application/json" },
@@ -166,7 +166,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
         image: data.image.trim() || null,
         ...toContactPayload(data),
       };
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", {
+      const res = await fetch(""  + "/api/v1/users/me", {
         method: "PATCH",
         credentials: "include",
         headers: { "content-type": "application/json" },

@@ -137,7 +137,7 @@ export default async function FreelancerPublicProfile({
               name={user.name}
               size="3xl"
               alt=""
-              className={`shrink-0 ring-4 ring-white ${user.banner_url ? "-mt-10" : ""}`}
+              className="shrink-0 ring-4 ring-white"
             />
             <div className="min-w-0">
               <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">

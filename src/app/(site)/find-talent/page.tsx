@@ -5,7 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
-import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon } from "@/lib/icons";
+import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon, UserMultiple02Icon } from "@/lib/icons";
 import type { PublicFreelancer } from "@/lib/api-data";
 import { serverApiBase } from "@/lib/api-base";
 
@@ -223,6 +223,13 @@ export default async function FindTalentPage({
                     {freelancer.availability === "available" ? "Open" : freelancer.availability === "limited" ? "Limited" : "Booked"}
                   </span>
                   <p className="mt-3 line-clamp-2 text-sm leading-snug text-neutral-700">{freelancer.headline}</p>
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-neutral-500">
+                    <Icon icon={UserMultiple02Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
+                    <span className="font-semibold text-neutral-800 tabular-nums">
+                      {formatNumber(freelancer.followers_count ?? 0)}
+                    </span>
+                    followers
+                  </p>
                   <div className="mt-auto flex items-center justify-between gap-3 border-t border-neutral-100 pt-4 text-xs text-neutral-500">
                     <span className="text-sm font-semibold text-neutral-900">
                       {freelancer.hourly_rate_minor != null ? `${formatMoney(freelancer.hourly_rate_minor / 100)}/hr` : "Unset"}

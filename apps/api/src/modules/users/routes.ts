@@ -10,6 +10,23 @@ const CONTACT_COLUMNS_SQL = sql`
   u.instagram_url, u.website_url, u.portfolio_url
 `;
 
+type ProfileRow = Record<string, unknown> & {
+  account_type?: "freelancer" | "client" | "admin";
+  freelancer_about?: string | null;
+  client_about?: string | null;
+};
+
+/**
+ * Both profile tables have an `about` column. Selecting them under the same
+ * alias makes the client value overwrite the freelancer value, so map the
+ * role-specific column to the single public `about` field explicitly.
+ */
+function serializeProfileRow(row: ProfileRow) {
+  const { freelancer_about, client_about, ...rest } = row;
+  const about = row.account_type === "client" ? client_about : freelancer_about;
+  return publicUser({ ...rest, about: about ?? null });
+}
+
 export default async function usersRoutes(app: FastifyInstance) {
   /** GET /api/v1/users/me — current user + profile. */
   app.get("/users/me", async (request, reply) => {
@@ -22,15 +39,15 @@ export default async function usersRoutes(app: FastifyInstance) {
     const rows = await sql`
       SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.status, u.created_at,
              ${CONTACT_COLUMNS_SQL},
-             fp.headline, fp.about, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
+             fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
-             cp.company_name, cp.company_size, cp.industry, cp.about, cp.spent_minor, cp.projects_count
+             cp.company_name, cp.company_size, cp.industry, cp.about AS client_about, cp.spent_minor, cp.projects_count
       FROM users u
       LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
       LEFT JOIN client_profiles cp ON cp.user_id = u.id
       WHERE u.id = ${user.id}
     `.execute(instance);
-    reply.send(ok({ user: publicUser(rows.rows[0] as Record<string, unknown>) }));
+    reply.send(ok({ user: serializeProfileRow(rows.rows[0] as ProfileRow) }));
   });
 
   /** PATCH /users/me/account-type — choose role during onboarding (once). */
@@ -237,9 +254,9 @@ export default async function usersRoutes(app: FastifyInstance) {
     const rows = await sql`
       SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.created_at,
              ${CONTACT_COLUMNS_SQL},
-             fp.headline, fp.about, fp.location, fp.hourly_rate_minor, fp.availability,
+             fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
-             cp.company_name, cp.company_size, cp.industry, cp.about, cp.projects_count
+             cp.company_name, cp.company_size, cp.industry, cp.about AS client_about, cp.projects_count
       FROM users u
       LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
       LEFT JOIN client_profiles cp ON cp.user_id = u.id
@@ -249,7 +266,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       reply.status(404).send({ success: false, message: "User not found", error: { code: "NOT_FOUND", details: {} } });
       return;
     }
-    reply.send(ok({ user: publicUser(rows.rows[0] as Record<string, unknown>) }));
+    reply.send(ok({ user: serializeProfileRow(rows.rows[0] as ProfileRow) }));
   });
 
   /** PATCH /api/v1/users/me — update own profile, contact details and links. */

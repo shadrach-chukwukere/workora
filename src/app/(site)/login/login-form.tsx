@@ -113,7 +113,7 @@ export default function LoginForm({
 
     setSubmitting(true);
     try {
-      const signIn = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com") + "/api/auth/sign-in/email", {
+      const signIn = await fetch("" + "/api/auth/sign-in/email", {
         method: "POST",
         headers: {
           "content-type": "application/json",

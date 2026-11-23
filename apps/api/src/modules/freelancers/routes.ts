@@ -219,6 +219,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
         "fp.rating_count",
         "fp.completed_count",
         "fp.location",
+        sql<number>`(SELECT count(*)::int FROM connections c WHERE c.following_id = u.id)`.as("followers_count"),
       ]);
 
     switch (sort) {

@@ -10,6 +10,7 @@ import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { LogoMark } from "@/components/ui/logo";
 // Dark mode removed — light mode only.
 import { navForRole } from "@/lib/navigation";
+import { api } from "@/lib/api";
 import {
   Alert02Icon,
   Analytics02Icon,
@@ -303,9 +304,9 @@ function NotificationsBell({
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/notifications", { cache: "no-store", credentials: "include" });
-        const json = (await res.json()) as { success: boolean; data?: { notifications: NotificationPayload[] } };
-        if (!cancelled && json?.success && json.data) setItems(json.data.notifications);
+        // Same-origin request so the Better Auth cookie is included and accepted.
+        const data = await api<{ notifications: NotificationPayload[] }>("/api/v1/notifications");
+        if (!cancelled) setItems(data.notifications);
       } catch {
         // keep previous list on network error
       } finally {
@@ -320,7 +321,7 @@ function NotificationsBell({
 
   const markAllRead = async () => {
     setItems((list) => list.map((n) => ({ ...n, is_read: true })));
-    await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/notifications/mark-all-read", { method: "POST", credentials: "include" }).catch(() => {});
+    await api("/api/v1/notifications/mark-all-read", { method: "POST" }).catch(() => {});
   };
 
   const openItem = (n: NotificationPayload) => {
