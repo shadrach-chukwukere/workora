@@ -11,8 +11,10 @@ import { Logo } from "@/components/ui/logo";
 import { workspacePathForRole } from "@/lib/workspace";
 import {
   ArrowRight02Icon,
+  BiometricAccessIcon,
   Icon,
 } from "@/lib/icons";
+import { signInWithPasskey } from "@/lib/webauthn";
 import type { Role } from "@/lib/types";
 /**
  * Social sign-in via Better Auth. The request is same-origin (relative URL) so
@@ -67,6 +69,38 @@ export default function LoginForm({
     {},
   );
   const [submitting, setSubmitting] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+  async function routeAfterSignIn() {
+    const me = await fetch("/api/v1/users/me", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const meBody = (await me.json().catch(() => null)) as {
+      data?: { user?: { account_type?: string } };
+    } | null;
+    const actualRole = (meBody?.data?.user?.account_type as Role | undefined) ?? role;
+    toast.success("Welcome back");
+    router.push(workspacePathForRole(actualRole));
+    router.refresh();
+  }
+
+  async function onPasskeySignIn() {
+    if (!EMAIL_RE.test(email.trim())) {
+      setErrors({ email: "Enter your email to use a passkey" });
+      return;
+    }
+    setErrors({});
+    setPasskeyLoading(true);
+    try {
+      await signInWithPasskey(email.trim().toLowerCase());
+      await routeAfterSignIn();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Passkey sign-in failed");
+    } finally {
+      setPasskeyLoading(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -99,18 +133,7 @@ export default function LoginForm({
         return;
       }
 
-      const me = await fetch(process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com" + "/api/v1/users/me", {
-        credentials: "include",
-        cache: "no-store",
-      });
-      const meBody = (await me.json()) as {
-        data?: { user?: { account_type?: string } };
-      };
-      const actualRole =
-        (meBody.data?.user?.account_type as Role | undefined) ?? role;
-      toast.success("Welcome back");
-      router.push(workspacePathForRole(actualRole));
-      router.refresh();
+      await routeAfterSignIn();
     } catch {
       toast.error("Sign-in failed. Check your connection and try again.");
       setSubmitting(false);
@@ -179,10 +202,29 @@ export default function LoginForm({
             </Button>
           </form>
 
-          {/* Social login buttons */}
+          {/* Social + passkey login */}
           <div className="mt-4 flex flex-wrap gap-2">
             <GoogleAuthButton onClick={signInWithGoogle} />
             <GitHubAuthButton onClick={signInWithGitHub} />
+          </div>
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              loading={passkeyLoading}
+              onClick={onPasskeySignIn}
+              className="w-full"
+              title="Use your device biometrics, PIN or security key"
+            >
+              {!passkeyLoading ? (
+                <Icon icon={BiometricAccessIcon} size={17} strokeWidth={1.8} />
+              ) : null}
+              Sign in with a passkey
+            </Button>
+            <p className="mt-2 text-center text-[11px] text-neutral-500">
+              Enter your email above, then confirm with Face ID, fingerprint, PIN or a security key.
+            </p>
           </div>
 
           <p className="mt-4 border-t border-neutral-200 pt-4 text-sm text-neutral-600 text-center">

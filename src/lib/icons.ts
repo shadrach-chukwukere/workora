@@ -47,6 +47,7 @@ export {
  Logout01Icon,
  ShieldCheckIcon,
  SecurityCheckIcon,
+ BiometricAccessIcon,
  Edit02Icon,
  Pen01Icon,
  TrashIcon,

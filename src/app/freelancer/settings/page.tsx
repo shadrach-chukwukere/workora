@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_OPTIONS } from "@/lib/constants";
 import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
+import { PasskeyManager } from "@/components/auth/passkey-manager";
 import { IdentityVerificationCard } from "@/components/verification/identity-verification";
 import { PaystackPayoutCard } from "@/components/payout/paystack-payout";
 
@@ -123,7 +124,12 @@ export default function FreelancerSettingsPage() {
 
       {!loading && me ? (
         <>
-          {tab === "profile" ? <ProfileTab me={me} onSaved={load} /> : null}
+          {tab === "profile" ? (
+            <>
+              <ProfileTab me={me} onSaved={load} />
+              <PasskeyManager />
+            </>
+          ) : null}
           {tab === "freelancer" ? (
             <>
               <FreelancerTab me={me} onSaved={load} />

@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Building01Icon, Icon, UserAccountIcon } from "@/lib/icons";
 import { formatMoney } from "@/lib/format";
 import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
+import { PasskeyManager } from "@/components/auth/passkey-manager";
 
 export interface BusinessInitial {
   companyName: string;
@@ -258,6 +259,8 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
           </Button>
         </div>
       </form>
+
+      <PasskeyManager />
     </div>
   );
 }

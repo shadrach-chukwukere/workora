@@ -226,6 +226,19 @@ export interface ProjectsTable {
   updated_at: Timestamp;
 }
 
+export interface PasskeysTable {
+  id: Generated<string>;
+  user_id: string;
+  credential_id: string;
+  public_key: string;
+  counter: Generated<number>;
+  transports: string | null;
+  device_type: Generated<string>;
+  backed_up: Generated<boolean>;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
 export interface ProjectSkillsTable {
   project_id: string;
   skill_id: string;
@@ -626,6 +639,7 @@ export interface DB {
   sessions: SessionsTable;
   accounts: AccountsTable;
   verifications: VerificationsTable;
+  passkeys: PasskeysTable;
   permissions: PermissionsTable;
   roles: RolesTable;
   role_permissions: RolePermissionsTable;
