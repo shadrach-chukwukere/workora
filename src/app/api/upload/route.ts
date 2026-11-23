@@ -52,8 +52,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({
       url: blob.url,
       pathname: blob.pathname,
-      size: blob.size,
-      contentType: blob.contentType,
+      size: body.byteLength,
+      contentType,
     });
   } catch (error) {
     console.error("Blob upload error:", error);
