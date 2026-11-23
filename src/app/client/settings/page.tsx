@@ -8,6 +8,13 @@ interface MeResponse {
     name: string;
     email: string;
     image: string | null;
+    phone: string | null;
+    github_url: string | null;
+    linkedin_url: string | null;
+    twitter_url: string | null;
+    instagram_url: string | null;
+    website_url: string | null;
+    portfolio_url: string | null;
     account_type: string;
     company_name: string | null;
     company_size: string | null;
@@ -70,6 +77,13 @@ export default async function ClientSettingsPage() {
     accountType: user.account_type,
     spentMinor: Number(user.spent_minor ?? 0),
     projectsCount: Number(user.projects_count ?? 0),
+    phone: user.phone,
+    github_url: user.github_url,
+    linkedin_url: user.linkedin_url,
+    twitter_url: user.twitter_url,
+    instagram_url: user.instagram_url,
+    website_url: user.website_url,
+    portfolio_url: user.portfolio_url,
   };
 
   return <SettingsClient business={business} account={account} />;

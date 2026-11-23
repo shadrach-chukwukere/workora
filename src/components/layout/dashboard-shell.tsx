@@ -42,6 +42,7 @@ import {
 } from "@/lib/icons";
 import type { IconName } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { signOut } from "@/lib/sign-out";
 
 type AccountRole = "freelancer" | "client" | "admin";
 
@@ -112,6 +113,7 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -120,6 +122,13 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
 
   const userId = account.userId;
   const sections = navForRole[role];
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    toast.success("Signed out");
+    await signOut("/login");
+  }
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -209,14 +218,10 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
               { type: "separator" },
               {
                 type: "item" as const,
-                label: "Sign out",
+                label: signingOut ? "Signing out…" : "Sign out",
                 danger: true,
-                onClick: () => {
-                  fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
-                  toast.success("Signed out");
-                  router.push("/login");
-                  router.refresh();
-                },
+                disabled: signingOut,
+                onClick: handleSignOut,
               },
             ]}
           />

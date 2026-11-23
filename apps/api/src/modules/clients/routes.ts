@@ -9,7 +9,9 @@ export default async function clientsRoutes(app: FastifyInstance) {
   app.get("/clients/:id", async (request, reply) => {
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.image, cp.company_name, cp.company_size, cp.industry, cp.about, cp.rating_avg, cp.rating_count, cp.projects_count, u.created_at
+      SELECT u.id, u.name, u.image, u.phone, u.github_url, u.linkedin_url, u.twitter_url,
+             u.instagram_url, u.website_url, u.portfolio_url,
+             cp.company_name, cp.company_size, cp.industry, cp.about, cp.rating_avg, cp.rating_count, cp.projects_count, u.created_at
       FROM users u JOIN client_profiles cp ON cp.user_id = u.id
       WHERE u.id = ${(request.params as { id: string }).id} AND u.status = 'active' AND u.account_type = 'client'
     `.execute(instance);

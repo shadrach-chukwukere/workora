@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
-import { Building01Icon, Icon, UserAccountIcon } from "@/lib/icons";
+import { Building01Icon, Icon, Link01Icon, UserAccountIcon } from "@/lib/icons";
+import { CONTACT_LINK_FIELDS, contactSchema, toContactPayload } from "@/lib/contact";
 import { formatMoney } from "@/lib/format";
 import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
 import { PasskeyManager } from "@/components/auth/passkey-manager";
@@ -29,6 +30,13 @@ export interface AccountInitial {
   accountType: string;
   spentMinor: number;
   projectsCount: number;
+  phone: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  website_url: string | null;
+  portfolio_url: string | null;
 }
 
 const businessSchema = z.object({
@@ -42,6 +50,7 @@ type BusinessForm = z.infer<typeof businessSchema>;
 const accountSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(120, "Name is too long"),
   image: z.string().trim().url("Enter a valid URL, e.g. https://…/avatar.png").or(z.literal("")),
+  ...contactSchema.shape,
 });
 type AccountForm = z.infer<typeof accountSchema>;
 
@@ -99,7 +108,17 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
 
   const accountForm = useForm<AccountForm>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { name: account.name, image: account.image },
+    defaultValues: {
+      name: account.name,
+      image: account.image,
+      phone: account.phone ?? "",
+      github_url: account.github_url ?? "",
+      linkedin_url: account.linkedin_url ?? "",
+      twitter_url: account.twitter_url ?? "",
+      instagram_url: account.instagram_url ?? "",
+      website_url: account.website_url ?? "",
+      portfolio_url: account.portfolio_url ?? "",
+    },
   });
   const accountName = accountForm.watch("name");
   const accountImage = accountForm.watch("image");
@@ -142,8 +161,11 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
     if (savingAccount) return;
     setSavingAccount(true);
     try {
-      const payload: Record<string, string> = { name: data.name.trim() };
-      if (data.image.trim()) payload.image = data.image.trim();
+      const payload: Record<string, string | null> = {
+        name: data.name.trim(),
+        image: data.image.trim() || null,
+        ...toContactPayload(data),
+      };
       const res = await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/v1/users/me", {
         method: "PATCH",
         credentials: "include",
@@ -159,6 +181,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
         toast.error("Account not saved", { description: envelopeMessage(body, "The server rejected the update.") });
         return;
       }
+      accountForm.reset(data);
       toast.success(envelopeMessage(body, "Profile updated"));
       router.refresh();
     } catch {
@@ -243,6 +266,39 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
             <Input {...accountForm.register("name")} />
           </Field>
         </div>
+        <div className="border-t border-neutral-100 pt-5">
+          <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+            <Icon icon={Link01Icon} size={16} strokeWidth={1.8} />
+            Contact & links
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
+            Add your phone number and profiles so clients and collaborators can reach you.
+          </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field label="Phone number" hint="Shown on your public profile." error={accountForm.formState.errors.phone?.message}>
+              <Input type="tel" placeholder="+1 555 000 1234" {...accountForm.register("phone")} />
+            </Field>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {CONTACT_LINK_FIELDS.map((field) => (
+              <Field key={field.key} label={field.label} error={accountForm.formState.errors[field.key]?.message}>
+                <Input
+                  type="url"
+                  inputMode="url"
+                  placeholder={field.placeholder}
+                  {...accountForm.register(field.key)}
+                />
+              </Field>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs text-neutral-500">
+            Your email <span className="font-medium text-neutral-700">{account.email}</span> is used for sign-in and shown on your public profile.
+          </p>
+        </div>
+
         <dl className="grid gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-[13px] sm:grid-cols-2">
           <div>
             <dt className="text-[11px] font-medium uppercase tracking-wide text-neutral-400">Lifetime spend</dt>

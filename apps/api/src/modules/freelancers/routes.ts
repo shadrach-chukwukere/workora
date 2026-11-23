@@ -14,12 +14,16 @@ export default async function freelancersRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const profileRows = await sql<{
-      id: string; name: string; image: string | null; banner_url: string | null; created_at: Date;
+      id: string; name: string; email: string; image: string | null; banner_url: string | null; created_at: Date;
+      phone: string | null; github_url: string | null; linkedin_url: string | null; twitter_url: string | null;
+      instagram_url: string | null; website_url: string | null; portfolio_url: string | null;
       headline: string; about: string; location: string | null; hourly_rate_minor: string | null; availability: string;
       response_time_hours: number; experience_level: string | null; verified_identity: boolean;
       rating_avg: string | null; rating_count: number; completed_count: number;
     }>`
-      SELECT u.id, u.name, u.image, u.banner_url, u.created_at,
+      SELECT u.id, u.name, u.email, u.image, u.banner_url, u.created_at,
+             u.phone, u.github_url, u.linkedin_url, u.twitter_url,
+             u.instagram_url, u.website_url, u.portfolio_url,
              fp.headline, fp.about, fp.location, fp.hourly_rate_minor::text AS hourly_rate_minor, fp.availability,
              fp.response_time_hours, fp.experience_level, fp.verified_identity,
              fp.rating_avg, fp.rating_count, fp.completed_count
@@ -63,6 +67,16 @@ export default async function freelancersRoutes(app: FastifyInstance) {
         rating_avg: owner.rating_avg === null ? null : Number(owner.rating_avg),
         rating_count: owner.rating_count,
         completed_count: owner.completed_count,
+      },
+      contact: {
+        email: owner.email,
+        phone: owner.phone,
+        github_url: owner.github_url,
+        linkedin_url: owner.linkedin_url,
+        twitter_url: owner.twitter_url,
+        instagram_url: owner.instagram_url,
+        website_url: owner.website_url,
+        portfolio_url: owner.portfolio_url,
       },
       skills,
       portfolio,

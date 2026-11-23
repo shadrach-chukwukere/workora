@@ -16,6 +16,8 @@ import {
   StarIcon,
 } from "@/lib/icons";
 import { apiServerOr } from "@/lib/api-data";
+import { ContactLinks } from "@/components/profile/contact-links";
+import type { ContactDetails } from "@/lib/contact";
 
 interface PublicProfile {
   user: { id: string; name: string; image: string | null; banner_url: string | null; created_at: string };
@@ -32,6 +34,7 @@ interface PublicProfile {
     rating_count: number;
     completed_count: number;
   };
+  contact: ContactDetails;
   skills: { slug: string; name: string }[];
   portfolio: {
     id: string;
@@ -81,7 +84,7 @@ export default async function FreelancerPublicProfile({
   );
   const reviews = reviewsEnvelope.reviews ?? [];
 
-  const { user, profile, skills, portfolio, experience, education, certifications } = data;
+  const { user, profile, contact, skills, portfolio, experience, education, certifications } = data;
   const hourly = profile.hourly_rate_minor != null ? profile.hourly_rate_minor / 100 : null;
   const availabilityLabel =
     profile.availability === "available" ? "Available now" : profile.availability === "limited" ? "Limited availability" : "Fully booked";
@@ -372,6 +375,9 @@ export default async function FreelancerPublicProfile({
               </div>
             </dl>
           </section>
+
+          {/* Contact details and social links */}
+          <ContactLinks contact={contact} />
 
           {/* Payment honesty */}
           <section className="rounded-xl border border-brand-100 bg-brand-50/50 p-6">

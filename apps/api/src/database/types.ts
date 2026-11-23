@@ -12,6 +12,13 @@ export interface UsersTable {
   email_verified: ColumnType<boolean, boolean | undefined, boolean | undefined>;
   image: string | null;
   banner_url: string | null;
+  phone: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  website_url: string | null;
+  portfolio_url: string | null;
   account_type: ColumnType<"freelancer" | "client" | "admin", "freelancer" | "client" | "admin" | undefined, "freelancer" | "client" | "admin" | undefined>;
   status: Generated<"active" | "suspended" | "restricted">;
   failed_logins: Generated<number>;

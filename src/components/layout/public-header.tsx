@@ -12,6 +12,7 @@ import { publicNav } from "@/lib/navigation";
 import { Icon, Logout01Icon, Menu01Icon, Search01Icon, MultiplicationSignIcon, Home01Icon, Settings01Icon } from "@/lib/icons";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
+import { signOut } from "@/lib/sign-out";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -25,6 +26,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (menuOpen) {
@@ -46,12 +48,12 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
   const workspace = workspacePathForRole(account?.role);
   const settingsHref = account ? `/${account.role}/settings` : "/login";
 
-  const signOut = async () => {
-    await fetch((process.env.NEXT_PUBLIC_API_URL ?? "https://workora-backend-x5il.onrender.com")  + "/api/auth/sign-out", { method: "POST", credentials: "include" }).catch(() => {});
-    toast.success("Signed out");
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
     setMenuOpen(false);
-    router.push("/");
-    router.refresh();
+    toast.success("Signed out");
+    await signOut("/login");
   };
 
   const accountItems = account
@@ -60,7 +62,13 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
         { type: "item" as const, label: "Open dashboard", onClick: () => router.push(workspace) },
         { type: "item" as const, label: "Account settings", onClick: () => router.push(settingsHref) },
         { type: "separator" as const },
-        { type: "item" as const, label: "Sign out", danger: true, onClick: signOut },
+        {
+          type: "item" as const,
+          label: signingOut ? "Signing out…" : "Sign out",
+          danger: true,
+          disabled: signingOut,
+          onClick: handleSignOut,
+        },
       ]
     : [];
 
@@ -199,11 +207,12 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               {account ? (
                 <button
                   type="button"
-                  onClick={signOut}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50"
                 >
                   <Icon icon={Logout01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
-                  Sign out
+                  {signingOut ? "Signing out…" : "Sign out"}
                 </button>
               ) : (
                 <div className="flex items-center gap-2">

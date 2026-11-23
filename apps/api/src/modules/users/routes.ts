@@ -3,6 +3,12 @@ import { sql } from "kysely";
 import { ok } from "../common/index.js";
 import { db } from "../../database/connection.js";
 import { publicUser } from "../../utils/serializers.js";
+import { updateMeSchema } from "./schemas.js";
+
+const CONTACT_COLUMNS_SQL = sql`
+  u.phone, u.github_url, u.linkedin_url, u.twitter_url,
+  u.instagram_url, u.website_url, u.portfolio_url
+`;
 
 export default async function usersRoutes(app: FastifyInstance) {
   /** GET /api/v1/users/me — current user + profile. */
@@ -15,6 +21,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     const instance = await db();
     const rows = await sql`
       SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.status, u.created_at,
+             ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
              cp.company_name, cp.company_size, cp.industry, cp.spent_minor, cp.projects_count
@@ -229,6 +236,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     const instance = await db();
     const rows = await sql`
       SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.created_at,
+             ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
              cp.company_name, cp.company_size, cp.industry, cp.projects_count
@@ -244,30 +252,40 @@ export default async function usersRoutes(app: FastifyInstance) {
     reply.send(ok({ user: publicUser(rows.rows[0] as Record<string, unknown>) }));
   });
 
-  /** PATCH /api/v1/users/me — update own name/image/about-visible info. */
+  /** PATCH /api/v1/users/me — update own profile, contact details and links. */
   app.patch("/users/me", async (request, reply) => {
     const user = request.currentUser;
     if (!user) {
       reply.status(401).send({ success: false, message: "Authentication required", error: { code: "UNAUTHENTICATED", details: {} } });
       return;
     }
-    const body = request.body as { name?: string; image?: string | null; banner_url?: string | null };
-    if (typeof body.name === "string" && body.name.trim().length < 2) {
-      reply.status(400).send({ success: false, message: "Name must be at least 2 characters", error: { code: "VALIDATION_ERROR", details: { field: "name" } } });
+    const parsed = updateMeSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      reply.status(400).send({
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Validation failed",
+        error: {
+          code: "VALIDATION_ERROR",
+          details: { issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })) },
+        },
+      });
       return;
     }
-    const instance = await db();
-    if (typeof body.name === "string") {
-      await sql`UPDATE users SET name = ${body.name.trim()} WHERE id = ${user.id}`.execute(instance);
+
+    const values = parsed.data;
+    // Only fields actually sent by the client are written; null clears a field.
+    const updates: Record<string, string | null> = {};
+    for (const [key, value] of Object.entries(values)) {
+      if (value !== undefined) updates[key] = value;
     }
-    // Null or an empty string clears the stored URL; invalid types are ignored.
-    if ("image" in body) {
-      const value = typeof body.image === "string" ? body.image.trim() || null : null;
-      await sql`UPDATE users SET image = ${value} WHERE id = ${user.id}`.execute(instance);
-    }
-    if ("banner_url" in body) {
-      const value = typeof body.banner_url === "string" ? body.banner_url.trim() || null : null;
-      await sql`UPDATE users SET banner_url = ${value} WHERE id = ${user.id}`.execute(instance);
+
+    if (Object.keys(updates).length > 0) {
+      // Keys come from the zod schema above, so they are safe to use as column identifiers.
+      const assignments = Object.entries(updates).map(
+        ([column, value]) => sql`${sql.ref(column)} = ${value}`,
+      );
+      const instance = await db();
+      await sql`UPDATE users SET ${sql.join(assignments, sql`, `)} WHERE id = ${user.id}`.execute(instance);
     }
     reply.send(ok(null, "Profile updated"));
   });

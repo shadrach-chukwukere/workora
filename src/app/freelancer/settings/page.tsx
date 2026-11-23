@@ -16,6 +16,8 @@ import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
 import { PasskeyManager } from "@/components/auth/passkey-manager";
 import { IdentityVerificationCard } from "@/components/verification/identity-verification";
 import { PaystackPayoutCard } from "@/components/payout/paystack-payout";
+import { CONTACT_LINK_FIELDS, contactSchema, toContactPayload } from "@/lib/contact";
+import { Icon, Link01Icon } from "@/lib/icons";
 
 type TabId = "profile" | "freelancer";
 
@@ -30,6 +32,13 @@ interface MeUser {
   email: string;
   image: string | null;
   banner_url: string | null;
+  phone: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  website_url: string | null;
+  portfolio_url: string | null;
   headline: string | null;
   location: string | null;
   hourly_rate_minor: number | null;
@@ -147,6 +156,7 @@ const profileSchema = z.object({
   name: z.string().min(2, "Enter your full name"),
   image: z.string().trim().url("Enter a valid image URL").or(z.literal("")),
   bannerUrl: z.string().trim().url("Enter a valid image URL").or(z.literal("")),
+  ...contactSchema.shape,
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -165,6 +175,13 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
       name: me.name,
       image: me.image ?? "",
       bannerUrl: me.banner_url ?? "",
+      phone: me.phone ?? "",
+      github_url: me.github_url ?? "",
+      linkedin_url: me.linkedin_url ?? "",
+      twitter_url: me.twitter_url ?? "",
+      instagram_url: me.instagram_url ?? "",
+      website_url: me.website_url ?? "",
+      portfolio_url: me.portfolio_url ?? "",
     },
   });
 
@@ -176,7 +193,12 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: values.name.trim(), image: values.image.trim() === "" ? null : values.image.trim(), banner_url: values.bannerUrl.trim() === "" ? null : values.bannerUrl.trim() }),
+      body: JSON.stringify({
+        name: values.name.trim(),
+        image: values.image.trim() === "" ? null : values.image.trim(),
+        banner_url: values.bannerUrl.trim() === "" ? null : values.bannerUrl.trim(),
+        ...toContactPayload(values),
+      }),
     });
     if (res.status === 401) {
       window.location.href = "/login";
@@ -245,6 +267,41 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
               toast.success("Banner uploaded");
             }}
           />
+        </div>
+
+        {/* Contact & links */}
+        <div className="mt-7 border-t border-neutral-100 pt-6">
+          <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+            <Icon icon={Link01Icon} size={16} strokeWidth={1.8} />
+            Contact & links
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
+            Add the places clients can find or reach you. These appear on your public profile.
+          </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field label="Phone number" hint="Shown on your public profile." error={errors.phone?.message}>
+              <Input id="settings-phone" type="tel" placeholder="+1 555 000 1234" {...register("phone")} />
+            </Field>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {CONTACT_LINK_FIELDS.map((field) => (
+              <Field key={field.key} label={field.label} error={errors[field.key]?.message}>
+                <Input
+                  id={`settings-${field.key}`}
+                  type="url"
+                  inputMode="url"
+                  placeholder={field.placeholder}
+                  {...register(field.key)}
+                />
+              </Field>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs text-neutral-500">
+            Your email <span className="font-medium text-neutral-700">{me.email}</span> is used for sign-in and shown on your public profile.
+          </p>
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">
