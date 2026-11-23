@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-dvh bg-white font-sans text-neutral-900 antialiased">
-        <ThemeProvider defaultTheme="system">{children}</ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
         <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font-geist-sans)" } }} />
       </body>
     </html>

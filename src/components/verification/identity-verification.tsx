@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/form";
-import { StampIcon, AlertTriangleIcon, CheckCircleIcon, PlusSignIcon, SendIcon } from "@/lib/icons";
+import { Alert02Icon, CheckmarkCircle02Icon, File01Icon, SentIcon, StampIcon } from "@/lib/icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 
@@ -69,20 +69,20 @@ export function IdentityVerificationCard({ onVerified }: IdentityVerificationCar
   const canResubmit = latest?.status === "info_requested";
   const isVerified = latest?.status === "approved";
 
-  const handleDragOver = (e: DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(true);
   };
 
-  const handleDragLeave = (e: DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
   };
 
-  const handleDrop = (e: DragEvent) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
-    const droppedFile = e.dataTransfer.files[0];
+    const droppedFile = e.dataTransfer?.files?.[0];
     if (droppedFile) handleFileSelect(droppedFile);
   };
 
@@ -172,7 +172,7 @@ export function IdentityVerificationCard({ onVerified }: IdentityVerificationCar
         </div>
         {isVerified ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-            <span className="size-3 shrink-0"><CheckCircleIcon /></span>
+            <span className="size-3 shrink-0"><HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={2} /></span>
             Verified
           </span>
         ) : null}
@@ -256,7 +256,7 @@ export function IdentityVerificationCard({ onVerified }: IdentityVerificationCar
                     : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200",
                 )}
               >
-                <HugeiconsIcon icon={SendIcon} size={22} strokeWidth={2} />
+                <HugeiconsIcon icon={File01Icon} size={22} strokeWidth={2} />
               </div>
               <div>
                 {file ? (
@@ -296,7 +296,7 @@ export function IdentityVerificationCard({ onVerified }: IdentityVerificationCar
           {error ? (
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
               <div className="flex items-start gap-2">
-                <AlertTriangleIcon size={16} className="mt-0.5 text-rose-600" />
+                <HugeiconsIcon icon={Alert02Icon} size={16} strokeWidth={2} className="mt-0.5 text-rose-600" />
                 <p className="text-sm text-rose-700">{error}</p>
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
@@ -13,11 +14,13 @@ import {
   Edit02Icon,
   ExternalLinkIcon,
   Icon,
+  Image02Icon,
   MoreVerticalIcon,
   PlusSignIcon,
   TrashIcon,
 } from "@/lib/icons";
 import { useBlobUpload } from "@/components/upload/blob-upload";
+import { cn } from "@/lib/utils";
 
 interface PortfolioItemDto {
   id: string;
@@ -138,8 +141,6 @@ export default function FreelancerPortfolioPage() {
         });
         toast.success("Portfolio item added");
       }
-      setPortfolioImageUrl(null);
-      setPortfolioImageFile(null);
       await load();
     } catch (cause) {
       if (cause instanceof Error && cause.name === "AuthRequired") {
@@ -364,10 +365,10 @@ function PortfolioEditor({
   const tagsValid = tags.split(",").map((t) => t.trim()).filter(Boolean).length > 0;
   const canSave = titleValid && tagsValid && yearValid && description.trim().length >= 10 && !saving;
 
-  const handleImageDrop = (e: DragEvent) => {
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setImageDragActive(false);
-    const f = e.dataTransfer.files?.[0];
+    const f = e.dataTransfer?.files?.[0];
     if (f) {
       if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
         setImageUploadError("Only JPEG, PNG and WebP images are allowed.");
@@ -484,7 +485,7 @@ function PortfolioEditor({
                     Remove
                   </button>
                 </>
-              : (
+              ) : (
                   <>
                     <p className="text-sm font-medium text-neutral-900">Drag & drop cover image</p>
                     <p className="text-xs text-neutral-500">or click to browse</p>
@@ -509,7 +510,6 @@ function PortfolioEditor({
               <Input id="portfolio-link" type="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
             </Field>
           </div>
-        </div>
       </div>
     </Modal>
   );

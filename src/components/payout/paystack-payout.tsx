@@ -103,7 +103,7 @@ export function PaystackPayoutCard() {
       {!loading && error ? (
         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4" role="alert">
           <div className="flex items-start gap-2">
-            <Alert02Icon size={16} className="mt-0.5 text-rose-600" />
+            <HugeiconsIcon icon={Alert02Icon} size={16} strokeWidth={2} className="mt-0.5 text-rose-600" />
             <p className="text-sm text-rose-700">{error}</p>
           </div>
         </div>

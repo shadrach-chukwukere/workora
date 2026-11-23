@@ -18,6 +18,7 @@ import {
   Briefcase02Icon,
   CheckListIcon,
   Icon,
+  Image02Icon,
   MagicWand02Icon,
   Tick02Icon,
 } from "@/lib/icons";
@@ -420,7 +421,7 @@ export default function PostProjectPage() {
                             <p className="text-sm font-semibold">{coverImageFile.name}</p>
                             <p className="text-xs text-neutral-500">{Math.round(coverImageFile.size / 1024)} KB</p>
                           </>
-                        : (
+                        ) : (
                           <>
                             <p className="text-sm font-medium text-neutral-900">
                               Drag & drop cover image
