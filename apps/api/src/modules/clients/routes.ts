@@ -32,10 +32,17 @@ export default async function clientsRoutes(app: FastifyInstance) {
     }
     const body = request.body as { company_name?: string; company_size?: string; industry?: string; about?: string; website?: string };
     const updates: Partial<{ company_name: string | null; company_size: "1-10" | "11-50" | "51-200" | "201-1000" | "1000+" | null; industry: string | null; about: string }> = {};
-    if (typeof body.company_name === "string") updates.company_name = body.company_name;
+    if (typeof body.company_name === "string") updates.company_name = body.company_name.trim();
     if (typeof body.company_size === "string") updates.company_size = body.company_size as typeof updates.company_size;
     if (typeof body.industry === "string") updates.industry = body.industry;
-    if (typeof body.about === "string") updates.about = body.about;
+    if (typeof body.about === "string") {
+      const about = body.about.trim();
+      if (about.length > 5000) {
+        reply.status(400).send({ success: false, message: "about must be 5000 characters or fewer", error: { code: "VALIDATION_ERROR", details: { field: "about" } } });
+        return;
+      }
+      updates.about = about;
+    }
     if (Object.keys(updates).length === 0) {
       reply.status(400).send({ success: false, message: "Nothing to update", error: { code: "BAD_REQUEST", details: {} } });
       return;

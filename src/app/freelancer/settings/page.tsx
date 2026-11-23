@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/form";
+import { Field, Input, Textarea } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ interface MeUser {
   website_url: string | null;
   portfolio_url: string | null;
   headline: string | null;
+  about: string | null;
   location: string | null;
   hourly_rate_minor: number | null;
   availability: "available" | "limited" | "unavailable" | null;
@@ -319,6 +320,7 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
 
 const freelancerSchema = z.object({
   headline: z.string().min(4, "Headline is too short"),
+  about: z.string().trim().max(5000, "Keep your About under 5,000 characters"),
   location: z.string().min(2, "Enter your location"),
   hourlyRate: z.number().min(0, "Rate cannot be negative").max(10000, "Keep it under $10,000"),
   availability: z.enum(["available", "limited", "unavailable"]),
@@ -339,6 +341,7 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
     resolver: zodResolver(freelancerSchema),
     defaultValues: {
       headline: me.headline ?? "",
+      about: me.about ?? "",
       location: me.location ?? "",
       hourlyRate: me.hourly_rate_minor === null ? 0 : me.hourly_rate_minor / 100,
       availability: me.availability ?? "available",
@@ -347,6 +350,7 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
   });
 
   const availability = watch("availability");
+  const aboutLength = (watch("about") ?? "").length;
 
   async function onSubmit(values: FreelancerValues) {
     const res = await fetch("/api/v1/freelancers/me", {
@@ -355,6 +359,7 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         headline: values.headline.trim(),
+        about: values.about.trim(),
         location: values.location.trim(),
         hourly_rate_minor: Math.round(values.hourlyRate * 100),
         availability: values.availability,
@@ -384,8 +389,20 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl border border-neutral-200 bg-white max-w-3xl p-6">
-      <Field label="Headline" required error={errors.headline?.message} hint="One line clients see in search results.">
+      <Field label="Headline" required error={errors.headline?.message} hint="Your public short note. Shown below your name, not on your banner.">
         <Input id="settings-headline" placeholder="Product engineer for SaaS teams" {...register("headline")} />
+      </Field>
+      <Field
+        label="About"
+        error={errors.about?.message}
+        hint={`Public. Tell clients what you do, your experience and how you work. ${aboutLength}/5000`}
+      >
+        <Textarea
+          id="settings-about"
+          rows={6}
+          placeholder="I help early-stage teams ship reliable web products…"
+          {...register("about")}
+        />
       </Field>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Field label="Location" required error={errors.location?.message}>

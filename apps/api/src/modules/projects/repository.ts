@@ -313,6 +313,7 @@ export interface ApiClientSummary {
   companyName: string | null;
   companySize: string | null;
   industry: string | null;
+  about: string | null;
   ratingAvg: number | null;
   ratingCount: number;
   projectsCount: number;
@@ -331,6 +332,7 @@ export async function getClientSummary(db: Db, clientId: string): Promise<ApiCli
       "cp.company_name as company_name",
       "cp.company_size as company_size",
       "cp.industry as industry",
+      "cp.about as about",
       "cp.rating_avg as rating_avg",
       "cp.rating_count as rating_count",
       "cp.projects_count as projects_count",
@@ -345,6 +347,7 @@ export async function getClientSummary(db: Db, clientId: string): Promise<ApiCli
     companyName: row.company_name ?? null,
     companySize: row.company_size ?? null,
     industry: row.industry ?? null,
+    about: row.about ?? null,
     ratingAvg: toNullableNumber(row.rating_avg as string | number | null),
     ratingCount: row.rating_count ?? 0,
     projectsCount: row.projects_count ?? 0,

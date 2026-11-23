@@ -34,6 +34,7 @@ interface ProjectClient {
   companyName: string | null;
   companySize: string | null;
   industry: string | null;
+  about: string | null;
   ratingAvg: number | null;
   ratingCount: number | null;
   projectsCount: number | null;
@@ -278,6 +279,21 @@ export default async function ProjectPage({
                   <dd className="mt-0.5 text-lg font-semibold text-neutral-900">{clientSince ?? "-"}</dd>
                 </div>
               </dl>
+              <div className="mt-5 border-t border-neutral-100 pt-5">
+                <p className="text-sm font-semibold text-neutral-900">About</p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
+                  {client?.about?.trim() || "This client hasn’t added an About yet."}
+                </p>
+                {client?.id ? (
+                  <Link
+                    href={`/clients/${client.id}`}
+                    className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800"
+                  >
+                    View public profile
+                    <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
+                  </Link>
+                ) : null}
+              </div>
             </section>
           </div>
 

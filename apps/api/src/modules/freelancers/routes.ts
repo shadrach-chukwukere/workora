@@ -99,11 +99,16 @@ export default async function freelancersRoutes(app: FastifyInstance) {
     }
     const body = request.body as {
       headline?: string;
+      about?: string;
       location?: string;
       hourly_rate_minor?: number | null;
       availability?: "available" | "limited" | "unavailable";
       response_time_hours?: number;
     };
+    if (body.about !== undefined && body.about.trim().length > 5000) {
+      reply.status(400).send({ success: false, message: "about must be 5000 characters or fewer", error: { code: "VALIDATION_ERROR", details: { field: "about" } } });
+      return;
+    }
     if (body.availability && !["available", "limited", "unavailable"].includes(body.availability)) {
       reply.status(400).send({ success: false, message: "availability must be available, limited or unavailable", error: { code: "VALIDATION_ERROR", details: {} } });
       return;
@@ -115,10 +120,12 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       }
     }
     const rate = body.hourly_rate_minor === null ? null : body.hourly_rate_minor !== undefined ? Math.max(1, Math.floor(body.hourly_rate_minor)) : undefined;
+    const about = body.about !== undefined ? body.about.trim() : null;
     const instance = await db();
     const updated = await sql<{ user_id: string }>`
       UPDATE freelancer_profiles
       SET headline = COALESCE(${body.headline?.trim() ?? null}, headline),
+          about = COALESCE(${about}, about),
           location = COALESCE(${body.location?.trim() ?? null}, location),
           hourly_rate_minor = COALESCE(${rate === undefined ? null : rate}, hourly_rate_minor),
           availability = COALESCE(${body.availability ?? null}, availability),

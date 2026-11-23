@@ -43,7 +43,7 @@ const businessSchema = z.object({
   companyName: z.string().trim().min(2, "Enter your company name"),
   industry: z.string().min(1, "Choose an industry"),
   companySize: z.string().min(1, "Choose a company size"),
-  about: z.string().trim().min(20, "Give a sentence or two about the company (at least 20 characters)"),
+  about: z.string().trim().min(20, "Give a sentence or two about the company (at least 20 characters)").max(5000, "Keep your About under 5,000 characters"),
 });
 type BusinessForm = z.infer<typeof businessSchema>;
 
@@ -228,8 +228,8 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
             />
           </Field>
         </div>
-        <Field label="About the company" required error={errors.about?.message} hint="Shown to freelancers evaluating your briefs.">
-          <Textarea rows={4} {...register("about")} />
+        <Field label="About the company" required error={errors.about?.message} hint="Public. Freelancers see this on your profile and project posts.">
+          <Textarea id="settings-about" rows={4} {...register("about")} />
         </Field>
         <div className="flex items-center justify-end border-t border-neutral-100 pt-4">
           <Button type="submit" size="md" loading={savingBusiness}>

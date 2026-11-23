@@ -22,9 +22,9 @@ export default async function usersRoutes(app: FastifyInstance) {
     const rows = await sql`
       SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.status, u.created_at,
              ${CONTACT_COLUMNS_SQL},
-             fp.headline, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
+             fp.headline, fp.about, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
-             cp.company_name, cp.company_size, cp.industry, cp.spent_minor, cp.projects_count
+             cp.company_name, cp.company_size, cp.industry, cp.about, cp.spent_minor, cp.projects_count
       FROM users u
       LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
       LEFT JOIN client_profiles cp ON cp.user_id = u.id
@@ -237,9 +237,9 @@ export default async function usersRoutes(app: FastifyInstance) {
     const rows = await sql`
       SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.created_at,
              ${CONTACT_COLUMNS_SQL},
-             fp.headline, fp.location, fp.hourly_rate_minor, fp.availability,
+             fp.headline, fp.about, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
-             cp.company_name, cp.company_size, cp.industry, cp.projects_count
+             cp.company_name, cp.company_size, cp.industry, cp.about, cp.projects_count
       FROM users u
       LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
       LEFT JOIN client_profiles cp ON cp.user_id = u.id

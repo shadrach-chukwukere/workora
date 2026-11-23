@@ -101,7 +101,7 @@ export default async function FreelancerPublicProfile({
         Browse talent
       </Link>
 
-      {/* Profile banner */}
+      {/* Profile banner — decorative only; the name and short note live in the hero below. */}
       {user.banner_url ? (
         <div className="relative mt-2 mb-6 h-48 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm sm:h-64">
           <Image
@@ -112,59 +112,31 @@ export default async function FreelancerPublicProfile({
             className="size-full object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/60 via-neutral-900/20 to-transparent" />
-          <div className="absolute bottom-6 left-6 right-6">
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl text-wrap-balance shadow-sm">
-              {user.name}
-              {profile.verified_identity ? (
-                <span title="Identity verified" className="inline-flex text-brand-400">
-                  <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
-                  <span className="sr-only">Identity verified</span>
-                </span>
-              ) : null}
-            </h1>
-            <p className="mt-1.5 text-[15px] leading-snug text-neutral-200 shadow-sm">{profile.headline}</p>
-          </div>
         </div>
       ) : null}
-
-      {!user.banner_url && (
-        <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-neutral-200 bg-gradient-to-r from-brand-600 via-brand-700 to-brand-900 shadow-sm">
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl text-wrap-balance">
-              {user.name}
-              {profile.verified_identity ? (
-                <span title="Identity verified" className="inline-flex text-brand-300">
-                  <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
-                  <span className="sr-only">Identity verified</span>
-                </span>
-              ) : null}
-            </h1>
-            <p className="mt-1.5 text-[15px] leading-snug text-brand-100">{profile.headline}</p>
-          </div>
-        </div>
-      )}
 
       {/* Hero */}
       <div className="rounded-xl border border-neutral-200 bg-white grid gap-8 p-6 sm:p-8 lg:grid-cols-3 mt-4">
         <div className="lg:col-span-2">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <Avatar src={user.image ?? undefined} name={user.name} size="3xl" alt="" className="shrink-0 -mt-10 ring-4 ring-white" />
+            <Avatar
+              src={user.image ?? undefined}
+              name={user.name}
+              size="3xl"
+              alt=""
+              className={`shrink-0 ring-4 ring-white ${user.banner_url ? "-mt-10" : ""}`}
+            />
             <div className="min-w-0">
-              {!user.banner_url && (
-                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
-                  {user.name}
-                  {profile.verified_identity ? (
-                    <span title="Identity verified" className="inline-flex text-brand-600">
-                      <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
-                      <span className="sr-only">Identity verified</span>
-                    </span>
-                  ) : null}
-                </h1>
-              )}
-              {!user.banner_url && (
-                <p className="mt-1.5 text-[15px] leading-snug text-neutral-600">{profile.headline}</p>
-              )}
+              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
+                {user.name}
+                {profile.verified_identity ? (
+                  <span title="Identity verified" className="inline-flex text-brand-600">
+                    <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
+                    <span className="sr-only">Identity verified</span>
+                  </span>
+                ) : null}
+              </h1>
+              <p className="mt-1.5 text-[15px] leading-snug text-neutral-600">{profile.headline}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-neutral-500">
                 {profile.location ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -217,7 +189,11 @@ export default async function FreelancerPublicProfile({
           {/* About */}
           <section className="rounded-xl border border-neutral-200 bg-white p-6">
             <h2 className="text-sm font-semibold text-neutral-900">About {user.name.split(" ")[0]}</h2>
-            <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-neutral-700">{profile.about}</p>
+            <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-neutral-700">
+              {profile.about?.trim()
+                ? profile.about
+                : `${user.name.split(" ")[0]} hasn’t added an About yet.`}
+            </p>
             {skills.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {skills.map((skill) => (

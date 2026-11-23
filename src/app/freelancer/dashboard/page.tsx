@@ -32,6 +32,7 @@ interface MeResponse {
     id: string;
     name: string;
     headline: string | null;
+    about: string | null;
     hourly_rate_minor: number | null;
     response_time_hours: number | null;
     rating_avg: string | null;
@@ -426,6 +427,27 @@ export default async function FreelancerDashboard() {
               Milestone earnings, net of the platform commission · {thisMonth ? monthLabel(thisMonth.month) : "This month"} is month to date
             </p>
           </div>
+        </section>
+
+        {/* Public profile preview */}
+        <section className="card flex flex-col p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-neutral-900">Your public profile</h2>
+            <Link href="/freelancer/settings" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
+              Edit
+              <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
+            </Link>
+          </div>
+          <p className="mt-3 text-sm font-medium text-neutral-900">
+            {user.headline?.trim() || "Add a headline so clients know what you do."}
+          </p>
+          <p className="mt-2 max-h-24 overflow-hidden text-[13px] leading-relaxed text-neutral-500">
+            {user.about?.trim() || "Your About is public. Add it in settings so clients can learn more about you."}
+          </p>
+          <Link href={`/freelancers/${user.id}`} className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-neutral-600 hover:text-neutral-900">
+            View public page
+            <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
+          </Link>
         </section>
 
         {/* Reputation snapshot */}

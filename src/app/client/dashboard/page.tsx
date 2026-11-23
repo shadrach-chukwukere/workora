@@ -20,7 +20,14 @@ import { formatDateShort, formatMoney, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface MeResponse {
-  user: { id: string; name: string };
+  user: {
+    id: string;
+    name: string;
+    company_name: string | null;
+    company_size: string | null;
+    industry: string | null;
+    about: string | null;
+  };
 }
 
 interface OwnProjectRow {
@@ -187,6 +194,7 @@ export default async function ClientDashboard() {
   );
 
   const firstName = me?.user.name.split(" ")[0] ?? "there";
+  const profileUser = me?.user;
 
   return (
     <div className="flex flex-col gap-6">
@@ -315,6 +323,34 @@ export default async function ClientDashboard() {
 
         {/* Right column */}
         <div className="flex flex-col gap-6">
+          {/* Public profile preview */}
+          {profileUser ? (
+            <section className="card flex flex-col p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold text-neutral-900">Your public profile</h2>
+                <Link href="/client/settings" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
+                  Edit
+                  <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
+                </Link>
+              </div>
+              <p className="mt-3 text-sm font-medium text-neutral-900">
+                {profileUser.company_name?.trim() || profileUser.name}
+              </p>
+              <p className="mt-2 text-[13px] text-neutral-500">
+                {[profileUser.industry, profileUser.company_size ? `${profileUser.company_size} people` : null]
+                  .filter(Boolean)
+                  .join(" · ") || "Add your company details in settings."}
+              </p>
+              <p className="mt-2 max-h-24 overflow-hidden text-[13px] leading-relaxed text-neutral-500">
+                {profileUser.about?.trim() || "Your About is public. Add it in settings so freelancers can learn more about your company."}
+              </p>
+              <Link href={`/clients/${profileUser.id}`} className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-neutral-600 hover:text-neutral-900">
+                View public page
+                <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
+              </Link>
+            </section>
+          ) : null}
+
           {/* Recent notifications */}
           <section className="card h-fit">
             <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
