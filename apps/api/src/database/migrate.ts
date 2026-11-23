@@ -11,6 +11,8 @@ import * as m0006 from "./migrations/0006_communication.js";
 import * as m0007 from "./migrations/0007_trust_admin.js";
 import * as m0008 from "./migrations/0008_verification_docs.js";
 import * as m0009 from "./migrations/0009_launch_connect.js";
+import * as m0010 from "./migrations/0010_banner.js";
+import * as m0011 from "./migrations/0011_project_cover.js";
 
 export const migrations: Record<string, Migration> = {
   "0001_extensions": m0001,
@@ -22,6 +24,8 @@ export const migrations: Record<string, Migration> = {
   "0007_trust_admin": m0007,
   "0008_verification_docs": m0008,
   "0009_launch_connect": m0009,
+  "0010_banner": m0010,
+  "0011_project_cover": m0011,
 };
 
 const provider: MigrationProvider = {

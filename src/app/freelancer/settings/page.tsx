@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_OPTIONS } from "@/lib/constants";
-import { useBlobUpload } from "@/components/upload/blob-upload";
+import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
 import { IdentityVerificationCard } from "@/components/verification/identity-verification";
 import { PaystackPayoutCard } from "@/components/payout/paystack-payout";
 
@@ -28,6 +28,7 @@ interface MeUser {
   name: string;
   email: string;
   image: string | null;
+  banner_url: string | null;
   headline: string | null;
   location: string | null;
   hourly_rate_minor: number | null;
@@ -157,30 +158,12 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
     defaultValues: {
       name: me.name,
       image: me.image ?? "",
-      bannerUrl: (me as any).banner_url ?? "",
+      bannerUrl: me.banner_url ?? "",
     },
   });
 
-  const [imageBroken, setImageBroken] = useState(false);
-  const preview = (watch("image") ?? "").trim();
-  const bannerPreview = (watch("bannerUrl") ?? "").trim();
-  const { upload: uploadImage, uploading: imageUploading, error: imageUploadError } = useBlobUpload({
-    accept: "image/jpeg, image/png, image/webp",
-    maxSizeMB: 5,
-    onUploaded: (url) => {
-      setImageBroken(false);
-      setValue("image", url, { shouldValidate: true, shouldDirty: true });
-      toast.success("Profile image uploaded");
-    },
-  });
-  const { upload: uploadBanner, uploading: bannerUploading, error: bannerUploadError } = useBlobUpload({
-    accept: "image/jpeg, image/png, image/webp",
-    maxSizeMB: 5,
-    onUploaded: (url) => {
-      setValue("bannerUrl", url, { shouldValidate: true, shouldDirty: true });
-      toast.success("Banner image uploaded");
-    },
-  });
+  const preview = (watch("image") ?? "").trim() || null;
+  const bannerPreview = (watch("bannerUrl") ?? "").trim() || null;
 
   async function onSubmit(values: ProfileValues) {
     const res = await fetch("/api/v1/users/me", {
@@ -213,55 +196,25 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl border border-neutral-200 bg-white p-6">
-        <div className="flex items-start gap-4">
-          <span
-            aria-hidden
-            className="inline-flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-100 text-lg font-semibold text-brand-800"
-          >
-            {preview && !imageBroken ? (
-              <img src={preview} alt="" className="size-full object-cover" onError={() => setImageBroken(true)} />
-            ) : (
-              me.name.trim().slice(0, 2).toUpperCase()
-            )}
-          </span>
+        <div className="flex items-center gap-5">
+          <ProfileMediaPicker
+            id="settings-profile-image"
+            variant="avatar"
+            name={me.name}
+            value={preview}
+            onChange={(url) => {
+              setValue("image", url, { shouldValidate: true, shouldDirty: true });
+              toast.success("Profile photo uploaded");
+            }}
+          />
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-neutral-900">Your profile</h2>
-            <p className="mt-0.5 text-xs text-neutral-500">Visible to clients you work with. Email is private.</p>
-          </div>
-          <div className="ml-auto shrink-0">
-            <label
-              className={cn(
-                "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
-                imageUploading
-                  ? "border-brand-600 bg-brand-50 text-brand-600"
-                  : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
-              )}
-              onClick={() => {
-                const input = document.getElementById("settings-profile-image") as HTMLInputElement | null;
-                input?.click();
-              }}
-            >
-              <input
-                id="settings-profile-image"
-                type="file"
-                accept="image/jpeg, image/png, image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadImage(f);
-                }}
-              />
-              {imageUploading ? (
-                <span className="text-[10px] font-medium">Uploading…</span>
-              ) : (
-                <span className="text-[10px] font-medium uppercase tracking-wider">Change photo</span>
-              )}
-            </label>
+            <h2 className="text-sm font-semibold text-neutral-900">Your profile photo</h2>
+            <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
+              Click the pencil on the photo to upload. Clients see this next to your proposals.
+            </p>
           </div>
         </div>
-        {imageUploadError ? (
-          <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
-        ) : null}
+
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Full name" required error={errors.name?.message}>
             <Input id="settings-name" {...register("name")} />
@@ -270,66 +223,22 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
             <Input id="settings-email" value={me.email} disabled readOnly aria-label="Email (read only)" />
           </Field>
         </div>
-        <div className="mt-4">
-          <Field label="Profile image URL" hint="Or upload a photo above. Leave empty to use your initials." error={errors.image?.message}>
-            <Input id="settings-image" type="url" placeholder="https://…" {...register("image")} onChange={(e) => { setImageBroken(false); void register("image").onChange(e); }} />
-          </Field>
-        </div>
 
         {/* Banner image */}
-        <div className="mt-6">
-          <div className="flex items-start gap-4">
-            <span
-              aria-hidden
-              className="inline-flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100 text-sm font-semibold text-neutral-600"
-            >
-              {bannerPreview ? (
-                <img src={bannerPreview} alt="" className="size-full object-cover" />
-              ) : (
-                "B"
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-neutral-900">Profile banner</h3>
-              <p className="mt-0.5 text-xs text-neutral-500">Shown at the top of your public profile. Clients see this when they search for you.</p>
-            </div>
-            <div className="ml-auto shrink-0">
-              <label
-                className={cn(
-                  "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
-                  bannerUploading
-                    ? "border-brand-600 bg-brand-50 text-brand-600"
-                    : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
-                )}
-                onClick={() => {
-                  const input = document.getElementById("settings-banner-image") as HTMLInputElement | null;
-                  input?.click();
-                }}
-              >
-                <input
-                  id="settings-banner-image"
-                  type="file"
-                  accept="image/jpeg, image/png, image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void uploadBanner(f);
-                  }}
-                />
-                {bannerUploading ? (
-                  <span className="text-[10px] font-medium">Uploading…</span>
-                ) : (
-                  <span className="text-[10px] font-medium uppercase tracking-wider">Change banner</span>
-                )}
-              </label>
-            </div>
-          </div>
-          {bannerUploadError ? (
-            <p className="mt-2 text-xs text-rose-600">{bannerUploadError}</p>
-          ) : null}
-          <Field label="Banner image URL" hint="Or paste a direct image URL." error={errors.bannerUrl?.message}>
-            <Input id="settings-banner-url" type="url" placeholder="https://…" {...register("bannerUrl")} />
-          </Field>
+        <div className="mt-7">
+          <h3 className="text-sm font-semibold text-neutral-900">Profile banner</h3>
+          <p className="mt-0.5 mb-3 text-xs leading-relaxed text-neutral-500">
+            Shown at the top of your public profile. Click the pencil on the banner to upload a new one.
+          </p>
+          <ProfileMediaPicker
+            id="settings-banner-image"
+            variant="banner"
+            value={bannerPreview}
+            onChange={(url) => {
+              setValue("bannerUrl", url, { shouldValidate: true, shouldDirty: true });
+              toast.success("Banner uploaded");
+            }}
+          />
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-3">

@@ -16,6 +16,8 @@ export const projectBodySchema = z
     durationBucket: z.enum(["lt-1m", "1-3m", "3-6m", "gt-6m"]).optional(),
     deadline: z.iso.date().optional(),
     invitedOnly: z.boolean().optional(),
+    /** Public Vercel Blob URL for the project cover image. */
+    cover_image_url: z.string().trim().url("Cover image must be a valid URL").nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (

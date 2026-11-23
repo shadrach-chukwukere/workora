@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { Building01Icon, Icon, UserAccountIcon } from "@/lib/icons";
 import { formatMoney } from "@/lib/format";
-import { useBlobUpload } from "@/components/upload/blob-upload";
-import { cn } from "@/lib/utils";
+import { ProfileMediaPicker } from "@/components/upload/profile-media-picker";
 
 export interface BusinessInitial {
   companyName: string;
@@ -105,15 +103,6 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
   const accountName = accountForm.watch("name");
   const accountImage = accountForm.watch("image");
   const { setValue: setAccountValue } = accountForm;
-
-  const { upload: uploadImage, uploading: imageUploading, error: imageUploadError } = useBlobUpload({
-    accept: "image/jpeg, image/png, image/webp",
-    maxSizeMB: 5,
-    onUploaded: (url) => {
-      setAccountValue("image", url, { shouldValidate: true, shouldDirty: true });
-      toast.success("Profile image uploaded");
-    },
-  });
 
   async function saveBusiness(data: BusinessForm) {
     if (savingBusiness) return;
@@ -231,52 +220,26 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
           <Icon icon={UserAccountIcon} size={16} strokeWidth={1.8} />
           Your account
         </p>
-        <div className="flex items-center gap-4">
-          <Avatar src={accountImage || null} name={accountName || account.name} size="lg" alt="" />
-          <div className="ml-auto shrink-0">
-            <label
-              className={cn(
-                "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
-                imageUploading
-                  ? "border-brand-600 bg-brand-50 text-brand-600"
-                  : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
-              )}
-              onClick={() => {
-                const input = document.getElementById("client-settings-profile-image") as HTMLInputElement | null;
-                input?.click();
-              }}
-            >
-              <input
-                id="client-settings-profile-image"
-                type="file"
-                accept="image/jpeg, image/png, image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadImage(f);
-                }}
-              />
-              {imageUploading ? (
-                <span className="text-[10px] font-medium">Uploading…</span>
-              ) : (
-                <span className="text-[10px] font-medium uppercase tracking-wider">Change photo</span>
-              )}
-            </label>
-          </div>
+        <div className="flex items-center gap-5">
+          <ProfileMediaPicker
+            id="client-settings-profile-image"
+            variant="avatar"
+            name={accountName || account.name}
+            value={accountImage || null}
+            onChange={(url) => {
+              setAccountValue("image", url, { shouldValidate: true, shouldDirty: true });
+              toast.success("Profile photo uploaded");
+            }}
+          />
           <div className="min-w-0 text-xs text-neutral-500">
-            <p className="truncate font-medium text-neutral-700">{account.email}</p>
+            <p className="font-semibold text-neutral-900">Your profile photo</p>
+            <p className="mt-1 truncate font-medium text-neutral-700">{account.email}</p>
             <p className="mt-0.5 capitalize">{account.accountType} account</p>
           </div>
         </div>
-        {imageUploadError ? (
-          <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
-        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Display name" required error={accountForm.formState.errors.name?.message}>
             <Input {...accountForm.register("name")} />
-          </Field>
-          <Field label="Avatar image URL" error={accountForm.formState.errors.image?.message} hint="Or upload a photo above. Leave blank to keep the monogram.">
-            <Input placeholder="https://…/avatar.png" inputMode="url" {...accountForm.register("image")} />
           </Field>
         </div>
         <dl className="grid gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-[13px] sm:grid-cols-2">

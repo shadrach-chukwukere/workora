@@ -16,6 +16,7 @@ export interface ApiProject {
   description: string;
   categoryId: string | null;
   categoryName: string | null;
+  coverImageUrl: string | null;
   status: string;
   budgetType: string;
   budgetMinMinor: number | null;
@@ -40,6 +41,7 @@ interface JoinedProjectRow {
   summary: string;
   description: string;
   category_id: string | null;
+  cover_image_url: string | null;
   status: string;
   budget_type: string;
   budget_min_minor: number | null;
@@ -89,6 +91,7 @@ export function toApiProject(row: JoinedProjectRow): ApiProject {
     description: row.description,
     categoryId: row.category_id,
     categoryName: row.category_name ?? null,
+    coverImageUrl: row.cover_image_url ?? null,
     status: row.status,
     budgetType: row.budget_type,
     budgetMinMinor: row.budget_min_minor,
@@ -114,6 +117,7 @@ export function toDbProjectInput(input: ProjectBody): Record<string, unknown> {
     summary: input.summary,
     description: input.description,
     category_id: input.categoryId ?? null,
+    cover_image_url: input.cover_image_url ?? null,
     budget_type: input.budgetType,
     budget_min_minor: input.budgetMinMinor ?? null,
     budget_max_minor: input.budgetMaxMinor ?? null,
@@ -136,6 +140,7 @@ function joinedSelect(eb: any): any[] {
     eb.ref("p.summary").as("summary"),
     eb.ref("p.description").as("description"),
     eb.ref("p.category_id").as("category_id"),
+    eb.ref("p.cover_image_url").as("cover_image_url"),
     eb.ref("p.status").as("status"),
     eb.ref("p.budget_type").as("budget_type"),
     eb.ref("p.budget_min_minor").as("budget_min_minor"),

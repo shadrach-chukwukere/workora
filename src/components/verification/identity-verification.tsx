@@ -108,7 +108,7 @@ export function IdentityVerificationCard({ onVerified }: IdentityVerificationCar
     setBusy(true);
     setError(null);
     try {
-      const presignResponse = await fetch("/api/upload", {
+      const presignResponse = await fetch("/api/upload?scope=document&access=private&folder=identity", {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/octet-stream" },

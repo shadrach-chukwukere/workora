@@ -14,8 +14,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "fastly.picsum.photos" },
       // SocialProofBadge hero avatars (unsplash)
       { protocol: "https", hostname: "images.unsplash.com" },
-      // Vercel Blob - add your production blob hostname here after creating
-      // the blob store (e.g. { protocol: "https", hostname: "workora-blob.vercel.app" })
+      // Vercel Blob public URLs (avatars, banners, project covers, identity docs).
+      // Wildcard covers the generated store hostname in any region.
+      { protocol: "https", hostname: "**.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "**.blob.vercel-storage.com" },
       { protocol: "https", hostname: "localhost" },
       { protocol: "http", hostname: "localhost" },
     ],

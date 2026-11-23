@@ -14,7 +14,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.email, u.email_verified, u.image, u.account_type, u.status, u.created_at,
+      SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.status, u.created_at,
              fp.headline, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
              cp.company_name, cp.company_size, cp.industry, cp.spent_minor, cp.projects_count
@@ -228,7 +228,7 @@ export default async function usersRoutes(app: FastifyInstance) {
   app.get("/users/:id", async (request, reply) => {
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.image, u.account_type, u.created_at,
+      SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.created_at,
              fp.headline, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
              cp.company_name, cp.company_size, cp.industry, cp.projects_count
@@ -251,7 +251,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       reply.status(401).send({ success: false, message: "Authentication required", error: { code: "UNAUTHENTICATED", details: {} } });
       return;
     }
-    const body = request.body as { name?: string; image?: string };
+    const body = request.body as { name?: string; image?: string | null; banner_url?: string | null };
     if (typeof body.name === "string" && body.name.trim().length < 2) {
       reply.status(400).send({ success: false, message: "Name must be at least 2 characters", error: { code: "VALIDATION_ERROR", details: { field: "name" } } });
       return;
@@ -260,8 +260,14 @@ export default async function usersRoutes(app: FastifyInstance) {
     if (typeof body.name === "string") {
       await sql`UPDATE users SET name = ${body.name.trim()} WHERE id = ${user.id}`.execute(instance);
     }
-    if (typeof body.image === "string") {
-      await sql`UPDATE users SET image = ${body.image} WHERE id = ${user.id}`.execute(instance);
+    // Null or an empty string clears the stored URL; invalid types are ignored.
+    if ("image" in body) {
+      const value = typeof body.image === "string" ? body.image.trim() || null : null;
+      await sql`UPDATE users SET image = ${value} WHERE id = ${user.id}`.execute(instance);
+    }
+    if ("banner_url" in body) {
+      const value = typeof body.banner_url === "string" ? body.banner_url.trim() || null : null;
+      await sql`UPDATE users SET banner_url = ${value} WHERE id = ${user.id}`.execute(instance);
     }
     reply.send(ok(null, "Profile updated"));
   });

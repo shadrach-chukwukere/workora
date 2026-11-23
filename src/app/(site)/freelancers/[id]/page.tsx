@@ -100,7 +100,7 @@ export default async function FreelancerPublicProfile({
 
       {/* Profile banner */}
       {user.banner_url ? (
-        <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-sm">
+        <div className="relative mt-2 mb-6 h-48 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm sm:h-64">
           <Image
             src={user.banner_url}
             alt={`Profile banner for ${user.name}`}

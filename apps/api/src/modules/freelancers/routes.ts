@@ -14,12 +14,12 @@ export default async function freelancersRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const profileRows = await sql<{
-      id: string; name: string; image: string | null; created_at: Date;
+      id: string; name: string; image: string | null; banner_url: string | null; created_at: Date;
       headline: string; about: string; location: string | null; hourly_rate_minor: string | null; availability: string;
       response_time_hours: number; experience_level: string | null; verified_identity: boolean;
       rating_avg: string | null; rating_count: number; completed_count: number;
     }>`
-      SELECT u.id, u.name, u.image, u.created_at,
+      SELECT u.id, u.name, u.image, u.banner_url, u.created_at,
              fp.headline, fp.about, fp.location, fp.hourly_rate_minor::text AS hourly_rate_minor, fp.availability,
              fp.response_time_hours, fp.experience_level, fp.verified_identity,
              fp.rating_avg, fp.rating_count, fp.completed_count
@@ -50,7 +50,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       `.execute(instance).then((r) => r.rows),
     ]);
     reply.send(ok({
-      user: { id: owner.id, name: owner.name, image: owner.image, created_at: owner.created_at.toISOString() },
+      user: { id: owner.id, name: owner.name, image: owner.image, banner_url: owner.banner_url, created_at: owner.created_at.toISOString() },
       profile: {
         headline: owner.headline,
         about: owner.about,
@@ -183,6 +183,7 @@ export default async function freelancersRoutes(app: FastifyInstance) {
         "u.id",
         "u.name",
         "u.image",
+        "u.banner_url",
         "u.created_at",
         "fp.headline",
         "fp.hourly_rate_minor",

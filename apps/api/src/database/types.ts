@@ -11,6 +11,7 @@ export interface UsersTable {
   email: string;
   email_verified: ColumnType<boolean, boolean | undefined, boolean | undefined>;
   image: string | null;
+  banner_url: string | null;
   account_type: ColumnType<"freelancer" | "client" | "admin", "freelancer" | "client" | "admin" | undefined, "freelancer" | "client" | "admin" | undefined>;
   status: Generated<"active" | "suspended" | "restricted">;
   failed_logins: Generated<number>;
@@ -208,6 +209,7 @@ export interface ProjectsTable {
   summary: string;
   description: string;
   category_id: string | null;
+  cover_image_url: string | null;
   status: Generated<"draft" | "open" | "in_progress" | "paused" | "completed" | "cancelled" | "flagged">;
   budget_type: "fixed" | "hourly";
   budget_min_minor: number | null;
