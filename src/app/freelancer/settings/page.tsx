@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -12,6 +12,9 @@ import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { AVAILABILITY_OPTIONS } from "@/lib/constants";
+import { useBlobUpload } from "@/components/upload/blob-upload";
+import { IdentityVerificationCard } from "@/components/verification/identity-verification";
+import { PaystackPayoutCard } from "@/components/payout/paystack-payout";
 
 type TabId = "profile" | "freelancer";
 
@@ -123,8 +126,8 @@ export default function FreelancerSettingsPage() {
           {tab === "freelancer" ? (
             <>
               <FreelancerTab me={me} onSaved={load} />
-              <StripePayoutCard />
-              <IdentityVerificationCard />
+              <PaystackPayoutCard />
+              <IdentityVerificationCard onVerified={load} />
             </>
           ) : null}
         </>
@@ -136,6 +139,7 @@ export default function FreelancerSettingsPage() {
 const profileSchema = z.object({
   name: z.string().min(2, "Enter your full name"),
   image: z.string().trim().url("Enter a valid image URL").or(z.literal("")),
+  bannerUrl: z.string().trim().url("Enter a valid image URL").or(z.literal("")),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -146,24 +150,44 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: me.name,
       image: me.image ?? "",
+      bannerUrl: (me as any).banner_url ?? "",
     },
   });
 
   const [imageBroken, setImageBroken] = useState(false);
   const preview = (watch("image") ?? "").trim();
+  const bannerPreview = (watch("bannerUrl") ?? "").trim();
+  const { upload: uploadImage, uploading: imageUploading, error: imageUploadError } = useBlobUpload({
+    accept: "image/jpeg, image/png, image/webp",
+    maxSizeMB: 5,
+    onUploaded: (url) => {
+      setImageBroken(false);
+      setValue("image", url, { shouldValidate: true, shouldDirty: true });
+      toast.success("Profile image uploaded");
+    },
+  });
+  const { upload: uploadBanner, uploading: bannerUploading, error: bannerUploadError } = useBlobUpload({
+    accept: "image/jpeg, image/png, image/webp",
+    maxSizeMB: 5,
+    onUploaded: (url) => {
+      setValue("bannerUrl", url, { shouldValidate: true, shouldDirty: true });
+      toast.success("Banner image uploaded");
+    },
+  });
 
   async function onSubmit(values: ProfileValues) {
     const res = await fetch("/api/v1/users/me", {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: values.name.trim(), image: values.image.trim() === "" ? null : values.image.trim() }),
+      body: JSON.stringify({ name: values.name.trim(), image: values.image.trim() === "" ? null : values.image.trim(), banner_url: values.bannerUrl.trim() === "" ? null : values.bannerUrl.trim() }),
     });
     if (res.status === 401) {
       window.location.href = "/login";
@@ -200,11 +224,44 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
               me.name.trim().slice(0, 2).toUpperCase()
             )}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-neutral-900">Your profile</h2>
             <p className="mt-0.5 text-xs text-neutral-500">Visible to clients you work with. Email is private.</p>
           </div>
+          <div className="ml-auto shrink-0">
+            <label
+              className={cn(
+                "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                imageUploading
+                  ? "border-brand-600 bg-brand-50 text-brand-600"
+                  : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
+              )}
+              onClick={() => {
+                const input = document.getElementById("settings-profile-image") as HTMLInputElement | null;
+                input?.click();
+              }}
+            >
+              <input
+                id="settings-profile-image"
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadImage(f);
+                }}
+              />
+              {imageUploading ? (
+                <span className="text-[10px] font-medium">Uploading…</span>
+              ) : (
+                <span className="text-[10px] font-medium uppercase tracking-wider">Change photo</span>
+              )}
+            </label>
+          </div>
         </div>
+        {imageUploadError ? (
+          <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
+        ) : null}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Full name" required error={errors.name?.message}>
             <Input id="settings-name" {...register("name")} />
@@ -214,10 +271,67 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
           </Field>
         </div>
         <div className="mt-4">
-          <Field label="Profile image URL" hint="A direct link to a square image. Leave empty to use your initials." error={errors.image?.message}>
+          <Field label="Profile image URL" hint="Or upload a photo above. Leave empty to use your initials." error={errors.image?.message}>
             <Input id="settings-image" type="url" placeholder="https://…" {...register("image")} onChange={(e) => { setImageBroken(false); void register("image").onChange(e); }} />
           </Field>
         </div>
+
+        {/* Banner image */}
+        <div className="mt-6">
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden
+              className="inline-flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100 text-sm font-semibold text-neutral-600"
+            >
+              {bannerPreview ? (
+                <img src={bannerPreview} alt="" className="size-full object-cover" />
+              ) : (
+                "B"
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-neutral-900">Profile banner</h3>
+              <p className="mt-0.5 text-xs text-neutral-500">Shown at the top of your public profile. Clients see this when they search for you.</p>
+            </div>
+            <div className="ml-auto shrink-0">
+              <label
+                className={cn(
+                  "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                  bannerUploading
+                    ? "border-brand-600 bg-brand-50 text-brand-600"
+                    : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
+                )}
+                onClick={() => {
+                  const input = document.getElementById("settings-banner-image") as HTMLInputElement | null;
+                  input?.click();
+                }}
+              >
+                <input
+                  id="settings-banner-image"
+                  type="file"
+                  accept="image/jpeg, image/png, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadBanner(f);
+                  }}
+                />
+                {bannerUploading ? (
+                  <span className="text-[10px] font-medium">Uploading…</span>
+                ) : (
+                  <span className="text-[10px] font-medium uppercase tracking-wider">Change banner</span>
+                )}
+              </label>
+            </div>
+          </div>
+          {bannerUploadError ? (
+            <p className="mt-2 text-xs text-rose-600">{bannerUploadError}</p>
+          ) : null}
+          <Field label="Banner image URL" hint="Or paste a direct image URL." error={errors.bannerUrl?.message}>
+            <Input id="settings-banner-url" type="url" placeholder="https://…" {...register("bannerUrl")} />
+          </Field>
+        </div>
+
         <div className="mt-6 flex items-center justify-end gap-3">
           {isDirty ? <span className="text-xs text-neutral-400">Unsaved changes</span> : null}
           <Button type="submit" size="md" loading={isSubmitting}>
@@ -329,248 +443,6 @@ function FreelancerTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<voi
         </Button>
       </div>
     </form>
-  );
-}
-
-interface StripePayoutStatus {
-  connected: boolean;
-  detailsSubmitted: boolean;
-  payoutsEnabled: boolean;
-}
-
-function StripePayoutCard() {
-  const [country, setCountry] = useState("");
-  const [status, setStatus] = useState<StripePayoutStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadStatus() {
-    try {
-      const res = await fetch("/api/v1/payments/connect/status", { credentials: "include", cache: "no-store" });
-      setStatus(await readEnvelope<StripePayoutStatus>(res));
-      setError(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load payout status");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadStatus();
-  }, []);
-
-  async function beginOnboarding() {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/v1/payments/connect/onboarding", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ country: country.trim().toUpperCase() }),
-      });
-      const data = await readEnvelope<{ url: string }>(res);
-      window.location.assign(data.url);
-    } catch (cause) {
-      toast.error("Could not start Stripe onboarding", {
-        description: cause instanceof Error ? cause.message : "Please try again.",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white p-6">
-      <h2 className="text-sm font-semibold text-neutral-900">Payout setup</h2>
-      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-        Connect a Stripe account to receive approved milestone transfers. Stripe collects and verifies payout details.
-      </p>
-      {loading ? <p className="mt-4 text-sm text-neutral-500">Checking Stripe status…</p> : null}
-      {!loading && error ? <p className="mt-4 text-sm text-rose-700" role="alert">{error}</p> : null}
-      {!loading && status ? (
-        <div className="mt-4 flex flex-col gap-4">
-          <p className={`text-sm font-medium ${status.payoutsEnabled ? "text-emerald-700" : "text-amber-700"}`}>
-            {status.payoutsEnabled
-              ? "Stripe payouts are ready."
-              : status.connected && status.detailsSubmitted
-                ? "Stripe is reviewing your payout details."
-                : status.connected
-                  ? "Finish Stripe onboarding to receive payouts."
-                  : "Stripe payout account not connected."}
-          </p>
-          {!status.payoutsEnabled ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <Field label="Stripe account country" required hint="Enter the two-letter country code where your payout account is based (for example, US or GB).">
-                <Input
-                  id="stripe-account-country"
-                  autoComplete="country"
-                  maxLength={2}
-                  value={country}
-                  onChange={(event) => setCountry(event.target.value.replace(/[^a-z]/gi, "").slice(0, 2).toUpperCase())}
-                />
-              </Field>
-              <Button
-                size="md"
-                disabled={country.length !== 2 || busy}
-                loading={busy}
-                onClick={() => void beginOnboarding()}
-              >
-                {status.connected ? "Continue Stripe setup" : "Connect Stripe"}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-interface VerificationRequestItem {
-  id: string;
-  status: "pending" | "info_requested" | "approved" | "rejected";
-  document_type: string;
-  submitted_at: string;
-  notes: string | null;
-}
-
-function IdentityVerificationCard() {
-  const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
-  const [documentType, setDocumentType] = useState("national-id");
-  const [file, setFile] = useState<File | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadRequests() {
-    try {
-      const res = await fetch("/api/v1/verification-requests/me", { credentials: "include", cache: "no-store" });
-      const data = await readEnvelope<{ requests: VerificationRequestItem[] }>(res);
-      setRequests(data.requests);
-      setError(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load verification status");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadRequests();
-  }, []);
-
-  const latest = requests[0];
-  const canSubmit = !latest || latest.status === "rejected";
-  const canResubmit = latest?.status === "info_requested";
-
-  async function submitDocument() {
-    if (!file || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const presignResponse = await fetch("/api/v1/uploads/presign", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ scope: "verification", mimeType: file.type, sizeBytes: file.size }),
-      });
-      const upload = await readEnvelope<{
-        uploadUrl: string | null;
-        key: string | null;
-        configured: boolean;
-      }>(presignResponse);
-      if (!upload.configured || !upload.uploadUrl || !upload.key) {
-        throw new Error("Private document storage is not configured.");
-      }
-
-      const uploaded = await fetch(upload.uploadUrl, {
-        method: "PUT",
-        headers: { "content-type": file.type },
-        body: file,
-      });
-      if (!uploaded.ok) {
-        throw new Error("Document upload failed. Try again.");
-      }
-
-      const path = canResubmit
-        ? `/api/v1/verification-requests/${encodeURIComponent(latest.id)}/document`
-        : "/api/v1/verification-requests";
-      const requestResponse = await fetch(path, {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...(canSubmit ? { documentType } : {}),
-          documentKey: upload.key,
-          documentName: file.name,
-        }),
-      });
-      await readEnvelope(requestResponse);
-      setFile(null);
-      setFileInputKey((key) => key + 1);
-      toast.success(canResubmit ? "Document resubmitted for review" : "Identity verification submitted");
-      await loadRequests();
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Could not submit your document";
-      setError(message);
-      toast.error("Verification submission failed", { description: message });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white p-6">
-      <h2 className="text-sm font-semibold text-neutral-900">Identity verification</h2>
-      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-        Upload an identity document for private admin review. Documents are stored privately and are not shown on your public profile.
-      </p>
-      {loading ? <p className="mt-4 text-sm text-neutral-500">Checking verification status…</p> : null}
-      {!loading && latest ? (
-        <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-          <p className="text-sm font-medium capitalize text-neutral-800">{latest.status.replace("_", " ")}</p>
-          {latest.notes ? <p className="mt-1 text-sm text-neutral-600">{latest.notes}</p> : null}
-          {latest.status === "approved" ? <p className="mt-1 text-xs text-emerald-700">Your identity is verified.</p> : null}
-        </div>
-      ) : null}
-      {!loading && (canSubmit || canResubmit) ? (
-        <div className="mt-4 flex flex-col gap-4">
-          {canSubmit ? (
-            <Field label="Document type" required>
-              <select
-                id="verification-document-type"
-                value={documentType}
-                onChange={(event) => setDocumentType(event.target.value)}
-                className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900"
-              >
-                <option value="national-id">National ID</option>
-                <option value="passport">Passport</option>
-                <option value="drivers-license">Driver's license</option>
-                <option value="other">Other government ID</option>
-              </select>
-            </Field>
-          ) : null}
-          <Field label="Identity document" required hint="JPEG, PNG, WebP or PDF · maximum 10 MB">
-            <Input
-              key={fileInputKey}
-              id="verification-document-file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            />
-          </Field>
-          {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
-          <div className="flex justify-end">
-            <Button size="md" disabled={!file || busy} loading={busy} onClick={() => void submitDocument()}>
-              {canResubmit ? "Resubmit document" : "Submit for verification"}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-      {!loading && error && !canSubmit && !canResubmit ? <p className="mt-4 text-sm text-rose-700" role="alert">{error}</p> : null}
-    </section>
   );
 }
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light";
 
 interface ThemeContextType {
   theme: Theme;
-  resolvedTheme: "light" | "dark";
+  resolvedTheme: "light";
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
@@ -14,82 +14,23 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 /**
- * Theme provider that avoids blocking back/forward cache restoration.
- *
- * - Reads the stored preference + system media query once in an effect.
- * - Applies the dark class to <html> in the same effect.
- * - Cleans up the matchMedia listener on unmount.
- * - Never registers beforeunload/unload/unhandledrejection listeners.
+ * Theme provider locked to light mode.
+ * Dark mode is intentionally removed. No DOM classList manipulation for
+ * dark/light toggling, no localStorage reads for theme preference — this keeps
+ * the page eligible for back/forward cache restoration.
  */
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-}: {
-  children: ReactNode;
-  defaultTheme?: Theme;
-}) {
-  const [theme, setThemeState] = useState<Theme>(defaultTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("workora-theme") as Theme | null;
-    if (stored) setThemeState(stored);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    let resolved: "light" | "dark";
-    if (theme === "system") {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-    } else {
-      resolved = theme;
-    }
-
-    setResolvedTheme(resolved);
-    if (resolved === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    localStorage.setItem("workora-theme", theme);
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => {
-      if (theme === "system") {
-        const next = media.matches ? "dark" : "light";
-        setResolvedTheme(next);
-        if (next === "dark") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-      }
-    };
-    media.addEventListener("change", handler);
-    return () => media.removeEventListener("change", handler);
-  }, [theme, mounted]);
-
-  const setTheme = (next: Theme) => {
-    setThemeState(next);
-  };
-
-  const toggleTheme = () => {
-    setThemeState((prev) => {
-      const next: Theme =
-        prev === "light" ? "dark" : prev === "dark" ? "system" : "light";
-      return next;
-    });
-  };
-
-  if (!mounted) return null;
-
+}: { children: ReactNode; defaultTheme?: Theme }) {
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme: "light",
+        resolvedTheme: "light",
+        setTheme: () => {},
+        toggleTheme: () => {},
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

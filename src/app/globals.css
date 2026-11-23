@@ -54,21 +54,10 @@
   --shadow-overlay-dark: 0 24px 60px -20px rgba(0, 0, 0, 0.55), 0 8px 24px -12px rgba(0, 0, 0, 0.35);
 }
 
-/* Dark mode - applied via .dark class on <html> by the theme provider.
-   Overrides the CSS custom properties defined in @theme above. */
+/* Dark mode - removed. Light mode only. */
 @layer base {
   .dark {
-    --color-surface: var(--color-surface-dark);
-    --color-surface-muted: var(--color-surface-muted-dark);
-    --color-surface-hover: var(--color-surface-hover-dark);
-    --color-border: var(--color-border-dark);
-    --color-border-hover: var(--color-border-hover-dark);
-    --color-text: var(--color-text-dark);
-    --color-text-secondary: var(--color-text-secondary-dark);
-    --color-text-tertiary: var(--color-text-tertiary-dark);
-    --color-text-inverse: var(--color-text-inverse-dark);
-    --shadow-dropdown: var(--shadow-dropdown-dark);
-    --shadow-overlay: var(--shadow-overlay-dark);
+    /* Intentionally empty — dark mode is disabled. */
   }
 }
 

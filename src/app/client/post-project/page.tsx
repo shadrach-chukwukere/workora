@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/form";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-blocks";
+import { Avatar } from "@/components/ui/avatar";
+import { useBlobUpload } from "@/components/upload/blob-upload";
 import {
   ArrowLeft02Icon,
   ArrowRight02Icon,
@@ -96,6 +98,8 @@ export default function PostProjectPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [skillIdsByName, setSkillIdsByName] = useState<Map<string, string>>(new Map());
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +168,16 @@ export default function PostProjectPage() {
   );
   const category = categories.find((c) => c.id === values.categoryId);
 
+  const { upload: uploadCoverImage, uploading: coverUploading, error: coverUploadError } = useBlobUpload({
+    accept: "image/jpeg, image/png, image/webp",
+    maxSizeMB: 5,
+    onUploaded: (url) => {
+      setCoverImageUrl(url);
+      setCoverImageFile(null);
+      toast.success("Cover image uploaded");
+    },
+  });
+
   async function goToStep(next: 1 | 2 | 3) {
     if (next > step) {
       const fields: (keyof FormValues)[][] = [
@@ -206,6 +220,7 @@ export default function PostProjectPage() {
         experienceLevel: data.experienceLevel,
         durationBucket: data.duration,
         invitedOnly: data.privateBrief,
+        cover_image_url: coverImageUrl ?? null,
       };
       if (data.budgetType === "fixed") {
         body.budgetMinMinor = toMinor(data.fixedAmount);
@@ -360,6 +375,73 @@ export default function PostProjectPage() {
                   ))}
                 </div>
               ) : null}
+
+              {/* Cover image upload */}
+              <div className="mt-4">
+                <Field label="Cover image" hint="Optional banner image shown at the top of your project listing.">
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); }}
+                    onDragLeave={(e) => { e.preventDefault(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) void uploadCoverImage(f);
+                    }}
+                    className={cn(
+                      "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors",
+                      coverUploading
+                        ? "border-brand-600 bg-brand-50 text-brand-600"
+                        : coverImageFile
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                        : "border-neutral-200 bg-neutral-50 text-neutral-500 hover:border-neutral-300 hover:text-neutral-600",
+                    )}
+                  >
+                    <input
+                      id="project-cover-image"
+                      type="file"
+                      accept="image/jpeg, image/png, image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void uploadCoverImage(f);
+                      }}
+                    />
+                    <label
+                      htmlFor="project-cover-image"
+                      className="cursor-pointer flex flex-col items-center gap-2 select-none"
+                      onClick={(e) => { e.stopPropagation(); }}
+                    >
+                      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full transition-colors">
+                        <Icon icon={Image02Icon} size={18} strokeWidth={2} />
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        {coverImageFile ? (
+                          <>
+                            <p className="text-sm font-semibold">{coverImageFile.name}</p>
+                            <p className="text-xs text-neutral-500">{Math.round(coverImageFile.size / 1024)} KB</p>
+                          </>
+                        : (
+                          <>
+                            <p className="text-sm font-medium text-neutral-900">
+                              Drag & drop cover image
+                            </p>
+                            <p className="text-xs text-neutral-500">or click to browse</p>
+                            <p className="mt-1 text-[10px] text-neutral-400 uppercase tracking-wider">
+                              JPEG, PNG, WebP · Max 5 MB
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </label>
+                    {coverImageUrl && (
+                      <div className="mt-3 inline-block">
+                        <Avatar src={coverImageUrl} name="Project cover" size="lg" className="rounded-xl border border-neutral-200" />
+                      </div>
+                    )}
+                  </div>
+                </Field>
+                {coverUploadError ? <p className="mt-2 text-xs text-rose-600">{coverUploadError}</p> : null}
+              </div>
               <Field
                 label="Description"
                 required

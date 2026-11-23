@@ -17,6 +17,7 @@ import {
   PlusSignIcon,
   TrashIcon,
 } from "@/lib/icons";
+import { useBlobUpload } from "@/components/upload/blob-upload";
 
 interface PortfolioItemDto {
   id: string;
@@ -112,27 +113,22 @@ export default function FreelancerPortfolioPage() {
   const yearRange = years.length > 0 ? `${Math.min(...years)} - ${Math.max(...years)}` : "n/a";
   const uniqueTags = useMemo(() => new Set(items.flatMap((i) => i.tags)).size, [items]);
 
-  async function saveItem(input: { id?: string; title: string; description: string; tags: string[]; year: number; imageSeed: string; link?: string }) {
+  async function saveItem(input: { id?: string; title: string; description: string; tags: string[]; year: number; imageUrl?: string; link?: string }) {
     if (saving) return;
     setSaving(true);
-    const imageUrl = `https://picsum.photos/seed/workora-${input.imageSeed}/800/560`;
     const payload = {
       title: input.title,
       description: input.description,
       tags: input.tags,
       year: input.year,
-      // Empty string clears the link server-side (COALESCE keeps old values on null).
       project_url: input.link ?? "",
-      image_url: imageUrl,
+      image_url: input.imageUrl ?? null,
     };
     try {
       if (input.id) {
-        const existing = items.find((i) => i.id === input.id);
-        const unchangedImage = existing ? seedOf(existing.imageUrl ?? "") === input.imageSeed : false;
-        const withoutImage = { ...payload, image_url: undefined as string | undefined };
         await apiClient(`/api/v1/users/me/portfolio/${encodeURIComponent(input.id)}`, {
           method: "PATCH",
-          body: JSON.stringify(unchangedImage ? withoutImage : payload),
+          body: JSON.stringify(payload),
         });
         toast.success("Portfolio item updated");
       } else {
@@ -142,6 +138,8 @@ export default function FreelancerPortfolioPage() {
         });
         toast.success("Portfolio item added");
       }
+      setPortfolioImageUrl(null);
+      setPortfolioImageFile(null);
       await load();
     } catch (cause) {
       if (cause instanceof Error && cause.name === "AuthRequired") {
@@ -310,19 +308,6 @@ export default function FreelancerPortfolioPage() {
   );
 }
 
-function seedOf(imageUrl: string): string {
-  const match = imageUrl.match(/seed\/workora-(.+)\/800\/560/);
-  return match?.[1] ?? "";
-}
-
-function slugify(text: string): string {
-  const slug = text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return slug || "portfolio";
-}
-
 function PortfolioEditor({
   open,
   item,
@@ -334,15 +319,29 @@ function PortfolioEditor({
   item: PortfolioItem | null;
   saving: boolean;
   onClose: () => void;
-  onSave: (input: { id?: string; title: string; description: string; tags: string[]; year: number; imageSeed: string; link?: string }) => void;
+  onSave: (input: { id?: string; title: string; description: string; tags: string[]; year: number; imageUrl?: string; link?: string }) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
-  const [imageSeed, setImageSeed] = useState("");
   const [link, setLink] = useState("");
   const [loadedId, setLoadedId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
+  const { upload: uploadPortfolioImage, uploading: portfolioImageUploading } = useBlobUpload({
+    accept: "image/jpeg, image/png, image/webp",
+    maxSizeMB: 5,
+    onUploaded: (url) => {
+      setImageUrl(url);
+      setImageFile(null);
+      setImageUploadError(null);
+      toast.success("Image uploaded");
+    },
+  });
 
   // Load the item being edited into local state when the modal opens.
   if (open && (item?.id ?? null) !== loadedId) {
@@ -351,10 +350,12 @@ function PortfolioEditor({
     setDescription(item?.description ?? "");
     setTags(item?.tags.join(", ") ?? "");
     setYear(String(item?.year ?? new Date().getFullYear()));
-    setImageSeed(item ? seedOf(item.imageUrl ?? "") : "");
+    setImageUrl(item?.imageUrl ?? null);
     setLink(item?.link ?? "");
   } else if (!open && loadedId !== null) {
     setLoadedId(null);
+    setImageUrl(null);
+    setImageFile(null);
   }
 
   const yearValue = Number(year);
@@ -362,6 +363,24 @@ function PortfolioEditor({
   const titleValid = title.trim().length >= 3;
   const tagsValid = tags.split(",").map((t) => t.trim()).filter(Boolean).length > 0;
   const canSave = titleValid && tagsValid && yearValid && description.trim().length >= 10 && !saving;
+
+  const handleImageDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setImageDragActive(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+        setImageUploadError("Only JPEG, PNG and WebP images are allowed.");
+        return;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        setImageUploadError("Image too large. Maximum 5 MB.");
+        return;
+      }
+      setImageUploadError(null);
+      setImageFile(f);
+    }
+  };
 
   function save() {
     if (!canSave) return;
@@ -371,7 +390,7 @@ function PortfolioEditor({
       description: description.trim(),
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       year: yearValue,
-      imageSeed: imageSeed.trim() || slugify(title),
+      imageUrl: imageUrl ?? undefined,
       link: link.trim() || undefined,
     });
     onClose();
@@ -409,13 +428,87 @@ function PortfolioEditor({
             <Input id="portfolio-year" type="number" min={2000} max={new Date().getFullYear()} value={year} onChange={(e) => setYear(e.target.value)} />
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Image seed" hint="Cover image comes from picsum.photos, seeded by this value">
-            <Input id="portfolio-seed" placeholder={slugify(title) || "fleet-console"} value={imageSeed} onChange={(e) => setImageSeed(e.target.value)} />
-          </Field>
-          <Field label="Link" hint="Optional, opens in a new tab">
-            <Input id="portfolio-link" type="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
-          </Field>
+
+        {/* Portfolio cover image upload */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setImageDragActive(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setImageDragActive(false); }}
+          onDrop={handleImageDrop}
+          className={cn(
+            "relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition-colors",
+            imageDragActive
+              ? "border-brand-600 bg-brand-50 text-brand-600"
+              : imageFile
+              ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+              : "border-neutral-200 bg-neutral-50 text-neutral-500 hover:border-neutral-300 hover:text-neutral-600",
+          )}
+        >
+          <input
+            id="portfolio-image-file"
+            type="file"
+            accept="image/jpeg, image/png, image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) {
+                  toast.error("Only JPEG, PNG and WebP images are allowed.");
+                  return;
+                }
+                if (f.size > 5 * 1024 * 1024) {
+                  toast.error("Image too large. Maximum 5 MB.");
+                  return;
+                }
+                setImageFile(f);
+              }
+            }}
+          />
+          <label
+            htmlFor="portfolio-image-file"
+            className="cursor-pointer flex flex-col items-center gap-2 select-none"
+            onClick={(e) => { e.stopPropagation(); }}
+          >
+            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full transition-colors">
+              <Icon icon={Image02Icon} size={16} strokeWidth={2} />
+            </span>
+            <div className="flex flex-col gap-1">
+              {imageFile ? (
+                <>
+                  <p className="text-sm font-semibold">{imageFile.name}</p>
+                  <p className="text-xs text-neutral-500">{Math.round(imageFile.size / 1024)} KB</p>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setImageFile(null); }}
+                    className="text-xs text-rose-600 hover:text-rose-700 underline"
+                  >
+                    Remove
+                  </button>
+                </>
+              : (
+                  <>
+                    <p className="text-sm font-medium text-neutral-900">Drag & drop cover image</p>
+                    <p className="text-xs text-neutral-500">or click to browse</p>
+                    <p className="mt-1 text-[10px] text-neutral-400 uppercase tracking-wider">
+                      JPEG, PNG, WebP · Max 5 MB
+                    </p>
+                  </>
+                )}
+              </div>
+            </label>
+            {imageUrl && (
+              <div className="mt-3 inline-block">
+                <Avatar src={imageUrl} name="Portfolio cover" size="lg" className="rounded-xl border border-neutral-200" />
+              </div>
+            )}
+          </div>
+          {imageUploadError ? (
+            <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Link" hint="Optional, opens in a new tab">
+              <Input id="portfolio-link" type="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
+            </Field>
+          </div>
         </div>
       </div>
     </Modal>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,8 @@ import { PageHeader } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { Building01Icon, Icon, UserAccountIcon } from "@/lib/icons";
 import { formatMoney } from "@/lib/format";
+import { useBlobUpload } from "@/components/upload/blob-upload";
+import { cn } from "@/lib/utils";
 
 export interface BusinessInitial {
   companyName: string;
@@ -102,6 +104,16 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
   });
   const accountName = accountForm.watch("name");
   const accountImage = accountForm.watch("image");
+  const { setValue: setAccountValue } = accountForm;
+
+  const { upload: uploadImage, uploading: imageUploading, error: imageUploadError } = useBlobUpload({
+    accept: "image/jpeg, image/png, image/webp",
+    maxSizeMB: 5,
+    onUploaded: (url) => {
+      setAccountValue("image", url, { shouldValidate: true, shouldDirty: true });
+      toast.success("Profile image uploaded");
+    },
+  });
 
   async function saveBusiness(data: BusinessForm) {
     if (savingBusiness) return;
@@ -173,8 +185,7 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
         description="Your company page and account details. Each panel saves independently."
       />
 
-      {/* ─── Business profile ──────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit(saveBusiness)} className="card flex flex-col gap-5 p-5 sm:p-6">
+      {/* ─── Business profile ──────────────────────────────────────────── */}      <form onSubmit={handleSubmit(saveBusiness)} className="card flex flex-col gap-5 p-5 sm:p-6">
         <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
           <Icon icon={Building01Icon} size={16} strokeWidth={1.8} />
           Business profile
@@ -222,16 +233,49 @@ export function SettingsClient({ business, account }: { business: BusinessInitia
         </p>
         <div className="flex items-center gap-4">
           <Avatar src={accountImage || null} name={accountName || account.name} size="lg" alt="" />
+          <div className="ml-auto shrink-0">
+            <label
+              className={cn(
+                "inline-flex items-center justify-center size-10 rounded-xl border-2 border-dashed transition-colors cursor-pointer",
+                imageUploading
+                  ? "border-brand-600 bg-brand-50 text-brand-600"
+                  : "border-neutral-200 bg-white text-neutral-400 hover:border-neutral-300 hover:text-neutral-600",
+              )}
+              onClick={() => {
+                const input = document.getElementById("client-settings-profile-image") as HTMLInputElement | null;
+                input?.click();
+              }}
+            >
+              <input
+                id="client-settings-profile-image"
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadImage(f);
+                }}
+              />
+              {imageUploading ? (
+                <span className="text-[10px] font-medium">Uploading…</span>
+              ) : (
+                <span className="text-[10px] font-medium uppercase tracking-wider">Change photo</span>
+              )}
+            </label>
+          </div>
           <div className="min-w-0 text-xs text-neutral-500">
             <p className="truncate font-medium text-neutral-700">{account.email}</p>
             <p className="mt-0.5 capitalize">{account.accountType} account</p>
           </div>
         </div>
+        {imageUploadError ? (
+          <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Display name" required error={accountForm.formState.errors.name?.message}>
             <Input {...accountForm.register("name")} />
           </Field>
-          <Field label="Avatar image URL" error={accountForm.formState.errors.image?.message} hint="Optional. Leave blank to keep the monogram.">
+          <Field label="Avatar image URL" error={accountForm.formState.errors.image?.message} hint="Or upload a photo above. Leave blank to keep the monogram.">
             <Input placeholder="https://…/avatar.png" inputMode="url" {...accountForm.register("image")} />
           </Field>
         </div>

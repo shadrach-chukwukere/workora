@@ -8,7 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { LogoMark } from "@/components/ui/logo";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+// Dark mode removed — light mode only.
 import { navForRole } from "@/lib/navigation";
 import {
   Alert02Icon,
@@ -251,8 +251,6 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
             </button>
 
             <div className="min-w-0 flex-1" />
-
-            <ThemeToggle className="hidden sm:flex" />
 
             <NotificationsBell open={bellOpen} setOpen={setBellOpen} />
           </header>

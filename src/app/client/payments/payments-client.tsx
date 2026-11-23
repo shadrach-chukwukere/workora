@@ -70,7 +70,7 @@ export function PaymentsClient({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Payments"
-        description="Milestone funding and payment history. Card details are handled by Stripe Checkout."
+        description="Milestone funding and payment history. Paystack handles secure checkout."
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -83,7 +83,7 @@ export function PaymentsClient({
         <div className="border-b border-neutral-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-neutral-900">Payment methods</h2>
           <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-            Card details are entered securely on Stripe Checkout when you fund a milestone. Workora never stores card numbers.
+            Card details are entered securely on Paystack Checkout when you fund a milestone. Workora never stores card numbers.
           </p>
         </div>
       </section>

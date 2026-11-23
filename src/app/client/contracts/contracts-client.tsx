@@ -122,7 +122,7 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
         `/api/v1/contracts/${encodeURIComponent(approveTarget.contractId)}/milestones/${encodeURIComponent(approveTarget.milestoneId)}/approve`,
       );
       if (result.ok) {
-        toast.success(`Milestone released. ${formatMoney(approveTarget.amountMinor / 100)} was sent to the freelancer's Stripe balance.`);
+        toast.success(`Milestone released. ${formatMoney(approveTarget.amountMinor / 100)} was sent to the freelancer's Paystack balance.`);
         setApproveTarget(null);
         router.refresh();
       } else {
@@ -162,7 +162,7 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
       }
       if (!res.ok || !envelope?.success || !envelope.data?.checkoutUrl) {
         toast.error("Could not start secure checkout", {
-          description: envelope?.message ?? "Stripe Checkout is currently unavailable.",
+          description: envelope?.message ?? "Paystack checkout is currently unavailable.",
         });
         return;
       }
@@ -445,7 +445,7 @@ export function ContractsClient({ initialContracts }: { initialContracts: Contra
         onClose={() => (actionPending ? undefined : setApproveTarget(null))}
         loading={actionPending}
         title={`Release ${approveTarget ? formatMoney(approveTarget.amountMinor / 100) : ""} to the freelancer?`}
-        description="Stripe transfers the approved milestone to the freelancer's connected account. This cannot be undone."
+        description="Paystack transfers the approved milestone to the freelancer's connected account. This cannot be undone."
         confirmLabel="Release funds"
         tone="brand"
         onConfirm={approveMilestoneConfirmed}
