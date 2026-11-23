@@ -19,6 +19,8 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().default(""),
   RESEND_API_KEY: z.string().default(""),
   EMAIL_FROM: z.string().min(1).default("Workora <no-reply@example.com>"),
+  /** Vercel Blob read/write token. When set, OAuth avatars are mirrored to our own storage. */
+  BLOB_READ_WRITE_TOKEN: z.string().default(""),
   STRIPE_SECRET_KEY: z.string().default(""),
   STRIPE_WEBHOOK_SECRET: z.string().default(""),
   PAYSTACK_SECRET_KEY: z.string().default(""),

@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { env } from "../../config/env.js";
 import { db } from "../../database/connection.js";
+import { mirrorProviderAvatarToBlob } from "./oauth-avatar.js";
 
 /** Better Auth is constructed over the shared Kysely instance, with our table/column names. */
 const instance = await db();
@@ -72,6 +73,32 @@ export const auth = betterAuth({
   },
 
   socialProviders,
+
+  /**
+   * Social sign-up: replace the provider's avatar URL with a copy hosted in
+   * our own Vercel Blob store before the user row is inserted. That way the
+   * DB, the session and every public profile all use the same stable URL.
+   * If mirroring is disabled or fails, we keep the provider URL as fallback.
+   */
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const providerImage = typeof user.image === "string" ? user.image.trim() : null;
+          if (!providerImage || !/^https?:\/\//i.test(providerImage)) return;
+
+          const blobUrl = await mirrorProviderAvatarToBlob({
+            id: typeof user.id === "string" ? user.id : null,
+            email: typeof user.email === "string" ? user.email : null,
+            imageUrl: providerImage,
+          });
+          if (!blobUrl) return;
+
+          return { data: { image: blobUrl } };
+        },
+      },
+    },
+  },
 
   // Our snake_case schema, mapped here rather than renamed at the database
   user: {
