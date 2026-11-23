@@ -313,7 +313,7 @@ function ProfileTab({ me, onSaved }: { me: MeUser; onSaved: () => Promise<void> 
         </div>
       </form>
 
-      <PasswordCard />
+      <PasswordCard username={me?.email ?? ""} />
     </div>
   );
 }
@@ -448,7 +448,7 @@ const passwordSchema = z
 
 type PasswordValues = z.infer<typeof passwordSchema>;
 
-function PasswordCard() {
+function PasswordCard({ username }: { username: string }) {
   const {
     register,
     handleSubmit,
@@ -488,6 +488,13 @@ function PasswordCard() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl border border-neutral-200 bg-white p-6 mt-6">
+      <input
+        type="hidden"
+        name="username"
+        autoComplete="username"
+        value={username}
+        readOnly
+      />
       <h2 className="text-sm font-semibold text-neutral-900">Change password</h2>
       <p className="mt-0.5 text-xs text-neutral-500">Use a password you do not reuse anywhere else.</p>
       <div className="mt-4 flex flex-col gap-4">

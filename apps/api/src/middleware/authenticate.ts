@@ -56,9 +56,9 @@ export async function authenticate(request: FastifyRequest): Promise<void> {
 }
 
 /** Terminates the request unless a user is attached. */
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
   if (!request.currentUser) {
-    reply.status(401).send({
+    return reply.status(401).send({
       success: false,
       message: "Authentication required",
       error: { code: "UNAUTHENTICATED", details: {} },
@@ -67,10 +67,10 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply):
 }
 
 export function requireAccountType(...types: Array<AuthedUser["accountType"]>) {
-  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> => {
     const user = request.currentUser;
     if (!user || !types.includes(user.accountType)) {
-      reply.status(403).send({
+      return reply.status(403).send({
         success: false,
         message: "You are not allowed to perform this action",
         error: { code: "FORBIDDEN", details: {} },
@@ -81,11 +81,11 @@ export function requireAccountType(...types: Array<AuthedUser["accountType"]>) {
 
 /** Terminates unless the request carries one of the given admin permissions. */
 export function requirePermission(...permissions: string[]) {
-  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> => {
     const user = request.currentUser;
     const hasPermission = user && (user.accountType === "admin" && permissions.some((p) => user.permissions.has(p)));
     if (!hasPermission) {
-      reply.status(403).send({
+      return reply.status(403).send({
         success: false,
         message: "You are not allowed to perform this action",
         error: { code: "FORBIDDEN", details: {} },

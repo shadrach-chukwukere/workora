@@ -67,8 +67,10 @@ export function Avatar({
           fill
           sizes={sizeToWidth[size]}
           className="size-full object-cover"
-          // Prioritize the first avatar (e.g. in a stack) so it loads eagerly.
-          priority={size === "lg" || size === "xl"}
+          // Profile images can come from OAuth providers or arbitrary uploaded
+          // URLs. Bypass the optimizer so an unrecognised host never produces a
+          // 400 from /_next/image, and avoid head preloads for list avatars.
+          unoptimized
         />
       ) : (
         <span aria-hidden>{initials(name)}</span>

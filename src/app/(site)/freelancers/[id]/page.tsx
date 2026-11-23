@@ -123,7 +123,9 @@ export default async function FreelancerPublicProfile({
             fill
             sizes="100vw"
             className="size-full object-cover object-center"
-            priority
+            loading="eager"
+            fetchPriority="high"
+            unoptimized
           />
         </div>
       ) : null}
