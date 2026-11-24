@@ -209,7 +209,7 @@ export default function AdminVerificationPage() {
           description="Manual KYC review for every freelancer and client."
           breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Verification" }]}
         />
-        <div className="card border-rose-200 bg-rose-50 px-5 py-8 text-center text-sm font-medium text-rose-800">
+        <div className="card px-5 py-8 text-center text-sm font-medium text-neutral-600">
           {error}
           <div className="mt-4">
             <Button size="sm" variant="secondary" onClick={() => void load()}>

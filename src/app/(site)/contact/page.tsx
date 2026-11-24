@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { Select } from "@/components/ui/select";
-import { sendContactMessage } from "./actions";
 import { Icon, Message01Icon, Clock01Icon, ShieldCheckIcon, Building01Icon } from "@/lib/icons";
 
 const TOPICS = [
@@ -30,6 +29,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function ContactPage() {
   const [sending, setSending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -46,18 +46,38 @@ export default function ContactPage() {
 
   async function onSubmit(values: FormValues) {
     setSending(true);
-    const result = await sendContactMessage(values);
-    setSending(false);
-    if (result.ok) {
+    setFailure(null);
+    try {
+      // Browser calls stay same-origin; the Next rewrite forwards to the API.
+      // The public endpoint persists every message even when email is not configured.
+      const response = await fetch("/api/v1/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(values),
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        message?: string;
+        error?: { details?: { issues?: Array<{ message: string }> } };
+      } | null;
+      if (!response.ok || !payload?.success) {
+        const issue = payload?.error?.details?.issues?.[0]?.message;
+        throw new Error(issue || payload?.message || "The server could not save your message.");
+      }
       toast.success("Message sent", {
         description: "We usually reply within one business day.",
       });
       reset({ name: "", email: "", topic: values.topic, message: "" });
-      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      setFailure(message);
+      toast.error("We could not deliver that message.", {
+        description: "Try again, or email hello@workora.com directly.",
+      });
+    } finally {
+      setSending(false);
     }
-    toast.error("We could not deliver that message.", {
-      description: "Please try again, or email hello@workora.com directly.",
-    });
   }
 
   return (
@@ -102,6 +122,11 @@ export default function ContactPage() {
                 {...register("message")}
               />
             </Field>
+            {failure ? (
+              <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {failure}
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-4 pt-2">
               <p className="hidden text-xs text-neutral-500 sm:block">
                 By sending, you agree to our support terms. We never share your details.

@@ -74,9 +74,10 @@ export default async function adminRoutes(app: FastifyInstance) {
       .leftJoin("client_profiles as cp", "cp.user_id", "u.id")
       .select([
         "u.id", "u.name", "u.email", "u.image", "u.account_type", "u.status", "u.email_verified", "u.verified", "u.verification_provider", "u.verified_at", "u.created_at",
-        "fp.headline", "fp.location", "fp.hourly_rate_minor", "fp.verified_identity",
-        "fp.rating_avg", "fp.rating_count", "fp.completed_count",
-        "cp.company_name", "cp.industry", "cp.spent_minor", "cp.projects_count",
+        "fp.headline", "fp.about", "fp.location", "fp.timezone", "fp.hourly_rate_minor", "fp.currency",
+        "fp.availability", "fp.experience_level", "fp.response_time_hours", "fp.verified_identity",
+        "fp.is_featured", "fp.featured_rank", "fp.rating_avg", "fp.rating_count", "fp.completed_count", "fp.earnings_minor",
+        "cp.company_name", "cp.company_size", "cp.industry", "cp.website", "cp.about", "cp.spent_minor", "cp.projects_count",
       ])
       .orderBy("u.created_at", "desc").limit(100);
     if (q) builder = builder.where((eb) => eb.or([eb("u.name", "ilike", `%${q}%`), eb("u.email", "ilike", `%${q}%`)]));
@@ -86,6 +87,201 @@ export default async function adminRoutes(app: FastifyInstance) {
     }
     const rows = await builder.execute();
     reply.send(ok({ users: rows.map((r) => ({ ...r })) }));
+  });
+
+  /** GET /admin/users/:id — the complete account record plus all content it owns. */
+  app.get("/admin/users/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const instance = await db();
+    const user = await instance.selectFrom("users").selectAll().where("id", "=", id).executeTakeFirst();
+    if (!user) {
+      reply.status(404).send({ success: false, message: "Account not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+
+    const [freelancer, client, projects, portfolio, reviews, experience, education, certifications] = await Promise.all([
+      instance.selectFrom("freelancer_profiles").selectAll().where("user_id", "=", id).executeTakeFirst() ?? Promise.resolve(null),
+      instance.selectFrom("client_profiles").selectAll().where("user_id", "=", id).executeTakeFirst() ?? Promise.resolve(null),
+      user.account_type === "client"
+        ? instance.selectFrom("projects")
+            .select(["id", "title", "status", "budget_min_minor", "budget_max_minor", "currency", "created_at"])
+            .where("client_id", "=", id).orderBy("created_at", "desc").limit(100).execute()
+        : instance.selectFrom("projects")
+            .select(["id", "title", "status", "budget_min_minor", "budget_max_minor", "currency", "created_at"])
+            .where("id", "in", (eb) => eb.selectFrom("proposals").select("project_id").where("freelancer_id", "=", id))
+            .orderBy("created_at", "desc").limit(100).execute(),
+      instance.selectFrom("portfolio_projects")
+        .select(["id", "title", "summary", "role", "year", "project_url", "sort_order", "created_at"])
+        .where("freelancer_id", "=", id).orderBy("sort_order", "asc").limit(100).execute(),
+      instance.selectFrom("reviews as r")
+        .innerJoin("users as reviewer", "reviewer.id", "r.reviewer_id")
+        .innerJoin("users as reviewee", "reviewee.id", "r.reviewee_id")
+        .select(["r.id", "r.rating", "r.comment", "r.created_at", "reviewer.name as reviewer_name", "reviewee.name as reviewee_name"])
+        .where((eb) => eb.or([eb("r.reviewer_id", "=", id), eb("r.reviewee_id", "=", id)]))
+        .orderBy("r.created_at", "desc").limit(100).execute(),
+      instance.selectFrom("work_experiences").selectAll().where("freelancer_id", "=", id).orderBy("start_date", "desc").limit(100).execute(),
+      instance.selectFrom("education").selectAll().where("freelancer_id", "=", id).orderBy("start_year", "desc").limit(100).execute(),
+      instance.selectFrom("certifications").selectAll().where("freelancer_id", "=", id).orderBy("year", "desc").limit(100).execute(),
+    ]);
+
+    reply.send(ok({ user, freelancer, client, content: { projects, portfolio, reviews, experience, education, certifications } }));
+  });
+
+  /** PATCH /admin/users/:id — edit identity, contact details, status and role profile. Never changes account_type. */
+  app.patch("/admin/users/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const instance = await db();
+    const existing = await instance.selectFrom("users").select(["id", "email"]).where("id", "=", id).executeTakeFirst();
+    if (!existing) {
+      reply.status(404).send({ success: false, message: "Account not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+
+    const userPatch: Record<string, unknown> = {};
+    const textFields = [
+      "name", "image", "banner_url", "phone", "github_url", "linkedin_url",
+      "twitter_url", "instagram_url", "website_url", "portfolio_url",
+    ];
+    for (const field of textFields) {
+      const value = body[field];
+      if (typeof value === "string" || value === null) userPatch[field] = typeof value === "string" ? value.trim() : null;
+    }
+    if (typeof userPatch.name === "string" && (userPatch.name as string).length < 2) {
+      reply.status(400).send({ success: false, message: "Name must be at least 2 characters", error: { code: "VALIDATION_ERROR", details: {} } });
+      return;
+    }
+    if (typeof body.status === "string" && ["active", "suspended", "restricted"].includes(body.status)) {
+      userPatch.status = body.status;
+    }
+    if (typeof body.email === "string" && body.email.trim()) {
+      const email = body.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        reply.status(400).send({ success: false, message: "Enter a valid email address", error: { code: "VALIDATION_ERROR", details: {} } });
+        return;
+      }
+      const clash = await instance.selectFrom("users").select("id").where("email", "=", email).where("id", "!=", id).executeTakeFirst();
+      if (clash) {
+        reply.status(409).send({ success: false, message: "Another account already uses that email", error: { code: "CONFLICT", details: {} } });
+        return;
+      }
+      userPatch.email = email;
+    }
+    if (Object.keys(userPatch).length > 0) {
+      await instance.updateTable("users").set(userPatch as never).where("id", "=", id).execute();
+    }
+
+    const freelancerBody = body.freelancer;
+    if (freelancerBody && typeof freelancerBody === "object") {
+      const input = freelancerBody as Record<string, unknown>;
+      const patch: Record<string, unknown> = {};
+      for (const field of ["headline", "about", "location", "timezone", "currency"] as const) {
+        const value = input[field];
+        if (typeof value === "string" || value === null) patch[field] = typeof value === "string" ? value.trim() : null;
+      }
+      for (const field of ["hourly_rate_minor", "response_time_hours", "featured_rank"] as const) {
+        const value = input[field];
+        if (value === null || (typeof value === "number" && Number.isFinite(value))) patch[field] = value;
+      }
+      if (typeof input.availability === "string" && ["available", "limited", "unavailable"].includes(input.availability)) {
+        patch.availability = input.availability;
+      }
+      if (typeof input.experience_level === "string" && ["entry", "intermediate", "expert"].includes(input.experience_level)) {
+        patch.experience_level = input.experience_level;
+      }
+      if (typeof input.is_featured === "boolean") patch.is_featured = input.is_featured;
+      if (Object.keys(patch).length > 0) {
+        await instance.updateTable("freelancer_profiles").set(patch as never).where("user_id", "=", id).execute();
+      }
+    }
+
+    const clientBody = body.client;
+    if (clientBody && typeof clientBody === "object") {
+      const input = clientBody as Record<string, unknown>;
+      const patch: Record<string, unknown> = {};
+      for (const field of ["company_name", "industry", "website", "about"] as const) {
+        const value = input[field];
+        if (typeof value === "string" || value === null) patch[field] = typeof value === "string" ? value.trim() : null;
+      }
+      if (typeof input.company_size === "string" && ["1-10", "11-50", "51-200", "201-1000", "1000+"].includes(input.company_size)) {
+        patch.company_size = input.company_size;
+      }
+      if (Object.keys(patch).length > 0) {
+        await instance.updateTable("client_profiles").set(patch as never).where("user_id", "=", id).execute();
+      }
+    }
+
+    reply.send(ok({ id }, "Account updated"));
+  });
+
+  /** Editable content owned by an account. Users are never deletable. */
+  const ADMIN_CONTENT_TABLES: Record<string, string> = {
+    project: "projects",
+    portfolio: "portfolio_projects",
+    review: "reviews",
+    experience: "work_experiences",
+    education: "education",
+    certification: "certifications",
+  };
+
+  /** PATCH /admin/content/:kind/:id — edit one piece of owned content. */
+  app.patch("/admin/content/:kind/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+    const { kind, id } = request.params as { kind: string; id: string };
+    const table = ADMIN_CONTENT_TABLES[kind];
+    if (!table) {
+      reply.status(400).send({ success: false, message: "Unknown content type", error: { code: "VALIDATION_ERROR", details: {} } });
+      return;
+    }
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const patch: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (typeof value === "string" || typeof value === "number" || value === null) patch[key] = value;
+    }
+    if (Object.keys(patch).length === 0) {
+      reply.status(400).send({ success: false, message: "No fields to update", error: { code: "VALIDATION_ERROR", details: {} } });
+      return;
+    }
+    const instance = await db();
+    const updated = await (instance as unknown as {
+      updateTable: (name: string) => {
+        set: (value: Record<string, unknown>) => { where: (column: string, op: string, id: string) => { returning: (column: string) => { executeTakeFirst: () => Promise<{ id: string } | undefined> } } };
+      };
+    })
+      .updateTable(table).set(patch).where("id", "=", id).returning("id").executeTakeFirst();
+    if (!updated) {
+      reply.status(404).send({ success: false, message: "Content not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+    reply.send(ok({ id: updated.id }, "Content updated"));
+  });
+
+  /** DELETE /admin/content/:kind/:id — remove one piece of owned content (never a user). */
+  app.delete("/admin/content/:kind/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+    const { kind, id } = request.params as { kind: string; id: string };
+    const table = ADMIN_CONTENT_TABLES[kind];
+    if (!table) {
+      reply.status(400).send({ success: false, message: "Unknown content type", error: { code: "VALIDATION_ERROR", details: {} } });
+      return;
+    }
+    const instance = await db();
+    try {
+      const deleted = await (instance as unknown as {
+        deleteFrom: (name: string) => { where: (column: string, op: string, id: string) => { returning: (column: string) => { executeTakeFirst: () => Promise<{ id: string } | undefined> } } };
+      })
+        .deleteFrom(table).where("id", "=", id).returning("id").executeTakeFirst();
+      if (!deleted) {
+        reply.status(404).send({ success: false, message: "Content not found", error: { code: "NOT_FOUND", details: {} } });
+        return;
+      }
+      reply.send(ok({ id: deleted.id }, "Content removed"));
+    } catch (error) {
+      request.log.warn({ err: error }, "admin content delete failed");
+      reply.status(409).send({
+        success: false,
+        message: "This item is linked to other records. Remove those links first, then try again.",
+        error: { code: "CONFLICT", details: {} },
+      });
+    }
   });
 
   /** PATCH /admin/freelancers/:id/curation — set editorial placement for launch talent. */
@@ -319,15 +515,27 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   /** POST /admin/categories — create a category. */
   app.post("/admin/categories", { preHandler: [requirePermission("admin.moderation")] }, async (request, reply) => {
-    const body = request.body as { slug?: string; name?: string; description?: string; kind?: "category" | "specialty"; sort_order?: number };
+    const body = request.body as {
+      slug?: string;
+      name?: string;
+      description?: string;
+      kind?: "category" | "specialty";
+      sort_order?: number;
+      is_launch_focus?: boolean;
+      launch_rank?: number;
+    };
     if (!body.slug?.trim() || !body.name?.trim()) {
       reply.status(400).send({ success: false, message: "slug and name are required", error: { code: "VALIDATION_ERROR", details: {} } });
       return;
     }
     const instance = await db();
     const inserted = await sql<{ id: string }>`
-      INSERT INTO categories (slug, name, description, kind, sort_order)
-      VALUES (${body.slug.trim().toLowerCase()}, ${body.name.trim()}, ${body.description?.trim() ?? ""}, ${body.kind ?? "category"}, ${body.sort_order ?? 100})
+      INSERT INTO categories (slug, name, description, kind, sort_order, is_launch_focus, launch_rank)
+      VALUES (
+        ${body.slug.trim().toLowerCase()}, ${body.name.trim()}, ${body.description?.trim() ?? ""},
+        ${body.kind ?? "category"}, ${body.sort_order ?? 100},
+        ${body.is_launch_focus === true}, ${Number.isFinite(body.launch_rank) ? body.launch_rank : 100}
+      )
       RETURNING id
     `.execute(instance).then((r) => r.rows[0]!);
     reply.status(201).send(ok({ id: inserted.id }, "Category created"));
@@ -359,6 +567,18 @@ export default async function adminRoutes(app: FastifyInstance) {
       return;
     }
     reply.send(ok({ id: updated.id }, "Category updated"));
+  });
+
+  /** DELETE /admin/categories/:id — remove a category. Linked skills cascade and projects keep their history with a null category. */
+  app.delete("/admin/categories/:id", { preHandler: [requirePermission("admin.moderation")] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const instance = await db();
+    const deleted = await sql<{ id: string }>`DELETE FROM categories WHERE id = ${id} RETURNING id`.execute(instance);
+    if (!deleted.rows[0]) {
+      reply.status(404).send({ success: false, message: "Category not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+    reply.send(ok({ id: deleted.rows[0].id }, "Category removed"));
   });
 
   /** GET /admin/analytics/monthly?months=12 — trailing monthly trend, sparse months filled with zeros. */

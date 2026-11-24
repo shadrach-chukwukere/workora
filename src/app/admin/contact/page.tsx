@@ -192,7 +192,7 @@ export default function AdminContactPage() {
           description="Every message sent through the public contact form."
           breadcrumbs={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Contact inbox" }]}
         />
-        <div className="card border-rose-200 bg-rose-50 px-5 py-8 text-center text-sm font-medium text-rose-800">
+        <div className="card px-5 py-8 text-center text-sm font-medium text-neutral-600">
           {error}
           <div className="mt-4">
             <Button size="sm" variant="secondary" onClick={() => void load(1)}>
@@ -309,7 +309,7 @@ export default function AdminContactPage() {
       ) : null}
 
       {error && items !== null ? (
-        <p className="text-sm text-rose-700" role="alert">
+        <p className="text-sm text-amber-800" role="alert">
           {error}
         </p>
       ) : null}

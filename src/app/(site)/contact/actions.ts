@@ -9,12 +9,6 @@
 
 import { serverApiBase } from "@/lib/api-base";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export interface ContactResult {
-  ok: boolean;
-}
-
 export interface PasswordResetResult {
   ok: boolean;
   message: string;
@@ -51,33 +45,6 @@ export async function requestPasswordReset(email: string): Promise<PasswordReset
   }
 }
 
-export async function sendContactMessage(input: {
-  name: string;
-  email: string;
-  topic: string;
-  message: string;
-}): Promise<ContactResult> {
-  const name = (input.name ?? "").trim();
-  const email = (input.email ?? "").trim();
-  const topic = (input.topic ?? "").trim();
-  const message = (input.message ?? "").trim();
-
-  if (name.length < 2 || name.length > 120) return { ok: false };
-  if (!EMAIL_RE.test(email)) return { ok: false };
-  if (!topic) return { ok: false };
-  if (message.length < 20 || message.length > 4000) return { ok: false };
-
-  try {
-    const response = await fetch(`${serverApiBase}/api/v1/contact`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, email, topic, message }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-    const body = (await response.json().catch(() => null)) as { success?: boolean } | null;
-    return { ok: response.ok && body?.success === true };
-  } catch {
-    return { ok: false };
-  }
-}
+// Contact submissions are handled client-side via the same-origin /api/v1/contact
+// rewrite. That keeps the public form independent of server-action serialization
+// and lets the UI show the API's real validation message.

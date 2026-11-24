@@ -134,11 +134,11 @@ export default async function AdminDashboardPage() {
         }
       />
       <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-neutral-400">
-        <Badge tone="outline">Environment: local development · demo data</Badge>
+        <Badge tone="outline">Live marketplace snapshot</Badge>
       </div>
 
-      {/* Platform pulse */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+      {/* Platform pulse — 4 per row on desktop, then 3, 2 and 1 as screens narrow. */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
         <StatCard
           label="Total accounts"
           value={formatNumber(totalAccounts)}
@@ -242,7 +242,7 @@ export default async function AdminDashboardPage() {
               tone="warning"
             />
             <AttentionRow
-              href="/admin/users"
+              href="/admin/freelancers"
               icon={<Icon icon={UserMultiple02Icon} size={15} strokeWidth={1.8} />}
               title={`${suspendedUsers.length} suspended ${suspendedUsers.length === 1 ? "account" : "accounts"}`}
               body={suspendedUsers.length > 0 ? suspendedUsers.slice(0, 3).map((u) => u.name).join(", ") : "No suspended accounts right now."}
@@ -253,7 +253,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <p className="text-center text-[11px] text-neutral-400">
-        Volume and commission are settled on the platform ledger. Environment: local development · demo data.
+        Volume and commission are settled on the platform ledger.
       </p>
     </div>
   );

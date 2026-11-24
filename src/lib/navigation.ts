@@ -92,7 +92,6 @@ export const adminNav: NavSection[] = [
  {
  title: "People",
  items: [
- { href: "/admin/users", label: "Users", icon: "UserMultiple02Icon" },
  { href: "/admin/freelancers", label: "Freelancers", icon: "UserCircleIcon" },
  { href: "/admin/clients", label: "Clients", icon: "Building01Icon" },
  ],

@@ -137,16 +137,11 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   const sidebar = (
-    <div
-      className={cn(
-        "flex h-full w-[256px] shrink-0 flex-col",
-        role === "admin" ? "bg-neutral-900 text-neutral-200" : "border-r border-neutral-200 bg-white text-neutral-900"
-      )}
-    >
-      <div className={cn("flex h-16 shrink-0 items-center justify-between px-4", role === "admin" ? "" : "border-b border-neutral-200")}>
+    <div className="flex h-full w-[256px] shrink-0 flex-col border-r border-neutral-200 bg-white text-neutral-900">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-neutral-200 px-4">
         <Link href="/" aria-label="Workora public site" className="flex items-center gap-2">
           <LogoMark size={22} />
-          <span className={cn("text-[15px] font-semibold tracking-tight", role === "admin" ? "text-white" : "text-neutral-900")}>
+          <span className="text-[15px] font-semibold tracking-tight text-neutral-900">
             Workora
           </span>
         </Link>
@@ -161,12 +156,12 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
       </div>
 
       <nav aria-label={`${role} navigation`} className="flex-1 overflow-y-auto px-3 py-4">
-        <p className={cn("mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.12em]", role === "admin" ? "text-neutral-500" : "text-neutral-400")}>
+        <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-400">
           {role === "freelancer" ? "Freelancer workspace" : role === "client" ? "Client workspace" : "Admin console"}
         </p>
         {sections.map((section) => (
           <div key={section.title} className="mb-5 last:mb-0">
-            <p className={cn("mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.12em]", role === "admin" ? "text-neutral-600" : "text-neutral-400")}>
+            <p className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-400">
               {section.title}
             </p>
             <ul className="space-y-0.5">
@@ -179,11 +174,7 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors",
-                        role === "admin"
-                          ? active
-                            ? "bg-brand-600/10 text-brand-700 border border-brand-200/50"
-                            : "text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300"
-                          : active
+                        active
                           ? "bg-brand-50 text-brand-800"
                           : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900",
                       )}
@@ -199,11 +190,11 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
         ))}
       </nav>
 
-      <div className={cn("shrink-0 p-3", role === "admin" ? "" : "border-t border-neutral-200")}>
-        <div className={cn("flex items-center gap-2.5 rounded-xl p-2", role === "admin" ? "bg-neutral-800" : "bg-neutral-50")}>
+      <div className="shrink-0 border-t border-neutral-200 p-3">
+        <div className="flex items-center gap-2.5 rounded-xl bg-neutral-50 p-2">
           <Avatar src={account.image} name={account.userName} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className={cn("truncate text-[13px] font-semibold", role === "admin" ? "text-white" : "text-neutral-900")}>
+            <p className="truncate text-[13px] font-semibold text-neutral-900">
               {account.userName}
             </p>
             <p className="truncate text-[11px] text-neutral-500">{account.email}</p>
