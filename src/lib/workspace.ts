@@ -6,6 +6,8 @@ export interface SessionAccount {
   name: string;
   email: string;
   image: string | null;
+  /** True until the user has chosen (or skipped to the default) their marketplace role. */
+  needsRoleSelection: boolean;
 }
 
 /** Where a role lands after sign-in / when opening the workspace. */

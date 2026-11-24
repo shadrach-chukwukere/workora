@@ -14,11 +14,10 @@ import {
   Icon,
   Alert02Icon,
   ArrowLeft02Icon,
-  Briefcase02Icon,
   CheckmarkCircle02Icon,
   EyeIcon,
-  WorkIcon,
 } from "@/lib/icons";
+import { RoleChoiceCards } from "@/components/onboarding/role-choice";
 import { cn } from "@/lib/utils";
 
 type Role = "freelancer" | "client";
@@ -155,29 +154,16 @@ export default function RegisterForm() {
           {step === 3 && "You are all set"}
         </h1>
         <p className="mt-2 text-neutral-600">
-          {step === 1 && "Choose the side of the marketplace you want to start with. You can always add more later."}
+          {step === 1 && "Choose the side of the marketplace you want to start with. This can’t be changed later."}
           {step === 2 && "Pick a strong password and tell us who you are."}
           {step === 3 && "Your workspace is ready. Sign in whenever you want to continue."}
         </p>
 
         {/* Step 1: choose role */}
         {step === 1 ? (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <RoleCard
-              icon={<Icon icon={WorkIcon as any} size={22} strokeWidth={1.8} />}
-              title="I am a freelancer"
-              body="Post your portfolio, send proposals and get paid into milestones."
-              selected={role === "freelancer"}
-              onClick={() => setRole("freelancer")}
-            />
-            <RoleCard
-              icon={<Icon icon={Briefcase02Icon as any} size={22} strokeWidth={1.8} />}
-              title="I am hiring"
-              body="Post a brief, review proposals and fund milestones when work lands."
-              selected={role === "client"}
-              onClick={() => setRole("client")}
-            />
-            <div className="sm:col-span-2 mt-2 flex items-center justify-end gap-4">
+          <div className="mt-6">
+            <RoleChoiceCards selected={role} onSelect={setRole} />
+            <div className="mt-4 flex items-center justify-end gap-4">
               <Link href="/login" className="text-sm text-neutral-600 hover:text-neutral-900">
                 Already have an account?
               </Link>
@@ -267,32 +253,3 @@ export default function RegisterForm() {
   );
 }
 
-function RoleCard({
-  icon,
-  title,
-  body,
-  selected,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cn(
-        "flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-colors",
-        selected ? "border-brand-600 bg-brand-50/50 ring-1 ring-brand-600" : "border-neutral-200 bg-white hover:border-neutral-300",
-      )}
-    >
-      <span className="inline-flex size-11 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700">{icon}</span>
-      <span className="text-[15px] font-semibold text-neutral-900">{title}</span>
-      <span className="text-sm leading-relaxed text-neutral-600">{body}</span>
-    </button>
-  );
-}

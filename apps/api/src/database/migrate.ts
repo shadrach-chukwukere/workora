@@ -16,6 +16,7 @@ import * as m0011 from "./migrations/0011_project_cover.js";
 import * as m0012 from "./migrations/0012_passkeys.js";
 import * as m0013 from "./migrations/0013_contact_details.js";
 import * as m0014 from "./migrations/0014_connections.js";
+import * as m0015 from "./migrations/0015_role_selection.js";
 
 export const migrations: Record<string, Migration> = {
   "0001_extensions": m0001,
@@ -32,6 +33,7 @@ export const migrations: Record<string, Migration> = {
   "0012_passkeys": m0012,
   "0013_contact_details": m0013,
   "0014_connections": m0014,
+  "0015_role_selection": m0015,
 };
 
 const provider: MigrationProvider = {

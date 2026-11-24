@@ -38,14 +38,18 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
 
     // Better Auth does not expose account_type by default; look it up via our API.
     let accountType: Role = "freelancer";
+    let needsRoleSelection = false;
     try {
       const meRes = await fetch(`${serverApiBase}/api/v1/users/me`, {
         headers: { cookie, origin },
         cache: "no-store",
         signal: AbortSignal.timeout(3000),
       });
-      const meBody = (await meRes.json()) as { data?: { user?: { account_type: Role } } } | null;
+      const meBody = (await meRes.json()) as {
+        data?: { user?: { account_type?: Role; needsRoleSelection?: boolean } };
+      } | null;
       accountType = meBody?.data?.user?.account_type ?? "freelancer";
+      needsRoleSelection = meBody?.data?.user?.needsRoleSelection === true;
     } catch {
       // fall back to the default workspace rather than logging the user out
     }
@@ -56,6 +60,7 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
       name: session.user.name,
       email: session.user.email,
       image: session.user.image ?? null,
+      needsRoleSelection,
     };
   } catch {
     return null;
@@ -72,6 +77,8 @@ export const getSessionAccount = cache(fetchSessionAccount);
 export async function requireSession({ requiredRole }: { requiredRole?: Role } = {}): Promise<SessionAccount> {
   const account = await getSessionAccount();
   if (!account) redirect("/login");
+
+  if (account.needsRoleSelection) redirect("/onboarding/role");
 
   if (requiredRole && account.role !== requiredRole) {
     redirect(workspacePathForRole(account.role));

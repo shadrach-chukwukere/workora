@@ -8,6 +8,7 @@ import { FilterSelect } from "@/components/ui/select";
 import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon, UserMultiple02Icon } from "@/lib/icons";
 import type { PublicFreelancer } from "@/lib/api-data";
 import { serverApiBase } from "@/lib/api-base";
+import { getSessionAccount } from "@/components/layout/session-guard";
 
 const PAGE_SIZE = 9;
 
@@ -65,6 +66,7 @@ export default async function FindTalentPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
+  const viewer = await getSessionAccount();
   const q = param(sp.q).trim().toLowerCase();
   const category = param(sp.category, "all");
   const availability = param(sp.availability, "all");
@@ -79,6 +81,7 @@ export default async function FindTalentPage({
   apiQuery.set("sort", apiSort(sort));
   apiQuery.set("page", String(requestedPage));
   apiQuery.set("perPage", String(PAGE_SIZE));
+  if (viewer) apiQuery.set("excludeUserId", viewer.userId);
   const rawRate = rate !== "all" ? rateParams(rate) : "";
 
   // Gracefully renders nothing when the API is down.

@@ -20,6 +20,7 @@ export interface UsersTable {
   website_url: string | null;
   portfolio_url: string | null;
   account_type: ColumnType<"freelancer" | "client" | "admin", "freelancer" | "client" | "admin" | undefined, "freelancer" | "client" | "admin" | undefined>;
+  role_selected_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
   status: Generated<"active" | "suspended" | "restricted">;
   failed_logins: Generated<number>;
   locked_until: Date | null;

@@ -77,11 +77,15 @@ export default function LoginForm({
       cache: "no-store",
     });
     const meBody = (await me.json().catch(() => null)) as {
-      data?: { user?: { account_type?: string } };
+      data?: { user?: { account_type?: string; needsRoleSelection?: boolean } };
     } | null;
-    const actualRole = (meBody?.data?.user?.account_type as Role | undefined) ?? role;
     toast.success("Welcome back");
-    router.push(workspacePathForRole(actualRole));
+    if (meBody?.data?.user?.needsRoleSelection) {
+      router.push("/onboarding/role");
+    } else {
+      const actualRole = (meBody?.data?.user?.account_type as Role | undefined) ?? role;
+      router.push(workspacePathForRole(actualRole));
+    }
     router.refresh();
   }
 
@@ -207,6 +211,9 @@ export default function LoginForm({
             <GoogleAuthButton onClick={signInWithGoogle} />
             <GitHubAuthButton onClick={signInWithGitHub} />
           </div>
+          <p className="mt-2 text-center text-[11px] text-neutral-500">
+            New here? You’ll choose freelancer or client once after signing in.
+          </p>
           <div className="mt-3">
             <Button
               type="button"

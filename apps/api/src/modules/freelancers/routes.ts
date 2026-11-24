@@ -155,6 +155,8 @@ export default async function freelancersRoutes(app: FastifyInstance) {
     const sort = String(request.query.sort ?? "recommended");
     const page = Math.max(1, Number(request.query.page ?? 1) || 1);
     const perPage = Math.min(50, Math.max(1, Number(request.query.perPage ?? 20) || 20));
+    const rawExcludeUserId = request.query.excludeUserId ? String(request.query.excludeUserId) : "";
+    const excludeUserId = /^[0-9a-fA-F-]{36}$/.test(rawExcludeUserId) ? rawExcludeUserId : undefined;
 
     const instance = await db();
 
@@ -163,6 +165,8 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       .innerJoin("freelancer_profiles as fp", "fp.user_id", "u.id")
       .where("u.status", "=", "active")
       .where("u.account_type", "=", "freelancer");
+
+    if (excludeUserId) builder = builder.where("u.id", "!=", excludeUserId);
 
     if (q) {
       builder = builder.where((eb) =>

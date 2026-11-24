@@ -5,6 +5,6 @@ import RegisterForm from "./register-form";
 
 export default async function RegisterPage() {
   const account = await getSessionAccount();
-  if (account) redirect(workspacePathForRole(account.role));
+  if (account) redirect(account.needsRoleSelection ? "/onboarding/role" : workspacePathForRole(account.role));
   return <RegisterForm />;
 }

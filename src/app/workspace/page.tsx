@@ -9,5 +9,8 @@ export default async function WorkspacePage() {
   if (!account) {
     redirect("/login");
   }
+  if (account.needsRoleSelection) {
+    redirect("/onboarding/role");
+  }
   redirect(workspacePathForRole(account.role));
 }

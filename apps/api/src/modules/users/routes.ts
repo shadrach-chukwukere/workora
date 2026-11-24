@@ -37,7 +37,7 @@ export default async function usersRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.status, u.created_at,
+      SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.role_selected_at, u.status, u.created_at,
              ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
@@ -47,7 +47,15 @@ export default async function usersRoutes(app: FastifyInstance) {
       LEFT JOIN client_profiles cp ON cp.user_id = u.id
       WHERE u.id = ${user.id}
     `.execute(instance);
-    reply.send(ok({ user: serializeProfileRow(rows.rows[0] as ProfileRow) }));
+    const row = rows.rows[0] as ProfileRow & { role_selected_at?: Date | string | null };
+    const { role_selected_at: _roleSelectedAt, ...profileRow } = row;
+    void _roleSelectedAt;
+    reply.send(ok({
+      user: {
+        ...serializeProfileRow(profileRow as ProfileRow),
+        needsRoleSelection: !row.role_selected_at,
+      },
+    }));
   });
 
   /** PATCH /users/me/account-type — choose role during onboarding (once). */
@@ -57,19 +65,40 @@ export default async function usersRoutes(app: FastifyInstance) {
       reply.status(401).send({ success: false, message: "Authentication required", error: { code: "UNAUTHENTICATED", details: {} } });
       return;
     }
-    const body = request.body as { accountType?: "freelancer" | "client" };
-    if (body.accountType !== "freelancer" && body.accountType !== "client") {
+    const instance = await db();
+    const current = await sql<{ role_selected_at: Date | string | null }>`
+      SELECT role_selected_at FROM users WHERE id = ${user.id}
+    `.execute(instance);
+    if (!current.rows[0]) {
+      reply.status(404).send({ success: false, message: "User not found", error: { code: "NOT_FOUND", details: {} } });
+      return;
+    }
+    if (current.rows[0].role_selected_at) {
+      reply.status(409).send({
+        success: false,
+        message: "Your account type is already set and cannot be changed",
+        error: { code: "ROLE_ALREADY_SET", details: {} },
+      });
+      return;
+    }
+
+    const body = request.body as { accountType?: "freelancer" | "client"; useDefault?: boolean } | null;
+    // Skipping the choice explicitly means the documented freelancer default.
+    const role = body?.useDefault === true ? "freelancer" : body?.accountType;
+    if (role !== "freelancer" && role !== "client") {
       reply.status(400).send({ success: false, message: "accountType must be freelancer or client", error: { code: "VALIDATION_ERROR", details: { field: "accountType" } } });
       return;
     }
-    const instance = await db();
-    await sql`UPDATE users SET account_type = ${body.accountType} WHERE id = ${user.id}`.execute(instance);
-    if (body.accountType === "freelancer") {
+
+    await sql`
+      UPDATE users SET account_type = ${role}, role_selected_at = now() WHERE id = ${user.id}
+    `.execute(instance);
+    if (role === "freelancer") {
       await sql`INSERT INTO freelancer_profiles (user_id, headline, about) VALUES (${user.id}, 'New to Workora — full profile pending', '') ON CONFLICT (user_id) DO NOTHING`.execute(instance);
     } else {
       await sql`INSERT INTO client_profiles (user_id, about) VALUES (${user.id}, '') ON CONFLICT (user_id) DO NOTHING`.execute(instance);
     }
-    reply.send(ok({ accountType: body.accountType }, "Account type saved"));
+    reply.send(ok({ accountType: role, needsRoleSelection: false }, "Account type saved"));
   });
 
   /** GET /users/me/projects — caller's own projects (client), all statuses, newest first. */

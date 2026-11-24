@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ArrowRight02Icon } from "@/lib/icons";
+import { getSessionAccount } from "@/components/layout/session-guard";
 import { apiServer, sessionCookie } from "@/lib/api-server";
 import { formatDateTime } from "@/lib/format";
 
@@ -23,6 +24,7 @@ interface NotificationRow {
 
 export default async function NotificationsPage() {
   const cookie = await sessionCookie();
+  if ((await getSessionAccount())?.needsRoleSelection) redirect("/onboarding/role");
 
   let rawData: { notifications: NotificationRow[]; total: number; unreadCount: number };
   try {
