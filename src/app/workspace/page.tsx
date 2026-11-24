@@ -1,16 +1,14 @@
 import { redirect } from "next/navigation";
 import { getSessionAccount } from "@/components/layout/session-guard";
-import { workspacePathForRole } from "@/lib/workspace";
+import { onboardingDestination, safeNextPath } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage() {
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const next = safeNextPath((await searchParams)?.next);
   const account = await getSessionAccount();
   if (!account) {
-    redirect("/login");
+    redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
   }
-  if (account.needsRoleSelection) {
-    redirect("/onboarding/role");
-  }
-  redirect(workspacePathForRole(account.role));
+  redirect(onboardingDestination(account, next ?? undefined));
 }

@@ -25,6 +25,7 @@ import {
   Tick02Icon,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { safeNextPath, withNext } from "@/lib/workspace";
 
 type BudgetFilter = "all" | "fixed" | "hourly";
 type LevelFilter = "all" | "entry" | "intermediate" | "expert";
@@ -83,6 +84,7 @@ interface ApiEnvelope<T> {
   success?: boolean;
   message?: string;
   data?: T;
+  error?: { code?: string };
 }
 
 async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
@@ -103,6 +105,11 @@ async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
     envelope = null;
   }
   if (!res.ok || !envelope?.success || envelope.data === undefined) {
+    if (envelope?.error?.code === "VERIFICATION_REQUIRED") {
+      const error = new Error(envelope.message ?? "Identity verification is required");
+      error.name = "VerificationRequired";
+      throw error;
+    }
     throw new Error(envelope?.message ?? `Request to ${path} failed`);
   }
   return envelope.data;
@@ -406,6 +413,12 @@ function SubmitProposalModal({
     } catch (cause) {
       if (cause instanceof Error && cause.name === "AuthRequired") {
         router.push("/login");
+        return;
+      }
+      if (cause instanceof Error && cause.name === "VerificationRequired") {
+        toast.error("Verify your identity before sending a proposal");
+        const next = safeNextPath(`${window.location.pathname}${window.location.search}`);
+        router.push(withNext("/onboarding/verify", next));
         return;
       }
       toast.error("Could not send the proposal", {

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { GoogleAuthButton, GitHubAuthButton } from "@/components/ui/social-auth-button";
 import { Field, Input } from "@/components/ui/form";
 import { Logo } from "@/components/ui/logo";
-import { workspacePathForRole } from "@/lib/workspace";
+import { onboardingDestination, safeNextPath } from "@/lib/workspace";
+import { nextFromUrl } from "@/lib/onboarding-next";
 import {
   ArrowRight02Icon,
   BiometricAccessIcon,
@@ -21,17 +22,23 @@ import type { Role } from "@/lib/types";
  * the OAuth state cookie is stored on this site and survives the provider
  * round trip; next.config.ts proxies /api/auth/* to the backend.
  */
-async function startSocialSignIn(provider: "google" | "github") {
+async function startSocialSignIn(provider: "google" | "github", next?: string | null) {
   try {
     const origin = window.location.origin;
+    const target = safeNextPath(next);
+    const callbackURL = target
+      ? `${origin}/workspace?next=${encodeURIComponent(target)}`
+      : `${origin}/workspace`;
     const res = await fetch("/api/auth/sign-in/social", {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
         provider,
-        callbackURL: `${origin}/workspace`,
-        errorCallbackURL: `${origin}/login?error=social_failed`,
+        callbackURL,
+        errorCallbackURL: target
+          ? `${origin}/login?error=social_failed&next=${encodeURIComponent(target)}`
+          : `${origin}/login?error=social_failed`,
       }),
     });
     const body = (await res.json().catch(() => null)) as {
@@ -50,15 +57,17 @@ async function startSocialSignIn(provider: "google" | "github") {
   }
 }
 
-const signInWithGoogle = () => startSocialSignIn("google");
-const signInWithGitHub = () => startSocialSignIn("github");
+const signInWithGoogle = () => startSocialSignIn("google", nextFromUrl());
+const signInWithGitHub = () => startSocialSignIn("github", nextFromUrl());
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export default function LoginForm({
   defaultRole = "freelancer",
+  next,
 }: {
   defaultRole?: Role;
+  next?: string | null;
 }) {
   const router = useRouter();
   const role = defaultRole;
@@ -77,15 +86,28 @@ export default function LoginForm({
       cache: "no-store",
     });
     const meBody = (await me.json().catch(() => null)) as {
-      data?: { user?: { account_type?: string; needsRoleSelection?: boolean } };
+      data?: {
+        user?: {
+          account_type?: Role;
+          needsRoleSelection?: boolean;
+          needsVerification?: boolean;
+          verified?: boolean;
+        };
+      };
     } | null;
     toast.success("Welcome back");
-    if (meBody?.data?.user?.needsRoleSelection) {
-      router.push("/onboarding/role");
-    } else {
-      const actualRole = (meBody?.data?.user?.account_type as Role | undefined) ?? role;
-      router.push(workspacePathForRole(actualRole));
-    }
+    const meUser = meBody?.data?.user;
+    const actualRole = meUser?.account_type ?? role;
+    const verified = meUser?.verified === true;
+    const destination = onboardingDestination(
+      {
+        role: actualRole,
+        needsRoleSelection: meUser?.needsRoleSelection === true,
+        needsVerification: meUser?.needsVerification === true || !verified,
+      },
+      safeNextPath(next ?? nextFromUrl()),
+    );
+    router.push(destination);
     router.refresh();
   }
 
@@ -237,7 +259,7 @@ export default function LoginForm({
           <p className="mt-4 border-t border-neutral-200 pt-4 text-sm text-neutral-600 text-center">
             New to Workora?{" "}
             <Link
-              href="/register"
+              href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
               className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline"
             >
               Create an account

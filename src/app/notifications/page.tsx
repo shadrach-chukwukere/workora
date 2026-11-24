@@ -9,6 +9,7 @@ import { Icon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { ArrowRight02Icon } from "@/lib/icons";
 import { getSessionAccount } from "@/components/layout/session-guard";
+import { onboardingDestination, safeNextPath, withNext } from "@/lib/workspace";
 import { apiServer, sessionCookie } from "@/lib/api-server";
 import { formatDateTime } from "@/lib/format";
 
@@ -22,9 +23,18 @@ interface NotificationRow {
   url: string | null;
 }
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const cookie = await sessionCookie();
-  if ((await getSessionAccount())?.needsRoleSelection) redirect("/onboarding/role");
+  const next = safeNextPath((await searchParams)?.next);
+  const account = await getSessionAccount();
+  if (!account) redirect(withNext("/login", next ?? "/notifications"));
+  if (account.needsRoleSelection || (account.needsVerification && account.role !== "admin")) {
+    redirect(onboardingDestination(account, next ?? "/notifications"));
+  }
 
   let rawData: { notifications: NotificationRow[]; total: number; unreadCount: number };
   try {

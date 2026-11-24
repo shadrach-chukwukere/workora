@@ -24,6 +24,8 @@ export const createVerificationRequestSchema = z.object({
   method: z.enum(["manual", "yoti"]).default("manual"),
   documentType: z.enum(["passport", "drivers-license", "national-id", "other", "yoti"]).default("other"),
   documents: z.array(verificationDocumentInputSchema).max(10).optional(),
+  /** Safe same-site destination to preserve through a Yoti round trip. */
+  next: z.string().trim().max(2048).optional(),
 });
 
 /** POST /verification-requests/:id/documents — replace/add documents after info_requested. */

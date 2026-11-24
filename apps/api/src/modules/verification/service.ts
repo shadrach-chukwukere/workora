@@ -111,6 +111,7 @@ export async function createVerificationRequest(
     method: "manual" | "yoti";
     documentType: "passport" | "drivers-license" | "national-id" | "other" | "yoti";
     documents?: VerificationDocumentInput[];
+    next?: string;
   },
 ): Promise<{ request: ReturnType<typeof ownRequest>; yoti?: YotiSessionInfo }> {
   const user = await assertUserExists(db, userId);
@@ -128,7 +129,7 @@ export async function createVerificationRequest(
     if (!isYotiConfigured()) {
       throw serviceUnavailable("Yoti identity verification is not configured; use manual review instead");
     }
-    yoti = await createYotiSession(userId);
+    yoti = await createYotiSession(userId, input.next);
   } else {
     assertManualDocuments(input.documents);
     await assertUploadsBelongToUser(userId, input.documents!);

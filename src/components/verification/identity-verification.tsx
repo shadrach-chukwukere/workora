@@ -1,324 +1,586 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/ui/form";
-import { Alert02Icon, CheckmarkCircle02Icon, File01Icon, SentIcon, StampIcon } from "@/lib/icons";
+import {
+  Alert02Icon,
+  ArrowRight02Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  File01Icon,
+  Image02Icon,
+  SentIcon,
+  ShieldCheckIcon,
+  StampIcon,
+} from "@/lib/icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
+import { safeNextPath, workspacePathForRole } from "@/lib/workspace";
+import type { Role } from "@/lib/types";
+
+type VerificationStatus = "pending" | "info_requested" | "approved" | "rejected";
+type DocumentCategory = "identity_document" | "selfie" | "supporting_document";
+type DocumentType = "passport" | "drivers-license" | "national-id" | "other";
+
+interface UploadedDocument {
+  category: DocumentCategory;
+  key: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
 
 interface VerificationRequestItem {
   id: string;
-  status: "pending" | "info_requested" | "approved" | "rejected";
+  status: VerificationStatus;
   document_type: string;
+  method: "manual" | "yoti";
+  provider: string;
+  yoti_state: string | null;
   submitted_at: string;
+  decided_at: string | null;
   notes: string | null;
-  document_name: string | null;
+}
+
+interface YotiSession {
+  requestId: string;
+  sessionId: string;
+  iframeUrl: string;
+  expiresIn: number;
 }
 
 interface IdentityVerificationCardProps {
   onVerified?: () => void;
+  next?: string | null;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
-const DOCUMENT_TYPES = [
-  { value: "national-id", label: "National ID", icon: "ID" },
-  { value: "passport", label: "Passport", icon: "PP" },
-  { value: "drivers-license", label: "Driver's License", icon: "DL" },
-  { value: "other", label: "Other Government ID", icon: "ID" },
-] as const;
+const DOCUMENT_TYPES: Array<{ value: DocumentType; label: string }> = [
+  { value: "national-id", label: "National ID" },
+  { value: "passport", label: "Passport" },
+  { value: "drivers-license", label: "Driver’s license" },
+  { value: "other", label: "Other government ID" },
+];
 
-export function IdentityVerificationCard({ onVerified }: IdentityVerificationCardProps = {}) {
-  const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
-  const [documentType, setDocumentType] = useState<"national-id" | "passport" | "drivers-license" | "other">("national-id");
-  const [file, setFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
+const STATUS_LABELS: Record<VerificationStatus, string> = {
+  pending: "Under admin review",
+  info_requested: "More information needed",
+  approved: "Approved",
+  rejected: "Needs attention",
+};
+
+class ApiFailure extends Error {
+  constructor(
+    message: string,
+    public code = "BAD_REQUEST",
+  ) {
+    super(message);
+  }
+}
+
+async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    credentials: "include",
+    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { success?: boolean; data?: T; message?: string; error?: { code?: string } }
+    | null;
+  if (!res.ok || !body?.success) {
+    throw new ApiFailure(body?.message ?? "Request failed. Please try again.", body?.error?.code);
+  }
+  return body.data as T;
+}
+
+async function toBase64(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  }
+  return btoa(binary);
+}
+
+function validateFile(file: File): void {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error(`${file.name}: use a JPG, PNG, WebP or PDF file`);
+  }
+  if (file.size < 1 || file.size > MAX_FILE_SIZE) {
+    throw new Error(`${file.name}: files must be under 10 MB`);
+  }
+}
+
+function statusTone(status: VerificationStatus): "warning" | "brand" | "success" | "danger" {
+  if (status === "pending") return "warning";
+  if (status === "info_requested") return "brand";
+  if (status === "approved") return "success";
+  return "danger";
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function readStoredYotiSession(requestId: string): YotiSession | null {
+  try {
+    const raw = window.localStorage.getItem(`workora:yoti:${requestId}`);
+    return raw ? (JSON.parse(raw) as YotiSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeYotiSession(session: YotiSession): void {
+  try {
+    window.localStorage.setItem(`workora:yoti:${session.requestId}`, JSON.stringify(session));
+  } catch {
+    // Private browsing may block storage; the iframe still works for this page.
+  }
+}
+
+export function IdentityVerificationCard({ onVerified, next }: IdentityVerificationCardProps = {}) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
+  const [verified, setVerified] = useState(false);
+  const [role, setRole] = useState<Role>("freelancer");
+  const [yotiAvailable, setYotiAvailable] = useState(false);
+  const [method, setMethod] = useState<"manual" | "yoti">("manual");
+  const [documentType, setDocumentType] = useState<DocumentType>("national-id");
+  const [identityFile, setIdentityFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
+  const [yotiSession, setYotiSession] = useState<YotiSession | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [yotiNotice, setYotiNotice] = useState<string | null>(null);
+  const notifiedVerified = useRef(false);
+  const importedYoti = useRef(false);
 
-  async function loadRequests() {
+  const destination = safeNextPath(next);
+
+  const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/verification-requests/me", { credentials: "include", cache: "no-store" });
-      if (res.status === 401 || res.status === 403) {
-        setLoading(false);
-        return;
+      const [me, status, list] = await Promise.all([
+        api<{ data: { user: { verified?: boolean; account_type?: Role } } }>("/api/v1/users/me"),
+        api<{ available: boolean }>("/api/v1/verification-requests/yoti/status"),
+        api<{ requests: VerificationRequestItem[] }>("/api/v1/verification-requests/me"),
+      ]);
+      const isVerified = me.data.user.verified === true;
+      setVerified(isVerified);
+      if (me.data.user.account_type) setRole(me.data.user.account_type);
+      setYotiAvailable(status.available);
+      setRequests(list.requests);
+      const latest = list.requests[0];
+      setYotiSession(latest?.method === "yoti" && latest.status === "pending" ? readStoredYotiSession(latest.id) : null);
+      if (isVerified && !notifiedVerified.current) {
+        notifiedVerified.current = true;
+        onVerified?.();
       }
-      const data = await res.json() as { success?: boolean; data?: { requests: VerificationRequestItem[] } };
-      if (data.success && data.data) {
-        setRequests(data.data.requests);
-      }
-      setError(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load verification status");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn’t load verification status");
     } finally {
       setLoading(false);
     }
-  }
+  }, [onVerified]);
 
   useEffect(() => {
-    void loadRequests();
-  }, []);
+    void load();
+  }, [load]);
 
   const latest = requests[0];
-  const canSubmit = !latest || latest.status === "rejected";
-  const canResubmit = latest?.status === "info_requested";
-  const isVerified = latest?.status === "approved";
+  const isInfoRequested = latest?.status === "info_requested";
+  const isPending = latest?.status === "pending";
+  const isRejected = latest?.status === "rejected";
+  const needsSubmission = !latest || isRejected || isInfoRequested;
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragActive(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragActive(false);
-    const droppedFile = e.dataTransfer?.files?.[0];
-    if (droppedFile) handleFileSelect(droppedFile);
-  };
-
-  const handleFileSelect = (selectedFile: File) => {
-    setError(null);
-    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setError("Only JPEG, PNG, WebP or PDF documents are allowed.");
+  useEffect(() => {
+    if (loading || importedYoti.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const yotiResult = params.get("yoti");
+    if (yotiResult === "error") {
+      setYotiNotice("Yoti could not complete the session. You can try again or use manual review.");
+      importedYoti.current = true;
       return;
     }
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("File too large. Maximum 10 MB.");
+    if (yotiResult !== "complete" || !latest || latest.method !== "yoti") return;
+
+    const stored = readStoredYotiSession(latest.id);
+    setYotiSession(stored);
+    importedYoti.current = true;
+    setBusy("yoti-complete");
+    void api(`/api/v1/verification-requests/${latest.id}/yoti/complete`, { method: "POST" })
+      .then(() => {
+        toast.success("Yoti results imported — admin review is still required");
+        return load();
+      })
+      .catch((error: unknown) => {
+        setYotiNotice(error instanceof Error ? error.message : "Yoti results are not ready yet");
+      })
+      .finally(() => setBusy(null));
+  }, [loading, latest, load]);
+
+  async function upload(file: File, category: DocumentCategory): Promise<UploadedDocument> {
+    validateFile(file);
+    return api<{ document: UploadedDocument }>("/api/v1/verification-requests/uploads", {
+      method: "POST",
+      body: JSON.stringify({
+        category,
+        fileName: file.name,
+        mimeType: file.type,
+        contentBase64: await toBase64(file),
+      }),
+    }).then((body) => body.document);
+  }
+
+  async function submitManual(): Promise<void> {
+    if (!identityFile || !selfieFile) {
+      toast.error("Add an identity document and a clear selfie");
       return;
     }
-    setFile(selectedFile);
-  };
-
-  const openFilePicker = () => {
-    fileInputRef.current?.click();
-  };
-
-  async function submitDocument() {
-    if (!file || busy) return;
-    setBusy(true);
-    setError(null);
+    setBusy("manual");
     try {
-      const presignResponse = await fetch("/api/upload?scope=document&access=private&folder=identity", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/octet-stream" },
-        body: file,
-      });
-      if (!presignResponse.ok) {
-        const err = await presignResponse.json().catch(() => ({}));
-        throw new Error(err.error || "Document upload failed. Try again.");
-      }
-      const upload = (await presignResponse.json()) as { url: string; pathname: string; size: number; contentType: string };
-
-      const path = canResubmit
-        ? `/api/v1/verification-requests/${encodeURIComponent(latest!.id)}/document`
-        : "/api/v1/verification-requests";
-      const requestResponse = await fetch(path, {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...(canSubmit ? { documentType } : {}),
-          documentKey: upload.pathname,
-          documentName: file.name,
-          documentUrl: upload.url,
-        }),
-      });
-      if (!requestResponse.ok) {
-        const err = await requestResponse.json().catch(() => ({}));
-        throw new Error(err.message || "Could not submit verification request.");
+      const documents: UploadedDocument[] = [];
+      documents.push(await upload(identityFile, "identity_document"));
+      documents.push(await upload(selfieFile, "selfie"));
+      for (const file of supportingFiles) {
+        documents.push(await upload(file, "supporting_document"));
       }
 
-      setFile(null);
-      setError(null);
-      toast.success(canResubmit ? "Document resubmitted for review" : "Identity verification submitted", {
-        description: "Our team will review your document privately.",
-      });
-      await loadRequests();
-      if (isVerified) onVerified?.();
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Could not submit your document";
-      setError(message);
-      toast.error("Verification submission failed", { description: message });
+      if (isInfoRequested && latest) {
+        await api(`/api/v1/verification-requests/${latest.id}/documents`, {
+          method: "POST",
+          body: JSON.stringify({ documents }),
+        });
+        toast.success("Documents resubmitted for review");
+      } else {
+        await api("/api/v1/verification-requests", {
+          method: "POST",
+          body: JSON.stringify({ method: "manual", documentType, documents, ...(destination ? { next: destination } : {}) }),
+        });
+        toast.success("Verification submitted for admin review");
+      }
+      setIdentityFile(null);
+      setSelfieFile(null);
+      setSupportingFiles([]);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn’t submit your documents");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
-  const removeFile = () => {
-    setFile(null);
-    setError(null);
-  };
+  async function startYoti(): Promise<void> {
+    setBusy("yoti");
+    try {
+      const result = await api<{
+        request: VerificationRequestItem;
+        yoti: { sessionId: string; clientSessionToken: string; iframeUrl: string; expiresIn: number };
+      }>("/api/v1/verification-requests", {
+        method: "POST",
+        body: JSON.stringify({
+          method: "yoti",
+          documentType: "yoti",
+          ...(destination ? { next: destination } : {}),
+        }),
+      });
+      const session: YotiSession = {
+        requestId: result.request.id,
+        sessionId: result.yoti.sessionId,
+        iframeUrl: result.yoti.iframeUrl,
+        expiresIn: result.yoti.expiresIn,
+      };
+      storeYotiSession(session);
+      setYotiSession(session);
+      setYotiNotice(null);
+      await load();
+      toast.success("Yoti session ready — complete it in the window below");
+    } catch (error) {
+      if (error instanceof ApiFailure && error.code === "SERVICE_UNAVAILABLE") {
+        setMethod("manual");
+        toast.error("Yoti isn’t configured yet. Use the manual review option instead.");
+      } else {
+        toast.error(error instanceof Error ? error.message : "Couldn’t start Yoti");
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function importYotiResults(): Promise<void> {
+    if (!yotiSession) return;
+    setBusy("yoti-complete");
+    try {
+      await api(`/api/v1/verification-requests/${yotiSession.requestId}/yoti/complete`, { method: "POST" });
+      toast.success("Yoti results imported — an admin will make the final decision");
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Yoti results aren’t ready yet");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function continueAfterVerification() {
+    router.push(destination ?? workspacePathForRole(role));
+    router.refresh();
+  }
+
+  if (loading) {
+    return (
+      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" aria-busy="true">
+        <p className="text-sm text-neutral-600">Loading verification status…</p>
+      </section>
+    );
+  }
+
+  if (verified) {
+    return (
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+        <div className="flex items-start gap-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={24} strokeWidth={1.8} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-emerald-950">Identity verified</h2>
+              <Badge tone="success">Verified</Badge>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-emerald-900">
+              An admin approved your identity documents. You can now post projects, send proposals and use the rest of
+              the marketplace.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button type="button" size="md" onClick={continueAfterVerification}>
+                {destination ? "Continue" : "Go to my workspace"}
+                <HugeiconsIcon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
+              </Button>
+              {!destination ? (
+                <Button type="button" size="md" variant="secondary" href="/freelancer/settings">
+                  Manage verification
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="mt-6 max-w-3xl rounded-xl border border-neutral-200 bg-white p-6 sm:p-8">
-      <div className="flex items-start justify-between gap-4 mb-3">
+    <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" id="identity-verification">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Identity verification</h2>
-          <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-            Upload an identity document for private admin review. Documents are
-            stored privately and are not shown on your public profile.
+          <div className="flex items-center gap-2">
+            <HugeiconsIcon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} className="text-brand-700" />
+            <h2 className="text-lg font-semibold text-neutral-900">Verify your identity</h2>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600">
+            Workora reviews every photo and document by hand before marking an account as verified. Use Yoti where
+            available, or upload a government ID and selfie for manual review.
           </p>
         </div>
-        {isVerified ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-            <span className="size-3 shrink-0"><HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={2} /></span>
-            Verified
-          </span>
-        ) : null}
+        {latest ? <Badge tone={statusTone(latest.status)}>{STATUS_LABELS[latest.status]}</Badge> : null}
       </div>
 
-      {loading ? (
-        <p className="mt-4 text-sm text-neutral-500">Checking verification status…</p>
-      ) : latest && !canSubmit && !canResubmit ? (
-        <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-sm font-medium text-neutral-800 capitalize">
-            {latest.status.replace("_", " ")}
-          </p>
-          {latest.notes ? (
-            <p className="mt-1 text-sm text-neutral-600">{latest.notes}</p>
-          ) : null}
-          {latest.status === "approved" ? (
-            <p className="mt-1 text-xs text-emerald-700">Your identity is verified.</p>
+      {yotiNotice ? (
+        <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <HugeiconsIcon icon={Alert02Icon} size={18} strokeWidth={1.8} className="mt-0.5 shrink-0" />
+          <p>{yotiNotice}</p>
+        </div>
+      ) : null}
+
+      {isPending ? (
+        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <HugeiconsIcon icon={Clock01Icon} size={20} strokeWidth={1.8} className="mt-0.5 text-amber-700" />
+            <div>
+              <p className="font-medium text-amber-950">Your submission is with our review team</p>
+              <p className="mt-1 text-sm text-amber-900">
+                Submitted {formatDate(latest!.submitted_at)}. We’ll email you when a decision is made. No action is
+                needed right now.
+              </p>
+            </div>
+          </div>
+
+          {latest?.method === "yoti" ? (
+            <div className="mt-5">
+              <p className="text-sm font-medium text-neutral-900">Yoti session</p>
+              {yotiSession ? (
+                <>
+                  <iframe
+                    title="Yoti identity verification"
+                    src={yotiSession.iframeUrl}
+                    className="mt-3 h-[540px] w-full rounded-xl border border-neutral-200 bg-white"
+                    allow="camera; microphone"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <Button type="button" size="md" variant="secondary" loading={busy === "yoti-complete"} onClick={() => void importYotiResults()}>
+                      I’ve finished with Yoti — import results
+                    </Button>
+                    <span className="text-xs text-neutral-500">Yoti results are imported for review, never auto-approved.</span>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-neutral-600">
+                  Session <span className="font-mono text-xs">{latest.yoti_state ?? "active"}</span>. If you closed the
+                  Yoti window, refresh this page to restore it, or wait for the review team.
+                </p>
+              )}
+            </div>
           ) : null}
         </div>
       ) : null}
 
-      {!loading && (canSubmit || canResubmit) && (
-        <div className="mt-6 space-y-4">
-          {canSubmit ? (
-            <Field label="Document type" required>
-              <select
-                id="verification-document-type"
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value as any)}
-                className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-600"
-              >
-                {DOCUMENT_TYPES.map((dt) => (
-                  <option key={dt.value} value={dt.value}>
-                    {dt.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
+      {isInfoRequested && latest ? (
+        <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-5 text-sm text-sky-950">
+          <p className="font-medium">Our reviewer asked for more information</p>
+          <p className="mt-1 whitespace-pre-wrap text-sky-900">{latest.notes ?? "Please upload a clearer identity document and selfie."}</p>
+        </div>
+      ) : null}
 
-          {/* Modern drag-and-drop upload zone */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={cn(
-              "relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200",
-              dragActive
-                ? "border-brand-600 bg-brand-50 text-brand-700"
-                : file
-                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                : "border-neutral-200 bg-neutral-50 text-neutral-500 hover:border-neutral-300 hover:text-neutral-700",
-            )}
-          >
-            <input
-              ref={fileInputRef}
-              id="verification-document-file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileSelect(f);
-              }}
-            />
-            <label
-              htmlFor="verification-document-file"
-              className="cursor-pointer flex flex-col items-center gap-3 select-none"
-              onClick={(e) => {
-                e.stopPropagation();
-                openFilePicker();
-              }}
-            >
-              <div
-                className={cn(
-                  "inline-flex size-16 shrink-0 items-center justify-center rounded-full transition-colors",
-                  dragActive
-                    ? "bg-brand-100 text-brand-600"
-                    : file
-                    ? "bg-emerald-100 text-emerald-600"
-                    : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200",
-                )}
-              >
-                <HugeiconsIcon icon={File01Icon} size={22} strokeWidth={2} />
-              </div>
-              <div>
-                {file ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <p className="text-sm font-semibold">{file.name}</p>
-                    <p className="text-xs text-neutral-500">
-                      {Math.round(file.size / 1024)} KB
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile();
-                      }}
-                      className="text-xs text-rose-600 hover:text-rose-700 underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-neutral-900">
-                      Drag & drop your document here
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      or click to browse
-                    </p>
-                    <p className="mt-1 text-[10px] text-neutral-400 uppercase tracking-wider">
-                      JPEG, PNG, WebP or PDF · Max 10 MB
-                    </p>
-                  </>
-                )}
-              </div>
-            </label>
-          </div>
+      {isRejected && latest ? (
+        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-950">
+          <p className="font-medium">This submission was not approved</p>
+          <p className="mt-1 whitespace-pre-wrap text-rose-900">{latest.notes ?? "Please submit new documents."}</p>
+          <p className="mt-2 text-rose-800">You can submit a fresh request below with clearer photos.</p>
+        </div>
+      ) : null}
 
-          {error ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-              <div className="flex items-start gap-2">
-                <HugeiconsIcon icon={Alert02Icon} size={16} strokeWidth={2} className="mt-0.5 text-rose-600" />
-                <p className="text-sm text-rose-700">{error}</p>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex justify-end sm:justify-start">
+      {needsSubmission ? (
+        <div className="mt-6">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Verification method">
             <Button
-              size="md"
-              disabled={!file || busy}
-              loading={busy}
-              onClick={() => void submitDocument()}
+              type="button"
+              size="sm"
+              variant={method === "manual" ? "primary" : "secondary"}
+              onClick={() => setMethod("manual")}
             >
-              {busy ? "Uploading…" : canResubmit ? "Resubmit document" : "Submit for verification"}
+              Manual review
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={method === "yoti" ? "primary" : "secondary"}
+              disabled={!yotiAvailable}
+              onClick={() => setMethod("yoti")}
+              title={yotiAvailable ? "Use Yoti identity verification" : "Yoti is not configured yet"}
+            >
+              Use Yoti
             </Button>
           </div>
-        </div>
-      )}
 
-      {!loading && error && !canSubmit && !canResubmit ? (
-        <p className="mt-4 text-sm text-rose-700" role="alert">
-          {error}
-        </p>
+          {method === "yoti" && yotiAvailable ? (
+            <div className="mt-5 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
+              <p className="text-sm text-neutral-700">
+                Yoti checks your identity document and face in a secure window. Our team still reviews the result before
+                approval.
+              </p>
+              <div className="mt-4">
+                <Button type="button" size="md" loading={busy === "yoti"} onClick={() => void startYoti()}>
+                  Start Yoti verification
+                  <HugeiconsIcon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="mt-5 space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitManual();
+              }}
+            >
+              <Field label="Document type" required>
+                <select
+                  value={documentType}
+                  onChange={(event) => setDocumentType(event.target.value as DocumentType)}
+                  className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-brand-500"
+                >
+                  {DOCUMENT_TYPES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Identity document" required hint="JPG, PNG, WebP or PDF · up to 10 MB">
+                  <label
+                    className={cn(
+                      "flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center text-sm text-neutral-600 hover:border-brand-400",
+                      identityFile && "border-emerald-300 bg-emerald-50 text-emerald-800",
+                    )}
+                  >
+                    <HugeiconsIcon icon={File01Icon} size={22} strokeWidth={1.7} />
+                    <span className="font-medium">{identityFile ? identityFile.name : "Choose a photo or scan"}</span>
+                    <span className="text-xs text-neutral-500">All four corners visible</span>
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept={ALLOWED_TYPES.join(",")}
+                      onChange={(event) => setIdentityFile(event.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </Field>
+
+                <Field label="Selfie" required hint="Face the camera in good light">
+                  <label
+                    className={cn(
+                      "flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center text-sm text-neutral-600 hover:border-brand-400",
+                      selfieFile && "border-emerald-300 bg-emerald-50 text-emerald-800",
+                    )}
+                  >
+                    <HugeiconsIcon icon={Image02Icon} size={22} strokeWidth={1.7} />
+                    <span className="font-medium">{selfieFile ? selfieFile.name : "Choose a clear selfie"}</span>
+                    <span className="text-xs text-neutral-500">No filters or hats</span>
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(event) => setSelfieFile(event.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </Field>
+              </div>
+
+              <Field label="Supporting document (optional)" hint="Up to three extra files, e.g. a second ID or proof of address">
+                <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center text-sm text-neutral-600 hover:border-brand-400">
+                  <HugeiconsIcon icon={StampIcon} size={22} strokeWidth={1.7} />
+                  <span className="font-medium">
+                    {supportingFiles.length ? `${supportingFiles.length} file${supportingFiles.length === 1 ? "" : "s"} selected` : "Add supporting files"}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    accept={ALLOWED_TYPES.join(",")}
+                    onChange={(event) => setSupportingFiles(Array.from(event.target.files ?? []).slice(0, 3))}
+                  />
+                </label>
+              </Field>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-5">
+                <p className="max-w-md text-xs text-neutral-500">
+                  Files are stored privately and shown only to authorized reviewers. Verification is required before
+                  posting projects or sending proposals.
+                </p>
+                <Button type="submit" size="md" loading={busy === "manual"}>
+                  <HugeiconsIcon icon={SentIcon} size={16} strokeWidth={1.8} />
+                  {isInfoRequested ? "Resend for review" : "Submit for review"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       ) : null}
     </section>
   );

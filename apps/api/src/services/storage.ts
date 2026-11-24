@@ -150,7 +150,7 @@ export async function storeVerificationUpload(
   const pathname = `verification/${userId}/${category}/${crypto.randomUUID()}-${safeName}`;
 
   if (env.BLOB_READ_WRITE_TOKEN.trim()) {
-    const blob = await put(pathname, new Uint8Array(body), {
+    const blob = await put(pathname, body, {
       access: "private",
       contentType: mimeType,
       addRandomSuffix: false,

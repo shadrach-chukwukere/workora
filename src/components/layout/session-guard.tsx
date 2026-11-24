@@ -3,7 +3,7 @@ import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { serverApiBase } from "@/lib/api-base";
 import type { Role } from "@/lib/types";
-import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
+import { onboardingDestination, workspacePathForRole, withNext, type SessionAccount } from "@/lib/workspace";
 
 export type { SessionAccount };
 export { workspacePathForRole };
@@ -20,6 +20,32 @@ async function bareOrigin(): Promise<string> {
   return "http://localhost:3000";
 }
 
+/**
+ * Next/Vercel expose the current route on these internal headers. Layouts do
+ * not receive pathname, so this lets the guard preserve a deep link through
+ * onboarding. Returns null when unavailable and silently falls back.
+ */
+async function currentPathFromHeaders(): Promise<string | null> {
+  const hdrs = await headers();
+  const path = hdrs.get("x-invoke-path") ?? hdrs.get("x-matched-path");
+  if (!path?.startsWith("/") || path.startsWith("//")) return null;
+
+  const rawQuery = hdrs.get("x-invoke-query");
+  if (!rawQuery) return path;
+  try {
+    const parsed = JSON.parse(rawQuery) as Record<string, unknown>;
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof value === "string") query.set(key, value);
+      else if (Array.isArray(value) && typeof value[0] === "string") query.set(key, value[0]!);
+    }
+    const serialized = query.toString();
+    return serialized ? `${path}?${serialized}` : path;
+  } catch {
+    return rawQuery.startsWith("?") ? `${path}${rawQuery}` : path;
+  }
+}
+
 async function fetchSessionAccount(): Promise<SessionAccount | null> {
   const cookieStore = await cookies();
   const cookie = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join("; ");
@@ -33,12 +59,15 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;
-    const session = (await res.json()) as { user?: { id: string; name: string; email: string; image: string | null } } | null;
+    const session = (await res.json()) as {
+      user?: { id: string; name: string; email: string; image: string | null; verified?: boolean };
+    } | null;
     if (!session?.user) return null;
 
-    // Better Auth does not expose account_type by default; look it up via our API.
     let accountType: Role = "freelancer";
     let needsRoleSelection = false;
+    let verified = session.user.verified === true;
+    let needsVerification = !verified;
     try {
       const meRes = await fetch(`${serverApiBase}/api/v1/users/me`, {
         headers: { cookie, origin },
@@ -46,12 +75,22 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
         signal: AbortSignal.timeout(3000),
       });
       const meBody = (await meRes.json()) as {
-        data?: { user?: { account_type?: Role; needsRoleSelection?: boolean } };
+        data?: {
+          user?: {
+            account_type?: Role;
+            needsRoleSelection?: boolean;
+            needsVerification?: boolean;
+            verified?: boolean;
+          };
+        };
       } | null;
-      accountType = meBody?.data?.user?.account_type ?? "freelancer";
-      needsRoleSelection = meBody?.data?.user?.needsRoleSelection === true;
+      const meUser = meBody?.data?.user;
+      if (meUser?.account_type) accountType = meUser.account_type;
+      if (typeof meUser?.verified === "boolean") verified = meUser.verified;
+      needsRoleSelection = meUser?.needsRoleSelection === true;
+      needsVerification = meUser?.needsVerification === true || !verified;
     } catch {
-      // fall back to the default workspace rather than logging the user out
+      // Keep the session-derived verification state rather than logging out.
     }
 
     return {
@@ -61,6 +100,8 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
       email: session.user.email,
       image: session.user.image ?? null,
       needsRoleSelection,
+      needsVerification,
+      verified,
     };
   } catch {
     return null;
@@ -73,12 +114,18 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
  */
 export const getSessionAccount = cache(fetchSessionAccount);
 
-/** Server-side guard. Reads the Better Auth session cookie and redirects to /login (or the matching workspace) on failure. */
-export async function requireSession({ requiredRole }: { requiredRole?: Role } = {}): Promise<SessionAccount> {
+/** Server-side guard. Redirects through mandatory onboarding before role checks. */
+export async function requireSession({
+  requiredRole,
+  next,
+}: { requiredRole?: Role; next?: string | null } = {}): Promise<SessionAccount> {
   const account = await getSessionAccount();
-  if (!account) redirect("/login");
+  if (!account) redirect(withNext("/login", next ?? (await currentPathFromHeaders())));
 
-  if (account.needsRoleSelection) redirect("/onboarding/role");
+  const intended = next ?? (await currentPathFromHeaders());
+  if (account.needsRoleSelection || (account.needsVerification && account.role !== "admin")) {
+    redirect(onboardingDestination(account, intended));
+  }
 
   if (requiredRole && account.role !== requiredRole) {
     redirect(workspacePathForRole(account.role));

@@ -40,9 +40,25 @@ function getClient(): yoti.IDVClient {
   return new yoti.IDVClient(sdkId, pem);
 }
 
+/** Only allow same-site internal paths in the Yoti return URLs. */
+function safeNextPath(raw?: string): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
+  if (/\\|[\u0000-\u001F\u007F]/.test(raw)) return null;
+  try {
+    const base = new URL(env.WEB_APP_URL);
+    const url = new URL(raw, base);
+    if (url.origin !== base.origin) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Create an IDV session that captures an ID document and a face image. */
-export async function createYotiSession(userId: string): Promise<YotiSessionInfo> {
+export async function createYotiSession(userId: string, next?: string): Promise<YotiSessionInfo> {
   const client = getClient();
+  const nextPath = safeNextPath(next);
+  const returnSuffix = nextPath ? `&next=${encodeURIComponent(nextPath)}` : "";
   const spec = new yoti.SessionSpecificationBuilder()
     .withClientSessionTokenTtl(600)
     .withResourcesTtl(90000)
@@ -67,8 +83,8 @@ export async function createYotiSession(userId: string): Promise<YotiSessionInfo
         .withSecondaryColour("#FFFFFF")
         .withFontColour("#FFFFFF")
         .withLocale("en")
-        .withSuccessUrl(`${env.WEB_APP_URL}/onboarding/verify?yoti=complete`)
-        .withErrorUrl(`${env.WEB_APP_URL}/onboarding/verify?yoti=error`)
+        .withSuccessUrl(`${env.WEB_APP_URL}/onboarding/verify?yoti=complete${returnSuffix}`)
+        .withErrorUrl(`${env.WEB_APP_URL}/onboarding/verify?yoti=error${returnSuffix}`)
         .withAllowHandoff(true)
         .build(),
     )

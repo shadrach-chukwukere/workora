@@ -18,6 +18,7 @@ import {
   EyeIcon,
 } from "@/lib/icons";
 import { RoleChoiceCards } from "@/components/onboarding/role-choice";
+import { safeNextPath, withNext } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 
 type Role = "freelancer" | "client";
@@ -31,7 +32,7 @@ const detailsSchema = z.object({
 
 type DetailsValues = z.infer<typeof detailsSchema>;
 
-export default function RegisterForm() {
+export default function RegisterForm({ next }: { next?: string | null }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role | null>(null);
@@ -111,7 +112,7 @@ export default function RegisterForm() {
   }
 
   function finish() {
-    router.push(role === "freelancer" ? "/freelancer/dashboard" : "/client/dashboard");
+    router.push(withNext("/onboarding/verify", safeNextPath(next)));
     router.refresh();
   }
 
@@ -164,7 +165,10 @@ export default function RegisterForm() {
           <div className="mt-6">
             <RoleChoiceCards selected={role} onSelect={setRole} />
             <div className="mt-4 flex items-center justify-end gap-4">
-              <Link href="/login" className="text-sm text-neutral-600 hover:text-neutral-900">
+              <Link
+                href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+                className="text-sm text-neutral-600 hover:text-neutral-900"
+              >
                 Already have an account?
               </Link>
               <Button onClick={goToDetails} size="md">
@@ -239,11 +243,12 @@ export default function RegisterForm() {
             <Icon icon={CheckmarkCircle02Icon as any} size={26} strokeWidth={1.8} className="text-emerald-600" />
             <p className="mt-3 text-base font-semibold text-emerald-900">Your workspace is ready</p>
             <p className="mt-1 text-sm leading-relaxed text-emerald-800">
-              We sent a verification email to your inbox. Until you verify, a few write actions stay on hold.
+              We sent a verification email to your inbox. Next, submit a government ID and selfie so our team can
+              review your identity. Posting projects and sending proposals stay on hold until approval.
             </p>
             <div className="mt-5">
               <Button onClick={finish} size="md">
-                Go to my dashboard
+                Verify my identity
               </Button>
             </div>
           </div>

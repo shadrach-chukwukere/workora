@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-blocks";
 import { Icon, Download01Icon, File01Icon, Wallet01Icon, CheckmarkCircle02Icon } from "@/lib/icons";
 import { apiServer, sessionCookie } from "@/lib/api-server";
 import { getSessionAccount } from "@/components/layout/session-guard";
+import { onboardingDestination, safeNextPath, withNext } from "@/lib/workspace";
 import { formatMoney, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +35,14 @@ interface InvoiceResponse {
 
 export default async function InvoicePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const cookie = await sessionCookie();
-  if ((await getSessionAccount())?.needsRoleSelection) redirect("/onboarding/role");
   const sp = await searchParams;
   const id = Array.isArray(sp.id) ? sp.id[0] : sp.id;
+  const next = safeNextPath(sp.next) ?? (id ? `/invoice?id=${encodeURIComponent(id)}` : "/invoice");
+  const account = await getSessionAccount();
+  if (!account) redirect(withNext("/login", next));
+  if (account.needsRoleSelection || (account.needsVerification && account.role !== "admin")) {
+    redirect(onboardingDestination(account, next));
+  }
 
   if (!id) redirect("/client/transactions");
 

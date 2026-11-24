@@ -6,7 +6,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { RoleChoiceCards, type MarketplaceRole } from "@/components/onboarding/role-choice";
-import { workspacePathForRole } from "@/lib/workspace";
+import { safeNextPath, withNext } from "@/lib/workspace";
+
+/** After role selection, verification is the next mandatory step. */
+function destinationForRole(role: MarketplaceRole, next?: string | null): string {
+  return withNext("/onboarding/verify", next ?? undefined);
+}
 
 type SaveBody = { accountType: MarketplaceRole } | { useDefault: true };
 
@@ -23,7 +28,7 @@ async function saveRole(body: SaveBody): Promise<void> {
   }
 }
 
-export function RoleSelectionForm({ name }: { name: string }) {
+export function RoleSelectionForm({ name, next }: { name: string; next?: string | null }) {
   const router = useRouter();
   const [role, setRole] = useState<MarketplaceRole | null>(null);
   const [busy, setBusy] = useState<"choice" | "default" | null>(null);
@@ -38,7 +43,8 @@ export function RoleSelectionForm({ name }: { name: string }) {
 
     try {
       await saveRole(nextRole === "default" ? { useDefault: true } : { accountType: nextRole });
-      const destination = nextRole === "default" ? workspacePathForRole("freelancer") : workspacePathForRole(nextRole);
+      const selected = nextRole === "default" ? "freelancer" : nextRole;
+      const destination = destinationForRole(selected, safeNextPath(next));
       toast.success(nextRole === "default" ? "Set up as a freelancer" : "Account type saved");
       router.push(destination);
       router.refresh();

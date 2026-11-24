@@ -25,6 +25,7 @@ import {
 import { EXPERIENCE_LEVELS, PROJECT_DURATIONS } from "@/lib/constants";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { safeNextPath, withNext } from "@/lib/workspace";
 
 interface CategoryOption {
   id: string;
@@ -238,13 +239,27 @@ export default function PostProjectPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
+      const envelope = (await res.json().catch(() => null)) as
+        | {
+            success?: boolean;
+            message?: string;
+            data?: { project?: { id: string } };
+            error?: {
+              code?: string;
+              details?: { issues?: { path: string; message: string }[] };
+            };
+          }
+        | null;
+      if (envelope?.error?.code === "VERIFICATION_REQUIRED") {
+        toast.error("Verify your identity before posting a project");
+        const next = safeNextPath(`${window.location.pathname}${window.location.search}`);
+        router.push(withNext("/onboarding/verify", next));
+        return;
+      }
       if (res.status === 401 || res.status === 403) {
         router.push("/login");
         return;
       }
-      const envelope = (await res.json().catch(() => null)) as
-        | { success?: boolean; message?: string; data?: { project?: { id: string } }; error?: { details?: { issues?: { path: string; message: string }[] } } }
-        | null;
       if (!res.ok || !envelope?.success || !envelope.data?.project) {
         const issues = envelope?.error?.details?.issues ?? [];
         for (const issue of issues) {
