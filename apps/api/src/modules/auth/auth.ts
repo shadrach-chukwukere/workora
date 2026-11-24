@@ -108,6 +108,11 @@ export const auth = betterAuth({
       createdAt: "created_at",
       updatedAt: "updated_at",
     },
+    // Read-only to clients: identity verification can only be granted by a
+    // reviewed verification request, never by a sign-up/sign-in payload.
+    additionalFields: {
+      verified: { type: "boolean", required: false, defaultValue: false, input: false, returned: true },
+    },
   },
   session: {
     modelName: "sessions",

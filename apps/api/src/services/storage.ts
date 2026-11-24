@@ -1,5 +1,6 @@
 import { HeadObjectCommand, S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { get, head, put } from "@vercel/blob";
 import { env } from "../config/env.js";
 import { AppError } from "../plugins/error-handler.js";
 import crypto from "node:crypto";
@@ -102,18 +103,126 @@ export async function presignDownload(key: string): Promise<{ downloadUrl: strin
   return { downloadUrl, expiresIn };
 }
 
+export type VerificationDocumentCategory = "identity_document" | "selfie" | "supporting_document";
+
+const CATEGORY_MIME: Record<VerificationDocumentCategory, string[]> = {
+  identity_document: ALLOWED_MIME.verification,
+  selfie: ["image/jpeg", "image/png", "image/webp"],
+  supporting_document: ALLOWED_MIME.verification,
+};
+
+function assertAllowedDocument(category: VerificationDocumentCategory, mimeType: string, sizeBytes: number) {
+  if (!CATEGORY_MIME[category].includes(mimeType)) {
+    throw new AppError(400, "VALIDATION_ERROR", `A ${category.replaceAll("_", " ")} must be a JPEG, PNG, WebP or PDF where supported`);
+  }
+  if (sizeBytes <= 0 || sizeBytes > MAX_BYTES.verification) {
+    throw new AppError(400, "VALIDATION_ERROR", "Verification document is empty or exceeds the 10 MB limit");
+  }
+}
+
+function isBlobUrl(key: string): boolean {
+  if (!/^https?:\/\//i.test(key)) return false;
+  try {
+    return new URL(key).hostname.endsWith(".blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
+function assertOwnVerificationPath(userId: string, key: string) {
+  const path = isBlobUrl(key) ? new URL(key).pathname.replace(/^\//, "") : key;
+  if (!path.startsWith(`verification/${userId}/`) || path.includes("..") || path.includes("\\")) {
+    throw new AppError(400, "VALIDATION_ERROR", "Verification document must use your private upload key");
+  }
+}
+
+/** Store a private verification file. Prefer Vercel Blob; S3 remains supported. */
+export async function storeVerificationUpload(
+  userId: string,
+  category: VerificationDocumentCategory,
+  fileName: string,
+  mimeType: string,
+  body: Buffer,
+): Promise<{ key: string; pathname: string; mimeType: string; sizeBytes: number; storage: "blob" | "s3" }> {
+  assertAllowedDocument(category, mimeType, body.byteLength);
+
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80) || "document";
+  const pathname = `verification/${userId}/${category}/${crypto.randomUUID()}-${safeName}`;
+
+  if (env.BLOB_READ_WRITE_TOKEN.trim()) {
+    const blob = await put(pathname, new Uint8Array(body), {
+      access: "private",
+      contentType: mimeType,
+      addRandomSuffix: false,
+      token: env.BLOB_READ_WRITE_TOKEN.trim(),
+    });
+    return { key: blob.url, pathname: blob.pathname, mimeType, sizeBytes: body.byteLength, storage: "blob" };
+  }
+
+  if (s3 && env.S3_BUCKET) {
+    await s3.send(new PutObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: pathname,
+      Body: body,
+      ContentType: mimeType,
+    }));
+    return { key: pathname, pathname, mimeType, sizeBytes: body.byteLength, storage: "s3" };
+  }
+
+  throw new AppError(503, "SERVICE_UNAVAILABLE", "Private document storage is not configured");
+}
+
+/** Verify that a submitted key belongs to the user and exists in private storage. */
 export async function assertVerificationUpload(userId: string, key: string): Promise<void> {
+  assertOwnVerificationPath(userId, key);
+
+  if (isBlobUrl(key)) {
+    if (!env.BLOB_READ_WRITE_TOKEN.trim()) {
+      throw new AppError(503, "SERVICE_UNAVAILABLE", "Private document storage is not configured");
+    }
+    const metadata = await head(key, { token: env.BLOB_READ_WRITE_TOKEN.trim() });
+    assertOwnVerificationPath(userId, metadata.pathname);
+    if (!metadata.size || metadata.size > MAX_BYTES.verification) {
+      throw new AppError(400, "VALIDATION_ERROR", "Verification document is empty or exceeds the 10 MB limit");
+    }
+    if (!metadata.contentType || !ALLOWED_MIME.verification.includes(metadata.contentType)) {
+      throw new AppError(400, "VALIDATION_ERROR", "Verification document must be a JPEG, PNG, WebP or PDF");
+    }
+    return;
+  }
+
   if (!s3 || !env.S3_BUCKET) {
     throw new AppError(503, "SERVICE_UNAVAILABLE", "Private document storage is not configured");
   }
-  if (!key.startsWith(`verification/${userId}/`) || key.includes("..") || key.includes("\\")) {
-    throw new AppError(400, "VALIDATION_ERROR", "Verification document must use your private upload key");
-  }
   const uploaded = await s3.send(new HeadObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+  assertOwnVerificationPath(userId, key);
   if (!uploaded.ContentLength || uploaded.ContentLength > MAX_BYTES.verification) {
     throw new AppError(400, "VALIDATION_ERROR", "Verification document is empty or exceeds the 10 MB limit");
   }
   if (!uploaded.ContentType || !ALLOWED_MIME.verification.includes(uploaded.ContentType)) {
     throw new AppError(400, "VALIDATION_ERROR", "Verification document must be a JPEG, PNG, WebP or PDF");
   }
+}
+
+/** Read a private verification file so the admin API can stream it back. */
+export async function readPrivateDocument(key: string): Promise<{ body: Buffer; contentType: string } | null> {
+  if (isBlobUrl(key)) {
+    if (!env.BLOB_READ_WRITE_TOKEN.trim()) return null;
+    const result = await get(key, { access: "private", token: env.BLOB_READ_WRITE_TOKEN.trim() });
+    if (!result || result.statusCode !== 200) return null;
+    const body = Buffer.from(await new Response(result.stream).arrayBuffer());
+    return { body, contentType: result.blob.contentType || "application/octet-stream" };
+  }
+
+  if (!s3 || !env.S3_BUCKET) return null;
+  const object = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+  if (!object.Body) return null;
+  const chunks: Buffer[] = [];
+  for await (const chunk of object.Body as AsyncIterable<Uint8Array>) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return {
+    body: Buffer.concat(chunks),
+    contentType: object.ContentType || "application/octet-stream",
+  };
 }

@@ -31,6 +31,13 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().default(""),
   S3_SECRET_ACCESS_KEY: z.string().default(""),
   S3_FORCE_PATH_STYLE: z.enum(["true", "false"]).default("false"),
+  /**
+   * Yoti IDV is backend-only. YOTI_API_KEY holds the application PEM private
+   * key (from Yoti Hub), with literal \n escapes accepted for env files.
+   * When either value is empty, the manual admin-review flow remains available.
+   */
+  YOTI_SDK_ID: z.string().default(""),
+  YOTI_API_KEY: z.string().default(""),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

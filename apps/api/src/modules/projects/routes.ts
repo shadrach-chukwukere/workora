@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ZodType } from "zod";
-import { ok, requireAccountType, requireAuth } from "../common/index.js";
+import { ok, requireAccountType, requireAuth, requireVerified } from "../common/index.js";
 import { db } from "../../database/connection.js";
 import { AppError } from "../../plugins/error-handler.js";
 import {
@@ -36,7 +36,7 @@ function parseParams<T>(schema: ZodType<T>, params: unknown): T {
 
 export default async function projectsRoutes(app: FastifyInstance) {
   /** POST /api/v1/projects — create and publish a project (client only). */
-  app.post("/projects", { preHandler: [requireAuth, requireAccountType("client")] }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post("/projects", { preHandler: [requireAuth, requireAccountType("client"), requireVerified] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const input = parse(projectBodySchema, request.body);
     const project = await service.createProject(await db(), request.currentUser!, input);
     reply.send(ok({ project }, "Project published"));

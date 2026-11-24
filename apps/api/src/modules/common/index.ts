@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { requireAuth, requireAccountType, requirePermission, type AuthedUser } from "../../middleware/authenticate.js";
+import { requireAuth, requireAccountType, requirePermission, requireVerified, type AuthedUser } from "../../middleware/authenticate.js";
 import type { AppError } from "../../plugins/error-handler.js";
 import { ok } from "../../utils/response.js";
 
-export { requireAccountType, requireAuth, requirePermission, ok };
+export { requireAccountType, requireAuth, requirePermission, requireVerified, ok };
 export type { AuthedUser };
 
 export interface ModuleContext {

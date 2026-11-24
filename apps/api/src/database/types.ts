@@ -10,6 +10,12 @@ export interface UsersTable {
   name: string;
   email: string;
   email_verified: ColumnType<boolean, boolean | undefined, boolean | undefined>;
+  /** Marketplace identity verification, distinct from Better Auth email verification. */
+  verified: Generated<boolean>;
+  verification_provider: string | null;
+  verification_method: string | null;
+  verified_at: Date | null;
+  yoti_session_id: string | null;
   image: string | null;
   banner_url: string | null;
   phone: string | null;
@@ -594,6 +600,11 @@ export interface VerificationRequestsTable {
   document_type: string;
   document_url: string | null;
   document_name: string | null;
+  method: Generated<"manual" | "yoti">;
+  provider: Generated<string>;
+  yoti_session_id: string | null;
+  yoti_state: string | null;
+  yoti_summary: JsonObject | null;
   profile_completeness: Generated<number>;
   submitted_at: Timestamp;
   decided_at: Date | null;
@@ -605,9 +616,13 @@ export interface VerificationDocumentsTable {
   id: Generated<string>;
   request_id: string;
   file_name: string;
-  url: string;
+  url: string | null;
   mime_type: string;
   size_bytes: number;
+  category: Generated<"identity_document" | "selfie" | "supporting_document">;
+  source: Generated<"upload" | "yoti">;
+  storage: Generated<"blob" | "s3" | "yoti">;
+  yoti_media_id: string | null;
   created_at: Timestamp;
 }
 

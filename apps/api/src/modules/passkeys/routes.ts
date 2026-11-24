@@ -107,7 +107,7 @@ export default async function passkeysRoutes(app: FastifyInstance) {
     appendSessionCookie(reply, result.cookie);
     const userRow = await (await db())
       .selectFrom("users")
-      .select(["id", "name", "email", "account_type", "image"])
+      .select(["id", "name", "email", "account_type", "image", "verified"])
       .where("id", "=", result.userId)
       .executeTakeFirst();
     if (!userRow) throw new AppError(401, "UNAUTHENTICATED", "Account not found");
@@ -116,6 +116,7 @@ export default async function passkeysRoutes(app: FastifyInstance) {
       name: userRow.name,
       email: userRow.email,
       accountType: userRow.account_type,
+      verified: userRow.verified,
       image: userRow.image,
     } }, "Signed in with passkey"));
   });

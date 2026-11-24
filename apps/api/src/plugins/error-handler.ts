@@ -6,6 +6,7 @@ export type ErrorCode =
   | "VALIDATION_ERROR"
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
+  | "VERIFICATION_REQUIRED"
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
@@ -32,6 +33,10 @@ export function notFound(message = "Resource not found"): AppError {
 
 export function forbidden(message = "You are not allowed to perform this action"): AppError {
   return new AppError(403, "FORBIDDEN", message);
+}
+
+export function verificationRequired(message = "Identity verification is required for this action"): AppError {
+  return new AppError(403, "VERIFICATION_REQUIRED", message);
 }
 
 export function unauthenticated(message = "Authentication required"): AppError {

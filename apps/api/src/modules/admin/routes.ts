@@ -73,7 +73,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       .leftJoin("freelancer_profiles as fp", "fp.user_id", "u.id")
       .leftJoin("client_profiles as cp", "cp.user_id", "u.id")
       .select([
-        "u.id", "u.name", "u.email", "u.image", "u.account_type", "u.status", "u.email_verified", "u.created_at",
+        "u.id", "u.name", "u.email", "u.image", "u.account_type", "u.status", "u.email_verified", "u.verified", "u.verification_provider", "u.verified_at", "u.created_at",
         "fp.headline", "fp.location", "fp.hourly_rate_minor", "fp.verified_identity",
         "fp.rating_avg", "fp.rating_count", "fp.completed_count",
         "cp.company_name", "cp.industry", "cp.spent_minor", "cp.projects_count",

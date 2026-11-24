@@ -5,6 +5,7 @@ import { sql } from "kysely";
 export interface AuthedUser {
   id: string;
   accountType: "freelancer" | "client" | "admin";
+  verified: boolean;
   roles: string[];
   permissions: Set<string>;
 }
@@ -20,8 +21,8 @@ export async function authenticate(request: FastifyRequest): Promise<void> {
   }
 
   const db = await import("../database/connection.js").then((m) => m.db());
-  const rows = await sql<{ account_type: "freelancer" | "client" | "admin"; key: string }>`
-    SELECT u.account_type, COALESCE(r.key, '') AS key
+  const rows = await sql<{ account_type: "freelancer" | "client" | "admin"; verified: boolean; key: string }>`
+    SELECT u.account_type, u.verified, COALESCE(r.key, '') AS key
     FROM users u
     LEFT JOIN user_roles ur ON ur.user_id = u.id
     LEFT JOIN roles r ON r.id = ur.role_id
@@ -50,6 +51,7 @@ export async function authenticate(request: FastifyRequest): Promise<void> {
   request.currentUser = {
     id: session.user.id,
     accountType,
+    verified: rows.rows[0]!.verified,
     roles,
     permissions: new Set(permissionRows.map((r) => r.key)),
   };
@@ -77,6 +79,17 @@ export function requireAccountType(...types: Array<AuthedUser["accountType"]>) {
       });
     }
   };
+}
+
+/** Terminates unless the signed-in user has completed identity verification. */
+export async function requireVerified(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
+  if (!request.currentUser?.verified) {
+    return reply.status(403).send({
+      success: false,
+      message: "Identity verification is required for this action",
+      error: { code: "VERIFICATION_REQUIRED", details: {} },
+    });
+  }
 }
 
 /** Terminates unless the request carries one of the given admin permissions. */

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
-import { ok, requireAccountType, requireAuth, type AuthedUser } from "../common/index.js";
+import { ok, requireAccountType, requireAuth, requireVerified, type AuthedUser } from "../common/index.js";
 import * as service from "./service.js";
 import { createProposalSchema, myProposalsQuerySchema, uuidParamSchema } from "./schemas.js";
 
@@ -20,7 +20,7 @@ export default async function proposalsRoutes(app: FastifyInstance) {
   /** POST /api/v1/projects/:id/proposals — freelancer (verified) submits a proposal. */
   app.post(
     "/projects/:id/proposals",
-    { preHandler: [requireAuth, requireAccountType("freelancer")] },
+    { preHandler: [requireAuth, requireAccountType("freelancer"), requireVerified] },
     async (request, reply) => {
       const params = uuidParamSchema.safeParse(request.params);
       if (!params.success) {

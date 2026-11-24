@@ -1,15 +1,34 @@
 import { z } from "zod";
 
-/** POST /verification-requests — freelancers only. */
-export const createVerificationRequestSchema = z.object({
-  documentType: z.enum(["passport", "drivers-license", "national-id", "other"]),
-  documentKey: z.string().trim().min(1).max(512),
-  documentName: z.string().trim().min(1).max(180),
+export const documentCategorySchema = z.enum(["identity_document", "selfie", "supporting_document"]);
+
+/** POST /verification-requests/uploads — client uploads one private file. */
+export const verificationUploadSchema = z.object({
+  category: documentCategorySchema,
+  fileName: z.string().trim().min(1).max(180),
+  mimeType: z.string().trim().min(1).max(100),
+  contentBase64: z.string().min(1),
 });
 
-export const verificationDocumentSchema = z.object({
-  documentKey: z.string().trim().min(1).max(512),
-  documentName: z.string().trim().min(1).max(180),
+/** A private upload returned by /verification-requests/uploads. */
+export const verificationDocumentInputSchema = z.object({
+  category: documentCategorySchema,
+  key: z.string().trim().min(1).max(2048),
+  fileName: z.string().trim().min(1).max(180),
+  mimeType: z.string().trim().min(1).max(100),
+  sizeBytes: z.coerce.number().int().positive().max(10 * 1024 * 1024),
+});
+
+/** POST /verification-requests — any signed-in user. */
+export const createVerificationRequestSchema = z.object({
+  method: z.enum(["manual", "yoti"]).default("manual"),
+  documentType: z.enum(["passport", "drivers-license", "national-id", "other", "yoti"]).default("other"),
+  documents: z.array(verificationDocumentInputSchema).max(10).optional(),
+});
+
+/** POST /verification-requests/:id/documents — replace/add documents after info_requested. */
+export const addVerificationDocumentsSchema = z.object({
+  documents: z.array(verificationDocumentInputSchema).min(1).max(10),
 });
 
 /** POST /verification-requests/:id/reject */
@@ -24,11 +43,7 @@ export const requestInfoVerificationSchema = z.object({
 
 /** GET /verification-requests — admin list filter. */
 export const listVerificationQuerySchema = z.object({
-  status: z.enum(["pending", "info_requested", "approved", "rejected"]).optional(),
+  status: z.enum(["pending", "info_requested", "approved", "rejected", "all"]).optional(),
 });
 
-export type CreateVerificationRequestInput = z.infer<typeof createVerificationRequestSchema>;
-export type VerificationDocumentInput = z.infer<typeof verificationDocumentSchema>;
-export type RejectVerificationInput = z.infer<typeof rejectVerificationSchema>;
-export type RequestInfoVerificationInput = z.infer<typeof requestInfoVerificationSchema>;
-export type ListVerificationQuery = z.infer<typeof listVerificationQuerySchema>;
+export type VerificationDocumentInput = z.infer<typeof verificationDocumentInputSchema>;

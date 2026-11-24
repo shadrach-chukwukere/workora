@@ -12,6 +12,7 @@ const CONTACT_COLUMNS_SQL = sql`
 
 type ProfileRow = Record<string, unknown> & {
   account_type?: "freelancer" | "client" | "admin";
+  verified?: boolean;
   freelancer_about?: string | null;
   client_about?: string | null;
 };
@@ -37,7 +38,8 @@ export default async function usersRoutes(app: FastifyInstance) {
     }
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.email, u.email_verified, u.image, u.banner_url, u.account_type, u.role_selected_at, u.status, u.created_at,
+      SELECT u.id, u.name, u.email, u.email_verified, u.verified, u.verification_provider, u.verification_method, u.verified_at,
+             u.image, u.banner_url, u.account_type, u.role_selected_at, u.status, u.created_at,
              ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability, fp.response_time_hours,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count, fp.earnings_minor,
@@ -54,6 +56,7 @@ export default async function usersRoutes(app: FastifyInstance) {
       user: {
         ...serializeProfileRow(profileRow as ProfileRow),
         needsRoleSelection: !row.role_selected_at,
+        needsVerification: !row.verified,
       },
     }));
   });
@@ -281,7 +284,7 @@ export default async function usersRoutes(app: FastifyInstance) {
   app.get("/users/:id", async (request, reply) => {
     const instance = await db();
     const rows = await sql`
-      SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.created_at,
+      SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.verified, u.created_at,
              ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
