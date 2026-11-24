@@ -111,7 +111,7 @@ export const adminNav: NavSection[] = [
  {
  title: "Trust & billing",
  items: [
- { href: "/admin/verification", label: "Verification", icon: "StampIcon", badge: "verification" },
+ { href: "/admin/contact", label: "Contact inbox", icon: "Mail01Icon" },
  { href: "/admin/subscriptions", label: "Subscriptions", icon: "CrownIcon" },
  ],
  },

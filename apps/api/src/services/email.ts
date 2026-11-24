@@ -8,6 +8,7 @@ export interface EmailMessage {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }
 
 /** Delivers email through Resend. Without an API key, logs the content instead (development). */
@@ -22,6 +23,7 @@ export async function sendEmail(message: EmailMessage): Promise<{ id: string } |
     subject: message.subject,
     html: message.html,
     text: message.text,
+    replyTo: message.replyTo,
   });
   if (result.error) {
     throw new Error(`Resend failed: ${result.error.message}`);

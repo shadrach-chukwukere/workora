@@ -15,7 +15,9 @@ const storageConfigured = storageConfig.every(Boolean);
 const storagePartiallyConfigured = storageConfig.some(Boolean) && !storageConfigured;
 
 if (storagePartiallyConfigured) {
-  throw new Error("S3 storage requires S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY");
+  // Degrade instead of crashing startup: private uploads simply report that
+  // storage is unavailable until all four values are configured.
+  console.warn("S3 storage disabled: set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY together");
 }
 
 export const s3 = storageConfigured

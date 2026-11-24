@@ -4,6 +4,7 @@ import { ok, requireAccountType, requireAuth, requirePermission } from "../commo
 import { db } from "../../database/connection.js";
 import { AppError } from "../../plugins/error-handler.js";
 import { presignDownload } from "../../services/storage.js";
+import { verificationRequired } from "../../config/env.js";
 import { isYotiConfigured } from "../../services/yoti.js";
 import {
   addVerificationDocumentsSchema,
@@ -44,7 +45,7 @@ function safeDownloadName(name: string): string {
 export default async function verificationRoutes(app: FastifyInstance) {
   /** GET /api/v1/verification-requests/yoti/status — whether the primary IDV path is enabled. */
   app.get("/verification-requests/yoti/status", { preHandler: [requireAuth] }, async (_request, reply) => {
-    reply.send(ok({ available: isYotiConfigured() }));
+    reply.send(ok({ available: verificationRequired && isYotiConfigured(), verificationRequired }));
   });
 
   /**

@@ -626,6 +626,18 @@ export interface VerificationDocumentsTable {
   created_at: Timestamp;
 }
 
+export interface ContactSubmissionsTable {
+  id: Generated<string>;
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+  status: Generated<"new" | "read" | "replied" | "archived">;
+  admin_notes: string | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
 export interface AdminLogsTable {
   id: Generated<string>;
   actor_id: string;
@@ -717,6 +729,7 @@ export interface DB {
   dispute_notes: DisputeNotesTable;
   verification_requests: VerificationRequestsTable;
   verification_documents: VerificationDocumentsTable;
+  contact_submissions: ContactSubmissionsTable;
   admin_logs: AdminLogsTable;
   moderation_actions: ModerationActionsTable;
   platform_settings: PlatformSettingsTable;

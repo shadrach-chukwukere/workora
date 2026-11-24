@@ -1,6 +1,7 @@
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { sql } from "kysely";
+import { verificationRequired } from "../config/env.js";
 
 export interface AuthedUser {
   id: string;
@@ -81,8 +82,15 @@ export function requireAccountType(...types: Array<AuthedUser["accountType"]>) {
   };
 }
 
-/** Terminates unless the signed-in user has completed identity verification. */
+/**
+ * Terminates unless the signed-in user has completed identity verification.
+ * Verification is temporarily disabled by default; in that mode this is a
+ * no-op so missing Yoti/storage keys can never block posting or proposals.
+ */
 export async function requireVerified(request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply | void> {
+  if (!verificationRequired) {
+    return;
+  }
   if (!request.currentUser?.verified) {
     return reply.status(403).send({
       success: false,

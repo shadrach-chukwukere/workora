@@ -68,7 +68,9 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
     let accountType: Role = "freelancer";
     let needsRoleSelection = false;
     let verified = session.user.verified === true;
-    let needsVerification = !verified;
+    // Verification is paused by default. Only the API can turn it back on.
+    let verificationRequired = false;
+    let needsVerification = false;
     try {
       const meRes = await fetch(`${serverApiBase}/api/v1/users/me`, {
         headers: { cookie, origin },
@@ -81,6 +83,7 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
             account_type?: Role;
             needsRoleSelection?: boolean;
             needsVerification?: boolean;
+            verificationRequired?: boolean;
             verified?: boolean;
           };
         };
@@ -89,9 +92,12 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
       if (meUser?.account_type) accountType = meUser.account_type;
       if (typeof meUser?.verified === "boolean") verified = meUser.verified;
       needsRoleSelection = meUser?.needsRoleSelection === true;
-      needsVerification = meUser?.needsVerification === true || !verified;
+      if (typeof meUser?.verificationRequired === "boolean") {
+        verificationRequired = meUser.verificationRequired;
+      }
+      needsVerification = verificationRequired && (meUser?.needsVerification === true || !verified);
     } catch {
-      // Keep the session-derived verification state rather than logging out.
+      // Stay on the non-blocking default rather than logging out or redirecting.
     }
 
     return {
@@ -102,6 +108,7 @@ async function fetchSessionAccount(): Promise<SessionAccount | null> {
       image: session.user.image ?? null,
       needsRoleSelection,
       needsVerification,
+      verificationRequired,
       verified,
     };
   } catch {

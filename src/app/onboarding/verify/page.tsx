@@ -19,7 +19,7 @@ export default async function VerifyOnboardingPage({
 
   if (!account) redirect(withNext("/login", next ?? "/onboarding/verify"));
   if (account.needsRoleSelection) redirect(withNext("/onboarding/role", next));
-  if (!account.needsVerification || account.role === "admin") {
+  if (!account.verificationRequired || !account.needsVerification || account.role === "admin") {
     redirect(next ?? workspacePathForRole(account.role));
   }
 

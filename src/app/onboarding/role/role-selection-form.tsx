@@ -6,16 +6,28 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { RoleChoiceCards, type MarketplaceRole } from "@/components/onboarding/role-choice";
-import { safeNextPath, withNext } from "@/lib/workspace";
+import { onboardingDestination, safeNextPath } from "@/lib/workspace";
 
-/** After role selection, verification is the next mandatory step. */
-function destinationForRole(role: MarketplaceRole, next?: string | null): string {
-  return withNext("/onboarding/verify", next ?? undefined);
+/** After role selection, continue to the next onboarding step that is enabled. */
+function destinationForRole(
+  role: MarketplaceRole,
+  next?: string | null,
+  verificationRequired = false,
+): string {
+  return onboardingDestination(
+    {
+      role,
+      needsRoleSelection: false,
+      needsVerification: verificationRequired,
+      verificationRequired,
+    },
+    safeNextPath(next),
+  );
 }
 
 type SaveBody = { accountType: MarketplaceRole } | { useDefault: true };
 
-async function saveRole(body: SaveBody): Promise<void> {
+async function saveRole(body: SaveBody): Promise<{ verificationRequired: boolean }> {
   const res = await fetch("/api/v1/users/me/account-type", {
     method: "PATCH",
     headers: { "content-type": "application/json" },
@@ -26,6 +38,12 @@ async function saveRole(body: SaveBody): Promise<void> {
   if (!res.ok) {
     throw new Error(payload?.message ?? "Could not save your account type");
   }
+
+  const meRes = await fetch("/api/v1/users/me", { credentials: "include", cache: "no-store" });
+  const me = (await meRes.json().catch(() => null)) as
+    | { data?: { user?: { verificationRequired?: boolean } } }
+    | null;
+  return { verificationRequired: me?.data?.user?.verificationRequired === true };
 }
 
 export function RoleSelectionForm({ name, next }: { name: string; next?: string | null }) {
@@ -42,9 +60,11 @@ export function RoleSelectionForm({ name, next }: { name: string; next?: string 
     }
 
     try {
-      await saveRole(nextRole === "default" ? { useDefault: true } : { accountType: nextRole });
+      const { verificationRequired } = await saveRole(
+        nextRole === "default" ? { useDefault: true } : { accountType: nextRole },
+      );
       const selected = nextRole === "default" ? "freelancer" : nextRole;
-      const destination = destinationForRole(selected, safeNextPath(next));
+      const destination = destinationForRole(selected, safeNextPath(next), verificationRequired);
       toast.success(nextRole === "default" ? "Set up as a freelancer" : "Account type saved");
       router.push(destination);
       router.refresh();

@@ -38,6 +38,11 @@ const envSchema = z.object({
    */
   YOTI_SDK_ID: z.string().default(""),
   YOTI_API_KEY: z.string().default(""),
+  /**
+   * Identity verification is paused by default. Set this to true only when the
+   * Yoti/storage keys and manual review flow are ready for real users.
+   */
+  REQUIRE_VERIFICATION: z.string().default("false"),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -56,3 +61,8 @@ function loadEnv(): AppEnv {
 
 export const env = loadEnv();
 export const corsOrigins = env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
+
+/** Single source of truth for the temporary verification pause. */
+export const verificationRequired = ["1", "true", "yes", "on"].includes(
+  env.REQUIRE_VERIFICATION.trim().toLowerCase(),
+);

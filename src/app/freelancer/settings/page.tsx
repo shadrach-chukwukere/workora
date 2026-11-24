@@ -45,6 +45,7 @@ interface MeUser {
   hourly_rate_minor: number | null;
   availability: "available" | "limited" | "unavailable" | null;
   response_time_hours: number | null;
+  verificationRequired?: boolean;
 }
 
 interface MeResponse {
@@ -144,7 +145,7 @@ export default function FreelancerSettingsPage() {
             <>
               <FreelancerTab me={me} onSaved={load} />
               <PaystackPayoutCard />
-              <IdentityVerificationCard onVerified={load} />
+              {me.verificationRequired === true ? <IdentityVerificationCard onVerified={load} /> : null}
             </>
           ) : null}
         </>

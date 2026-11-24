@@ -10,6 +10,8 @@ export interface SessionAccount {
   needsRoleSelection: boolean;
   /** True until an admin has reviewed an identity verification request. */
   needsVerification: boolean;
+  /** False while verification is temporarily paused; drives the redirect below. */
+  verificationRequired: boolean;
   verified: boolean;
 }
 
@@ -46,11 +48,18 @@ export function withNext(path: string, next?: string | string[] | null): string 
   return target ? `${path}?next=${encodeURIComponent(target)}` : path;
 }
 
-type OnboardingAccount = Pick<SessionAccount, "role" | "needsRoleSelection" | "needsVerification">;
+interface OnboardingAccount {
+  role: Role;
+  needsRoleSelection: boolean;
+  needsVerification: boolean;
+  verificationRequired?: boolean;
+}
 
 /** Resolve the first incomplete onboarding step (role → verification → destination). */
 export function onboardingDestination(account: OnboardingAccount, next?: string | string[] | null): string {
   if (account.needsRoleSelection) return withNext("/onboarding/role", next);
-  if (account.needsVerification && account.role !== "admin") return withNext("/onboarding/verify", next);
+  if (account.verificationRequired === true && account.needsVerification && account.role !== "admin") {
+    return withNext("/onboarding/verify", next);
+  }
   return safeNextPath(next) ?? workspacePathForRole(account.role);
 }

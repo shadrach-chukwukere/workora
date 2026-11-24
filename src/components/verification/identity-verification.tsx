@@ -150,6 +150,7 @@ export function IdentityVerificationCard({ onVerified, next }: IdentityVerificat
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<VerificationRequestItem[]>([]);
   const [verified, setVerified] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
   const [role, setRole] = useState<Role>("freelancer");
   const [yotiAvailable, setYotiAvailable] = useState(false);
   const [method, setMethod] = useState<"manual" | "yoti">("manual");
@@ -167,19 +168,30 @@ export function IdentityVerificationCard({ onVerified, next }: IdentityVerificat
 
   const load = useCallback(async () => {
     try {
-      const [me, status, list] = await Promise.all([
-        api<{ data: { user: { verified?: boolean; account_type?: Role } } }>("/api/v1/users/me"),
-        api<{ available: boolean }>("/api/v1/verification-requests/yoti/status"),
+      // Read the feature flag first so a paused flow never touches Yoti or
+      // private storage and cannot surface missing-key errors to the user.
+      const me = await api<{
+        user: { verified?: boolean; account_type?: Role; verificationRequired?: boolean };
+      }>("/api/v1/users/me");
+      const required = me.user.verificationRequired === true;
+      setVerificationRequired(required);
+      setVerified(me.user.verified === true);
+      if (me.user.account_type) setRole(me.user.account_type);
+      if (!required) {
+        setRequests([]);
+        setYotiAvailable(false);
+        return;
+      }
+
+      const [status, list] = await Promise.all([
+        api<{ available: boolean; verificationRequired?: boolean }>("/api/v1/verification-requests/yoti/status"),
         api<{ requests: VerificationRequestItem[] }>("/api/v1/verification-requests/me"),
       ]);
-      const isVerified = me.data.user.verified === true;
-      setVerified(isVerified);
-      if (me.data.user.account_type) setRole(me.data.user.account_type);
       setYotiAvailable(status.available);
       setRequests(list.requests);
       const latest = list.requests[0];
       setYotiSession(latest?.method === "yoti" && latest.status === "pending" ? readStoredYotiSession(latest.id) : null);
-      if (isVerified && !notifiedVerified.current) {
+      if (me.user.verified === true && !notifiedVerified.current) {
         notifiedVerified.current = true;
         onVerified?.();
       }
@@ -201,7 +213,7 @@ export function IdentityVerificationCard({ onVerified, next }: IdentityVerificat
   const needsSubmission = !latest || isRejected || isInfoRequested;
 
   useEffect(() => {
-    if (loading || importedYoti.current) return;
+    if (loading || !verificationRequired || importedYoti.current) return;
     const params = new URLSearchParams(window.location.search);
     const yotiResult = params.get("yoti");
     if (yotiResult === "error") {
@@ -337,6 +349,25 @@ export function IdentityVerificationCard({ onVerified, next }: IdentityVerificat
     return (
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" aria-busy="true">
         <p className="text-sm text-neutral-600">Loading verification status…</p>
+      </section>
+    );
+  }
+
+  if (!verificationRequired) {
+    return (
+      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" id="identity-verification">
+        <div className="flex items-start gap-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+            <HugeiconsIcon icon={ShieldCheckIcon} size={24} strokeWidth={1.8} />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Identity verification is paused</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-600">
+              Verification is temporarily turned off while we finish setting up our identity provider. You can use the
+              marketplace normally — no documents or action are needed right now.
+            </p>
+          </div>
+        </div>
       </section>
     );
   }

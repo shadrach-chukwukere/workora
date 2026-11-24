@@ -91,6 +91,7 @@ export default function LoginForm({
           account_type?: Role;
           needsRoleSelection?: boolean;
           needsVerification?: boolean;
+          verificationRequired?: boolean;
           verified?: boolean;
         };
       };
@@ -99,11 +100,13 @@ export default function LoginForm({
     const meUser = meBody?.data?.user;
     const actualRole = meUser?.account_type ?? role;
     const verified = meUser?.verified === true;
+    const verificationRequired = meUser?.verificationRequired === true;
     const destination = onboardingDestination(
       {
         role: actualRole,
         needsRoleSelection: meUser?.needsRoleSelection === true,
-        needsVerification: meUser?.needsVerification === true || !verified,
+        needsVerification: verificationRequired && (meUser?.needsVerification === true || !verified),
+        verificationRequired,
       },
       safeNextPath(next ?? nextFromUrl()),
     );

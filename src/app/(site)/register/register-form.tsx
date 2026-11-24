@@ -18,7 +18,7 @@ import {
   EyeIcon,
 } from "@/lib/icons";
 import { RoleChoiceCards } from "@/components/onboarding/role-choice";
-import { safeNextPath, withNext } from "@/lib/workspace";
+import { safeNextPath, workspacePathForRole } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 
 type Role = "freelancer" | "client";
@@ -112,7 +112,8 @@ export default function RegisterForm({ next }: { next?: string | null }) {
   }
 
   function finish() {
-    router.push(withNext("/onboarding/verify", safeNextPath(next)));
+    // Verification is paused; any future gate is re-applied by requireSession.
+    router.push(safeNextPath(next) ?? workspacePathForRole(role));
     router.refresh();
   }
 

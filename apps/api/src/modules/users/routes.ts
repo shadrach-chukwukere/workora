@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "kysely";
+import { verificationRequired } from "../../config/env.js";
 import { ok } from "../common/index.js";
 import { db } from "../../database/connection.js";
 import { publicUser } from "../../utils/serializers.js";
@@ -56,7 +57,8 @@ export default async function usersRoutes(app: FastifyInstance) {
       user: {
         ...serializeProfileRow(profileRow as ProfileRow),
         needsRoleSelection: !row.role_selected_at,
-        needsVerification: !row.verified,
+        verificationRequired,
+        needsVerification: verificationRequired && !row.verified,
       },
     }));
   });
