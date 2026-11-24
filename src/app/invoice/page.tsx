@@ -46,13 +46,14 @@ export default async function InvoicePage({ searchParams }: { searchParams: Prom
 
   if (!id) redirect("/client/transactions");
 
-  let invoice: Invoice;
+  let invoice: Invoice | null = null;
   try {
     const data = await apiServer<InvoiceResponse>(`/api/v1/invoices/${encodeURIComponent(id)}`, undefined, cookie);
     invoice = data.invoice;
   } catch {
-    redirect("/client/transactions");
+    // Render the fallback redirect outside the try/catch (redirect throws).
   }
+  if (!invoice) redirect("/client/transactions");
 
   const amount = formatMoney(invoice.amountMinor / 100);
   const fee = formatMoney(invoice.feeMinor / 100);
