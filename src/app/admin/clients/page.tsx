@@ -65,6 +65,7 @@ export default function AdminClientsPage() {
  const [query, setQuery] = useState("");
  const [status, setStatus] = useState("all");
  const [actingId, setActingId] = useState<string | null>(null);
+ const [managing, setManaging] = useState<{ id: string; name: string } | null>(null);
  const debounceRef = useRef<number | undefined>(undefined);
 
  const load = useCallback(
