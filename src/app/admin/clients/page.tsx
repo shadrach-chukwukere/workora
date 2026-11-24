@@ -6,17 +6,20 @@ import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input } from "@/components/ui/form";
 import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { Select } from "@/components/ui/select";
 import { TD, TH, THead, Table, TableShell, TR } from "@/components/ui/table";
 import { AdminAccessCard, classifyAdminError } from "@/components/admin/admin-access";
+import { ManageUserModal } from "@/components/admin/manage-user-modal";
 import { formatMoney, formatNumber } from "@/lib/format";
 import {
  Alert02Icon,
  Download01Icon,
  Icon,
+ MoreVerticalIcon,
  Search01Icon,
  SearchRemoveIcon,
  UserAccountIcon,
