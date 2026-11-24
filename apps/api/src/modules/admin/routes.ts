@@ -224,6 +224,15 @@ export default async function adminRoutes(app: FastifyInstance) {
     certification: "certifications",
   };
 
+  const ADMIN_CONTENT_FIELDS: Record<string, string[]> = {
+    project: ["title", "summary", "description", "status", "budget_min_minor", "budget_max_minor"],
+    portfolio: ["title", "summary", "description", "role", "year", "project_url", "image_url", "sort_order"],
+    review: ["rating", "comment"],
+    experience: ["company", "role", "description", "start_date", "end_date"],
+    education: ["school", "degree", "field", "start_year", "end_year"],
+    certification: ["name", "issuer", "year", "credential_url"],
+  };
+
   /** PATCH /admin/content/:kind/:id — edit one piece of owned content. */
   app.patch("/admin/content/:kind/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
     const { kind, id } = request.params as { kind: string; id: string };
@@ -233,9 +242,12 @@ export default async function adminRoutes(app: FastifyInstance) {
       return;
     }
     const body = (request.body ?? {}) as Record<string, unknown>;
+    const allowed = new Set(ADMIN_CONTENT_FIELDS[kind] ?? []);
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(body)) {
-      if (typeof value === "string" || typeof value === "number" || value === null) patch[key] = value;
+      if (allowed.has(key) && (typeof value === "string" || typeof value === "number" || value === null)) {
+        patch[key] = value;
+      }
     }
     if (Object.keys(patch).length === 0) {
       reply.status(400).send({ success: false, message: "No fields to update", error: { code: "VALIDATION_ERROR", details: {} } });

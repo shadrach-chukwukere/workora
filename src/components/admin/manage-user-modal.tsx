@@ -378,6 +378,7 @@ export function ManageUserModal({
     : [];
 
   return (
+    <>
     <Modal
       open={userId !== null}
       onClose={onClose}
@@ -582,6 +583,7 @@ export function ManageUserModal({
         loading={saving}
       />
     </Modal>
+    </>
   );
 }
 
