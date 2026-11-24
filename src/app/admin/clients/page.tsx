@@ -33,12 +33,18 @@ interface UserRow {
  email: string;
  image: string | null;
  status: string;
+ email_verified: boolean | null;
+ verified: boolean | null;
  created_at: string;
  company_name: string | null;
+ company_size: string | null;
  industry: string | null;
+ website: string | null;
  spent_minor: string | number | null;
  projects_count: number | string | null;
 }
+
+type ItemSpec = NonNullable<Parameters<typeof DropdownMenu>[0]["items"]>[number];
 
 const n = (v: string | number | null | undefined): number => {
  const parsed = Number(v ?? 0);
