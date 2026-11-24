@@ -86,26 +86,27 @@ function budgetLabel(project: ProjectSummary): string {
 }
 
 export default async function Home() {
-  const [account, [{ projects }, { freelancers }, { categories }]] =
+  const account = await getSessionAccount();
+  const freelancersPath = account
+    ? `/api/v1/freelancers?excludeUserId=${encodeURIComponent(account.userId)}`
+    : "/api/v1/freelancers";
+  const [{ projects }, { freelancers }, { categories }] =
     await Promise.all([
-      getSessionAccount(),
-      Promise.all([
-        apiServerOr<{ projects: ProjectSummary[] }>(
-          "/api/v1/projects?status=open",
-          { projects: [] },
-          true,
-        ),
-        apiServerOr<{ freelancers: FreelancerSummary[] }>(
-          "/api/v1/freelancers",
-          { freelancers: [] },
-          true,
-        ),
-        apiServerOr<{ categories: CategorySummary[] }>(
-          "/api/v1/categories",
-          { categories: [] },
-          true,
-        ),
-      ]),
+      apiServerOr<{ projects: ProjectSummary[] }>(
+        "/api/v1/projects?status=open",
+        { projects: [] },
+        true,
+      ),
+      apiServerOr<{ freelancers: FreelancerSummary[] }>(
+        freelancersPath,
+        { freelancers: [] },
+        true,
+      ),
+      apiServerOr<{ categories: CategorySummary[] }>(
+        "/api/v1/categories",
+        { categories: [] },
+        true,
+      ),
     ]);
   const workspace = workspacePathForRole(account?.role);
   const openList = projects;
