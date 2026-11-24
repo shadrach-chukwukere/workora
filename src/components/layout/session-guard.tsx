@@ -27,7 +27,8 @@ async function bareOrigin(): Promise<string> {
  */
 async function currentPathFromHeaders(): Promise<string | null> {
   const hdrs = await headers();
-  const path = hdrs.get("x-invoke-path") ?? hdrs.get("x-matched-path");
+  const path =
+    hdrs.get("x-workora-current-path") ?? hdrs.get("x-invoke-path") ?? hdrs.get("x-matched-path");
   if (!path?.startsWith("/") || path.startsWith("//")) return null;
 
   const rawQuery = hdrs.get("x-invoke-query");
