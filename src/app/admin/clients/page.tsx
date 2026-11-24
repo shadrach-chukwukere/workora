@@ -105,12 +105,13 @@ export default function AdminClientsPage() {
  };
  }, [rows]);
 
- async function setUserStatus(user: UserRow, next: "suspended" | "active") {
+ async function setUserStatus(user: UserRow, next: "suspended" | "active" | "restricted") {
  setActingId(user.id);
+ const endpoint = next === "active" ? "activate" : next === "restricted" ? "restrict" : "suspend";
  try {
- await api(`/api/v1/admin/users/${encodeURIComponent(user.id)}/${next === "active" ? "activate" : "suspend"}`, { method: "POST" });
+ await api(`/api/v1/admin/users/${encodeURIComponent(user.id)}/${endpoint}`, { method: "POST" });
  setRows((list) => list?.map((r) => (r.id === user.id ? { ...r, status: next } : r)) ?? list);
- toast.success(next === "active" ? `${user.name} is active again` : `${user.name} suspended`);
+ toast.success(`${user.name} is now ${next}`);
  } catch (err) {
  toast.error(err instanceof Error ? err.message : "Action failed");
  } finally {
@@ -222,13 +223,13 @@ export default function AdminClientsPage() {
  <TH>Company</TH>
  <TH align="right">Spent</TH>
  <TH align="right">Projects</TH>
+ <TH>Verified</TH>
  <TH>Status</TH>
  <TH align="right">Actions</TH>
  </THead>
  <tbody>
  {rows.map((r) => {
  const meta = STATUS_META[r.status] ?? { label: r.status, tone: "neutral" as const };
- const suspended = r.status === "suspended";
  return (
  <TR key={r.id}>
  <TD>
@@ -251,17 +252,32 @@ export default function AdminClientsPage() {
  <span className="text-sm text-neutral-700">{r.projects_count == null ? "—" : formatNumber(n(r.projects_count))}</span>
  </TD>
  <TD>
+ <Badge tone={r.verified || r.email_verified ? "success" : "neutral"}>
+ {r.verified ? "ID verified" : r.email_verified ? "Email only" : "Unverified"}
+ </Badge>
+ </TD>
+ <TD>
  <Badge tone={meta.tone}>{meta.label}</Badge>
  </TD>
  <TD align="right">
- <Button
- variant="secondary"
- size="sm"
- disabled={actingId === r.id}
- onClick={() => void setUserStatus(r, suspended ? "active" : "suspended")}
- >
- {suspended ? "Activate" : "Suspend"}
+ <div className="flex justify-end gap-2">
+ <Button variant="secondary" size="sm" onClick={() => setManaging({ id: r.id, name: r.name })}>
+ Manage
  </Button>
+ <DropdownMenu
+ label="Account actions"
+ trigger={
+ <Button variant="secondary" size="sm" disabled={actingId === r.id} aria-label="More account actions">
+ <Icon icon={MoreVerticalIcon} size={15} strokeWidth={1.8} />
+ </Button>
+ }
+ items={[
+ { type: "item" as const, label: "Set active", disabled: r.status === "active", onClick: () => void setUserStatus(r, "active") },
+ { type: "item" as const, label: "Restrict", disabled: r.status === "restricted", onClick: () => void setUserStatus(r, "restricted") },
+ { type: "item" as const, label: "Suspend", disabled: r.status === "suspended", onClick: () => void setUserStatus(r, "suspended") },
+ ] satisfies ItemSpec[]}
+ />
+ </div>
  </TD>
  </TR>
  );
@@ -272,8 +288,15 @@ export default function AdminClientsPage() {
  )}
 
  <p className="text-center text-[11px] text-neutral-400">
- {rows ? `${rows.length} ${rows.length === 1 ? "client" : "clients"} shown · admin endpoint caps at 100 rows` : "Loading clients…"}
+ {rows ? `${rows.length} ${rows.length === 1 ? "client" : "clients"} shown · accounts are never deletable from the console` : "Loading clients…"}
  </p>
+
+ <ManageUserModal
+ userId={managing?.id ?? null}
+ userName={managing?.name ?? ""}
+ onClose={() => setManaging(null)}
+ onUpdated={() => void load(query, status)}
+ />
  </div>
  );
 }
