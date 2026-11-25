@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/ui/form";
+import { Select } from "@/components/ui/select";
 import {
   Alert02Icon,
   ArrowRight02Icon,
@@ -530,17 +531,12 @@ export function IdentityVerificationCard({ onVerified, next }: IdentityVerificat
               }}
             >
               <Field label="Document type" required>
-                <select
+                <Select
                   value={documentType}
-                  onChange={(event) => setDocumentType(event.target.value as DocumentType)}
-                  className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-brand-500"
-                >
-                  {DOCUMENT_TYPES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setDocumentType(value as DocumentType)}
+                  options={DOCUMENT_TYPES.map((item) => ({ value: item.value, label: item.label }))}
+                  ariaLabel="Document type"
+                />
               </Field>
 
               <div className="grid gap-5 sm:grid-cols-2">

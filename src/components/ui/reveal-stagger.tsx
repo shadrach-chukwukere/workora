@@ -1,47 +1,36 @@
 "use client";
 
-import { motion } from "motion/react";
-import { useReducedMotion } from "motion/react";
+import { Children, isValidElement } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 // Reveal stagger: Motion whileInView fade + rise for section children.
-// Each child staggers based on its index. Reduced motion gets instant appear.
+// Each child staggers based on its index. Reduced motion gets an instant appearance.
+// Renders a plain div wrapper. Use it around a list of section elements.
 
 export function RevealStagger({
   children,
-  tag = "div",
   className,
-}: { children: React.ReactNode; tag?: "div" | "ul"; className?: string }) {
+}: { children: React.ReactNode; className?: string }) {
   const reduced = useReducedMotion();
-
-  const staggerChildren = reduced
-    ? children
-    : React.Children.toArray(children).map((child, i) => (
-        React.cloneElement(child as React.ReactElement, {
-          key: child.key,
-          ...(child.props as any),
-        })
-      ));
+  const items = Children.toArray(children);
 
   return (
-    <tag className={`
-      grid gap-6 
-      ${className}
-    `}>
-      {React.Children.toArray(children).map((child, i) => (
+    <div className={className ?? ""}>
+      {items.map((child, i) => (
         <motion.div
-          key={child.key}
-          initial={{ opacity: 0, y: 24 }}
+          key={isValidElement(child) ? (child.key ?? i) : i}
+          initial={reduced ? false : { opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{
-            duration: 0.6,
-            delay: i * 0.06,
+            duration: reduced ? 0 : 0.6,
+            delay: reduced ? 0 : i * 0.06,
             ease: [0.16, 1, 0.3, 1],
           }}
         >
           {child}
         </motion.div>
       ))}
-    </tag>
+    </div>
   );
 }

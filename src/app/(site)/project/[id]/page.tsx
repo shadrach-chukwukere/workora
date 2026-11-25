@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
+import { getSessionAccount } from "@/components/layout/session-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Monogram } from "@/components/ui/logo";
@@ -106,22 +106,6 @@ async function getProject(encodedId: string): Promise<ProjectDetail | null> {
   }
 }
 
-function getViewerRole(): "freelancer" | "client" | "visitor" {
-  try {
-    const cookieStore = cookies();
-    const cookie = cookieStore.get("next-auth.session-token");
-    if (cookie) {
-      // User has a session cookie - they're authenticated
-      // We can't easily get the accountType from the cookie alone,
-      // but we can make an authenticated API call to check
-      return "authenticated";
-    }
-  } catch {
-    // No session cookie - visitor
-  }
-  return "visitor";
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -131,6 +115,16 @@ export async function generateMetadata({
   const project = await getProject(encodeURIComponent(id));
   if (!project) return { title: "Project not found" };
   return { title: project.title, description: project.description.slice(0, 160) };
+}
+
+function priceLabel(project: ProjectDetail): string {
+  const min = project.budgetMinMinor != null ? project.budgetMinMinor / 100 : null;
+  const max = project.budgetMaxMinor != null ? project.budgetMaxMinor / 100 : null;
+  const suffix = project.budgetType === "hourly" ? "/hr" : "";
+  if (min != null && max != null && min !== max) {
+    return `${formatMoney(min)} - ${formatMoney(max)}${suffix}`;
+  }
+  return `${formatMoney(min ?? max ?? 0)}${suffix}`;
 }
 
 export default async function ProjectPage({
@@ -151,7 +145,8 @@ export default async function ProjectPage({
   const clientSince = client?.memberSince ? client.memberSince.slice(0, 4) : null;
 
   // Determine viewer role for role-aware CTA
-  const viewerRole = getViewerRole();
+  const account = await getSessionAccount();
+  const viewerRole = account?.role ?? "visitor";
 
   const relatedList = await apiServerOr<{ projects: ProjectListItem[] }>(
     "/api/v1/projects",
@@ -241,7 +236,7 @@ export default async function ProjectPage({
               <MetaCell
                 icon={FolderCheckIcon}
                 label="Duration"
-                value={project.durationBucket ? formatRelative(project.durationBucket) : "-"}
+                value={project.durationBucket ? labelize(project.durationBucket) : "-"}
               />
               <MetaCell
                 icon={Calendar03Icon}
@@ -390,6 +385,7 @@ export default async function ProjectPage({
                 <Icon icon={InformationCircleIcon} size={13} strokeWidth={1.8} className="mt-0.5 shrink-0" />
                 You need an account to propose. Creating one is free and takes a minute.
               </p>
+            </div>
           </aside>
         </div>
       </div>
@@ -407,7 +403,9 @@ function MetaCell({
   value: string | number;
 }) {
   return (
-    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-500">{label}</div>
-    <dd className="mt-0.5 text-lg font-semibold text-neutral-900">{value}</dd>
+    <>
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-500">{label}</dt>
+      <dd className="mt-0.5 text-lg font-semibold text-neutral-900">{value}</dd>
+    </>
   );
 }

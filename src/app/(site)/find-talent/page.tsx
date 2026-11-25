@@ -2,17 +2,14 @@ import Link from "next/link";
 import { AVAILABILITY_OPTIONS, CATEGORY_BASE, RATE_RANGES, SORT_OPTIONS } from "@/lib/constants";
 import { formatMoney, formatNumber } from "@/lib/format";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
-import { useState } from "react";
-import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon, HeartIcon, UserMultiple02Icon } from "@/lib/icons";
+import { ShortlistButton } from "@/components/freelancer/shortlist-button";
+import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon, UserMultiple02Icon } from "@/lib/icons";
 import type { PublicFreelancer } from "@/lib/api-data";
 import { serverApiBase } from "@/lib/api-base";
 import { getSessionAccount } from "@/components/layout/session-guard";
-import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 9;
 
@@ -200,31 +197,6 @@ export default async function FindTalentPage({
             const availabilityTone =
               freelancer.availability === "available" ? "available" : freelancer.availability === "limited" ? "limited" : "booked";
             const rating = freelancer.rating_avg != null ? Number(freelancer.rating_avg) : null;
-            const [isShortlisted, setIsShortlisted] = useState(() => {
-              // Check if already shortlisted - we'll assume false initially
-              return false;
-            });
-
-            async function toggleShortlist() {
-              try {
-                const res = await fetch(`${serverApiBase}/api/v1/users/me/shortlist`, {
-                  method: "POST",
-                  credentials: "include",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ freelancerId: freelancer.id }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                  setIsShortlisted(data.data.shortlisted ?? !isShortlisted);
-                  toast[data.data.shortlisted ? "success" : "error"](
-                    data.message ?? (data.data.shortlisted ? "Added to shortlist" : "Removed from shortlist")
-                  );
-                }
-              } catch (e) {
-                toast.error("Failed to update shortlist");
-              }
-            }
-
             return (
               <li key={freelancer.id}>
                 <Link
@@ -243,25 +215,7 @@ export default async function FindTalentPage({
                         </p>
                       </div>
                     </div>
-                    {isShortlisted ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-neutral-500 hover:text-neutral-700"
-                        onClick={toggleShortlist}
-                      >
-                        Shortlisted
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-brand-600 hover:text-brand-800"
-                        onClick={toggleShortlist}
-                      >
-                        Shortlist
-                      </Button>
-                    )}
+                    <ShortlistButton freelancerId={freelancer.id} />
                   </div>
                   <span
                     className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-neutral-500"

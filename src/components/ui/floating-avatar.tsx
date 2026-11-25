@@ -10,7 +10,7 @@ export function FloatingAvatar({
   src,
   alt,
   className,
-}: { src: string; alt: string; className?: string }) {
+}: { src?: string | null; alt: string; className?: string }) {
   const reduced = useReducedMotion();
 
   return (
@@ -31,12 +31,12 @@ export function FloatingAvatar({
       transition={{ 
         duration: 1.5, 
         repeat: Infinity, 
-        yoyo: true, 
-        ease: "sine.inOut" 
+        repeatType: "reverse",
+        ease: [0.42, 0, 0.58, 1]
       }}
     >
       <img
-        src={src}
+        src={src ?? `https://i.pravatar.cc/150?u=${encodeURIComponent(alt)}`}
         alt={alt}
         className={`
           w-full h-full 

@@ -172,11 +172,11 @@ export default function FreelancerResumePage() {
       {/* Stepper */}
       <div className="grid grid-cols-6 gap-2 bg-neutral-100 px-2 py-1 rounded text-xs font-medium text-neutral-500">
         <div className="col-span-1">{step} of 6</div>
-        <div className="col-span-1 {step > 1 ? "bg-brand-600 text-white" : ""}">1</div>
-        <div className="col-span-1 {step > 2 ? "bg-brand-600 text-white" : ""}">2</div>
-        <div className="col-span-1 {step > 3 ? "bg-brand-600 text-white" : ""}">3</div>
-        <div className="col-span-1 {step > 4 ? "bg-brand-600 text-white" : ""}">4</div>
-        <div className="col-span-1 {step > 5 ? "bg-brand-600 text-white" : ""}">5</div>
+        <div className={`col-span-1 ${step > 1 ? "bg-brand-600 text-white" : ""}`}>1</div>
+        <div className={`col-span-1 ${step > 2 ? "bg-brand-600 text-white" : ""}`}>2</div>
+        <div className={`col-span-1 ${step > 3 ? "bg-brand-600 text-white" : ""}`}>3</div>
+        <div className={`col-span-1 ${step > 4 ? "bg-brand-600 text-white" : ""}`}>4</div>
+        <div className={`col-span-1 ${step > 5 ? "bg-brand-600 text-white" : ""}`}>5</div>
       </div>
 
       {/* Current step content */}
@@ -242,48 +242,52 @@ export default function FreelancerResumePage() {
             </h3>
 
             {aiKind === "parse" && (
-              <div className="mb-6">
-                <label className="block text-sm text-neutral-700 mb-2">
-                  Paste resume text (max 20,000 chars) or upload PDF:
-                </label>
-                <textarea
-                  className="w-full rounded-lg border border-neutral-200 p-3 text-sm h-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 resize-y"
-                  placeholder="Paste your resume text here or describe what you want..."
-                  maxLength={20000}
-                  onChange={(e) => setResumeText(e.target.value)}
-                ></textarea>
-              </div>
+              <>
+                <div className="mb-6">
+                  <label className="block text-sm text-neutral-700 mb-2">
+                    Paste resume text (max 20,000 chars) or upload PDF:
+                  </label>
+                  <textarea
+                    className="w-full rounded-lg border border-neutral-200 p-3 text-sm h-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 resize-y"
+                    placeholder="Paste your resume text here or describe what you want..."
+                    maxLength={20000}
+                    onChange={(e) => setResumeText(e.target.value)}
+                  ></textarea>
+                </div>
 
-              <div className="mb-4">
-                <label className="block text-sm text-neutral-700 mb-2">
-                  Or upload PDF (max 10 MB):
-                </label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="w-full rounded-lg border border-neutral-200 p-2.5 text-sm cursor-pointer hover:border-brand-500"
-                  onChange={(e) => setResumeFile(e.target.files?.[0])}
-                />
-                <p className="mt-1 text-[10px] text-neutral-500">
-                  PDF must be 10 MB or smaller
-                </p>
-              </div>
+                <div className="mb-4">
+                  <label className="block text-sm text-neutral-700 mb-2">
+                    Or upload PDF (max 10 MB):
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="w-full rounded-lg border border-neutral-200 p-2.5 text-sm cursor-pointer hover:border-brand-500"
+                    onChange={(e) => setResumeFile(e.target.files?.[0])}
+                  />
+                  <p className="mt-1 text-[10px] text-neutral-500">
+                    PDF must be 10 MB or smaller
+                  </p>
+                </div>
 
-              <Button
-                onClick={handleAiParse}
-                className="w-full bg-brand-600 text-white hover:bg-brand-700"
-              >
-                {aiKind === "parse" ? "Parse with AI" : "Generate profile"}
-              </Button>
+                <Button
+                  onClick={handleAiParse}
+                  className="w-full bg-brand-600 text-white hover:bg-brand-700"
+                >
+                  {aiKind === "parse" ? "Parse with AI" : "Generate profile"}
+                </Button>
+              </>
             )}
 
             {aiKind === "generate" && (
-              <p className="text-sm text-neutral-500 mb-4">
-                AI will generate headline options, about section, and skill suggestions based on your profile facts.
-              </p>
-              <Button onClick={handleAiGenerateConfirm} className="w-full bg-brand-600 text-white hover:bg-brand-700">
-                Generate with AI
-              </Button>
+              <>
+                <p className="text-sm text-neutral-500 mb-4">
+                  AI will generate headline options, about section, and skill suggestions based on your profile facts.
+                </p>
+                <Button onClick={handleAiGenerateConfirm} className="w-full bg-brand-600 text-white hover:bg-brand-700">
+                  Generate with AI
+                </Button>
+              </>
             )}
 
             <Button
