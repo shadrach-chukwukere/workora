@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
+import { Input, Textarea } from "@/components/ui/form";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/lib/icons";
@@ -29,7 +29,7 @@ export function InviteToProjectModal({
   const [loading, setLoading] = useState(false);
 
   const handleInvite = async () => {
-    if (!freelancerId || !UUID.test(freelancerId)) {
+    if (!freelancerId || !UUID(freelancerId)) {
       toast.error("Please enter a valid freelancer ID");
       return;
     }
@@ -77,8 +77,7 @@ export function InviteToProjectModal({
 
         <div>
           <label className="sr-only">Message</label>
-          <Input
-            type="text"
+          <Textarea
             placeholder="Optional personal message (max 1200 chars)"
             value={message}
             onChange={(e) => setMessage(e.target.value)}

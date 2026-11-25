@@ -12,7 +12,11 @@ export interface NavDropdownItem {
   icon?: React.ReactNode;
 }
 
-/** Smart custom dropdown for header nav links. Accessible: outside click, Escape, arrow keys. */
+/**
+ * Smart custom dropdown for header nav links.
+ * Desktop (md+): accessible dropdown with outside click, Escape, arrow keys.
+ * Mobile (< md): renders plain links only, no dropdown behavior.
+ */
 export function NavDropdown({
   label,
   items,
@@ -66,53 +70,72 @@ export function NavDropdown({
   }
 
   return (
-    <div ref={rootRef} className="relative inline-flex">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={onTriggerKeyDown}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`${label} menu`}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900",
-          active ? "text-neutral-900" : "text-neutral-600",
-        )}
-      >
-        {label}
-        <Icon icon={ArrowDown01Icon} size={14} strokeWidth={1.8} className={cn("shrink-0 opacity-60 transition-transform", open && "rotate-180")} aria-hidden="true" />
-      </button>
+    <>
+      {/* Mobile: normal links only, no dropdown */}
+      <div className="flex flex-col md:hidden">
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              active ? "bg-brand-50 text-brand-800" : "text-neutral-800 hover:bg-neutral-50 hover:text-neutral-900",
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
 
-      {open ? (
-        <div
-          role="menu"
+      {/* Desktop: smart dropdown */}
+      <div ref={rootRef} className="relative hidden md:inline-flex">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          onKeyDown={onTriggerKeyDown}
+          aria-haspopup="menu"
+          aria-expanded={open}
           aria-label={`${label} menu`}
           className={cn(
-            "anim-pop absolute z-50 mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-dropdown",
-            align === "end" ? "right-0" : "left-0",
+            "inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900",
+            active ? "text-neutral-900" : "text-neutral-600",
           )}
         >
-          {items.map((item, index) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="menuitem"
-              ref={(el) => {
-                linkRefs.current[index] = el;
-              }}
-              onClick={() => setOpen(false)}
-              onKeyDown={(e) => onItemKeyDown(e, index)}
-              className="flex items-start gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none"
-            >
-              {item.icon ? <span aria-hidden className="mt-0.5 shrink-0 text-brand-600">{item.icon}</span> : null}
-              <span className="min-w-0">
-                <span className="block font-medium text-neutral-800">{item.label}</span>
-                {item.description ? <span className="mt-0.5 block text-xs leading-snug text-neutral-500">{item.description}</span> : null}
-              </span>
-            </Link>
-          ))}
-        </div>
-      ) : null}
-    </div>
+          {label}
+          <Icon icon={ArrowDown01Icon} size={14} strokeWidth={1.8} className={cn("shrink-0 opacity-60 transition-transform", open && "rotate-180")} aria-hidden="true" />
+        </button>
+
+        {open ? (
+          <div
+            role="menu"
+            aria-label={`${label} menu`}
+            className={cn(
+              "anim-pop absolute z-50 mt-5 w-72 rounded-2xl border border-neutral-200 bg-white p-2 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.22)]",
+              align === "end" ? "right-0" : "left-0",
+            )}
+          >
+            {items.map((item, index) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                ref={(el) => {
+                  linkRefs.current[index] = el;
+                }}
+                onClick={() => setOpen(false)}
+                onKeyDown={(e) => onItemKeyDown(e, index)}
+                className="flex items-start gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none"
+              >
+                {item.icon ? <span aria-hidden className="mt-0.5 shrink-0 text-brand-600">{item.icon}</span> : null}
+                <span className="min-w-0">
+                  <span className="block font-medium text-neutral-800">{item.label}</span>
+                  {item.description ? <span className="mt-0.5 block text-xs leading-snug text-neutral-500">{item.description}</span> : null}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </>
   );
 }
