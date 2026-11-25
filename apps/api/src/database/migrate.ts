@@ -19,6 +19,7 @@ import * as m0014 from "./migrations/0014_connections.js";
 import * as m0015 from "./migrations/0015_role_selection.js";
 import * as m0016 from "./migrations/0016_user_verification.js";
 import * as m0017 from "./migrations/0017_contact_submissions.js";
+import * as m0018 from "./migrations/0018_resume_ai.js";
 
 export const migrations: Record<string, Migration> = {
   "0001_extensions": m0001,
@@ -38,6 +39,7 @@ export const migrations: Record<string, Migration> = {
   "0015_role_selection": m0015,
   "0016_user_verification": m0016,
   "0017_contact_submissions": m0017,
+  "0018_resume_ai": m0018,
 };
 
 const provider: MigrationProvider = {

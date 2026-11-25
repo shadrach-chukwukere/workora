@@ -112,6 +112,10 @@ export interface FreelancerProfilesTable {
   stripe_account_id: string | null;
   stripe_details_submitted: Generated<boolean>;
   stripe_payouts_enabled: Generated<boolean>;
+  resume_url: string | null;
+  resume_file_name: string | null;
+  resume_visibility: Generated<"public" | "private">;
+  resume_updated_at: Date | null;
   skills_count: Generated<number>;
   portfolio_count: Generated<number>;
   has_about: Generated<boolean>;
@@ -266,6 +270,35 @@ export interface SavedProjectsTable {
 }
 
 /** follower_id follows following_id. Both sides are users (freelancer or client). */
+export interface ShortlistedTalentTable {
+  client_id: string;
+  freelancer_id: string;
+  note: string | null;
+  created_at: Timestamp;
+}
+
+export interface ProjectInvitationsTable {
+  id: Generated<string>;
+  project_id: string;
+  client_id: string;
+  freelancer_id: string;
+  message: Generated<string>;
+  status: Generated<"pending" | "accepted" | "declined" | "withdrawn">;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export interface AiUsageTable {
+  id: Generated<string>;
+  user_id: string;
+  kind: string;
+  model: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  status: Generated<string>;
+  created_at: Timestamp;
+}
+
 export interface ConnectionsTable {
   follower_id: string;
   following_id: string;
@@ -699,6 +732,9 @@ export interface DB {
   projects: ProjectsTable;
   project_skills: ProjectSkillsTable;
   saved_projects: SavedProjectsTable;
+  shortlisted_talent: ShortlistedTalentTable;
+  project_invitations: ProjectInvitationsTable;
+  ai_usage: AiUsageTable;
   connections: ConnectionsTable;
   proposals: ProposalsTable;
   proposal_attachments: ProposalAttachmentsTable;

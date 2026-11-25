@@ -12,7 +12,13 @@ import type { PublicPlan } from "@/lib/api-data";
 type Interval = "monthly" | "annual";
 
 /** Interactive pricing sections. `plans` is null when the plans request failed. */
-export default function PricingClient({ plans }: { plans: PublicPlan[] | null }) {
+export default function PricingClient({
+  plans,
+  audience,
+}: {
+  plans: PublicPlan[] | null;
+  audience: "freelancer" | "client" | null;
+}) {
   const [interval, setInterval] = useState<Interval>("monthly");
 
   const visible = useMemo(
@@ -26,6 +32,11 @@ export default function PricingClient({ plans }: { plans: PublicPlan[] | null })
   const freelancerPlans = useMemo(() => visible.filter((p) => p.audience === "freelancer"), [visible]);
   const clientPlans = useMemo(() => visible.filter((p) => p.audience === "client"), [visible]);
 
+  // Signed-in accounts only see the side of the marketplace they belong to.
+  // Visitors (and admins, who are neither buyer nor seller) see both.
+  const showFreelancer = audience !== "client";
+  const showClient = audience !== "freelancer";
+
   return (
     <>
       {/* Hero */}
@@ -36,8 +47,11 @@ export default function PricingClient({ plans }: { plans: PublicPlan[] | null })
             Pricing that stays out of the way
           </h1>
           <p className="mt-4 max-w-[58ch] text-lg leading-relaxed text-neutral-600">
-            Start free on both sides of the marketplace. Paid plans only add leverage, never a paywall on the
-            work itself.
+            {audience === "freelancer"
+              ? "Start free. Paid freelancer plans only add leverage and visibility, never a paywall on the work itself."
+              : audience === "client"
+                ? "Start free. Paid client plans only add hiring tools and team seats, never a paywall on the talent itself."
+                : "Start free on both sides of the marketplace. Paid plans only add leverage, never a paywall on the work itself."}
           </p>
           {plans !== null ? (
             <div className="mt-6">
@@ -67,39 +81,49 @@ export default function PricingClient({ plans }: { plans: PublicPlan[] | null })
         </section>
       ) : (
         <>
-          {/* For freelancers */}
-          <section aria-labelledby="freelancer-plans" className="container-page pb-4">
-            <PlanSectionHeading
-              id="freelancer-plans"
-              eyebrow="For freelancers"
-              title="Sell the work, keep the margin"
-              sub={`An ${PLATFORM_FEE_PERCENT}% fee is deducted only when a milestone is released to you. Clients never pay it, and withdrawals are always free.`}
-            />
-            <div className="mt-8 grid gap-5 md:grid-cols-3">
-              {freelancerPlans.length === 0 ? (
-                <p className="text-sm text-neutral-500">No freelancer plans available right now.</p>
-              ) : (
-                freelancerPlans.map((plan) => <PlanCard key={plan.id} plan={plan} interval={interval} />)
-              )}
-            </div>
-          </section>
+          {/* Freelancer plans — hidden for signed-in clients */}
+          {showFreelancer ? (
+            <section
+              aria-labelledby="freelancer-plans"
+              className={audience === "freelancer" ? "container-page pb-16" : "container-page pb-4"}
+            >
+              <PlanSectionHeading
+                id="freelancer-plans"
+                eyebrow={audience === "freelancer" ? "Your freelancer plans" : "For freelancers"}
+                title="Sell the work, keep the margin"
+                sub={`An ${PLATFORM_FEE_PERCENT}% fee is deducted only when a milestone is released to you. Clients never pay it, and withdrawals are always free.`}
+              />
+              <div className="mt-8 grid gap-5 md:grid-cols-3">
+                {freelancerPlans.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No freelancer plans available right now.</p>
+                ) : (
+                  freelancerPlans.map((plan) => <PlanCard key={plan.id} plan={plan} interval={interval} />)
+                )}
+              </div>
+            </section>
+          ) : null}
 
-          {/* For clients */}
-          <section aria-labelledby="client-plans" className="container-page pb-16 pt-12">
-            <PlanSectionHeading
-              id="client-plans"
-              eyebrow="For clients"
-              title="Hire without the procurement theatre"
-              sub="Posting is free and milestones are held by our payment provider until you approve the work."
-            />
-            <div className="mt-8 grid gap-5 md:grid-cols-2 md:max-w-4xl">
-              {clientPlans.length === 0 ? (
-                <p className="text-sm text-neutral-500">No client plans available right now.</p>
-              ) : (
-                clientPlans.map((plan) => <PlanCard key={plan.id} plan={plan} interval={interval} />)
-              )}
-            </div>
-          </section>
+          {/* Client plans — hidden for signed-in freelancers */}
+          {showClient ? (
+            <section
+              aria-labelledby="client-plans"
+              className={showFreelancer ? "container-page pb-16 pt-12" : "container-page pb-16"}
+            >
+              <PlanSectionHeading
+                id="client-plans"
+                eyebrow={audience === "client" ? "Your client plans" : "For clients"}
+                title="Hire without the procurement theatre"
+                sub="Posting is free and milestones are held by our payment provider until you approve the work."
+              />
+              <div className="mt-8 grid gap-5 md:grid-cols-2 md:max-w-4xl">
+                {clientPlans.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No client plans available right now.</p>
+                ) : (
+                  clientPlans.map((plan) => <PlanCard key={plan.id} plan={plan} interval={interval} />)
+                )}
+              </div>
+            </section>
+          ) : null}
         </>
       )}
     </>

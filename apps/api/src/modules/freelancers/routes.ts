@@ -21,13 +21,15 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       headline: string; about: string; location: string | null; hourly_rate_minor: string | null; availability: string;
       response_time_hours: number; experience_level: string | null; verified_identity: boolean;
       rating_avg: string | null; rating_count: number; completed_count: number;
+      resume_url: string | null; resume_file_name: string | null; resume_visibility: string;
     }>`
       SELECT u.id, u.name, u.email, u.image, u.banner_url, u.created_at,
              u.phone, u.github_url, u.linkedin_url, u.twitter_url,
              u.instagram_url, u.website_url, u.portfolio_url,
              fp.headline, fp.about, fp.location, fp.hourly_rate_minor::text AS hourly_rate_minor, fp.availability,
              fp.response_time_hours, fp.experience_level, fp.verified_identity,
-             fp.rating_avg, fp.rating_count, fp.completed_count
+             fp.rating_avg, fp.rating_count, fp.completed_count,
+             fp.resume_url, fp.resume_file_name, fp.resume_visibility
       FROM users u
       INNER JOIN freelancer_profiles fp ON fp.user_id = u.id
       WHERE u.id = ${id} AND u.status = 'active' AND u.account_type = 'freelancer'
@@ -85,6 +87,10 @@ export default async function freelancersRoutes(app: FastifyInstance) {
       experience,
       education,
       certifications,
+      resume:
+        owner.resume_visibility === "public" && owner.resume_url
+          ? { url: owner.resume_url, file_name: owner.resume_file_name }
+          : null,
       connections,
     }));
   });

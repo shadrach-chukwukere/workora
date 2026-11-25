@@ -17,110 +17,113 @@ export interface NavSection {
 
 export const freelancerNav: NavSection[] = [
  {
- title: "Overview",
- items: [{ href: "/freelancer/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true }],
+  title: "Overview",
+  items: [{ href: "/freelancer/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true }],
  },
  {
- title: "Work",
- items: [
- { href: "/freelancer/projects", label: "Find projects", icon: "JobSearchIcon" },
- { href: "/freelancer/proposals", label: "Proposals", icon: "SentIcon", badge: "proposals" },
- { href: "/freelancer/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
- { href: "/freelancer/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
-{ href: "/notifications", label: "Notifications", icon: "Notification01Icon", badge: "notifications" },
- ],
+  title: "Work",
+  items: [
+  { href: "/freelancer/projects", label: "Find projects", icon: "JobSearchIcon" },
+  { href: "/freelancer/proposals", label: "Proposals", icon: "SentIcon", badge: "proposals" },
+  { href: "/freelancer/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
+  { href: "/freelancer/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
+  { href: "/freelancer/invitations", label: "Invitations", icon: "Mail01Icon", badge: "notifications" },
+  { href: "/freelancer/saved", label: "Saved projects", icon: "SaveIcon", badge: "notifications" },
+  { href: "/freelancer/resume", label: "Résumé", icon: "File01Icon", badge: "notifications" },
+  ],
  },
  {
- title: "Money",
- items: [
- { href: "/freelancer/earnings", label: "Earnings", icon: "Wallet01Icon" },
- { href: "/freelancer/transactions", label: "Transactions", icon: "CreditCardIcon" },
- ],
+  title: "Money",
+  items: [
+  { href: "/freelancer/earnings", label: "Earnings", icon: "Wallet01Icon" },
+  { href: "/freelancer/transactions", label: "Transactions", icon: "CreditCardIcon" },
+  ],
  },
  {
- title: "Reputation",
- items: [
- { href: "/freelancer/portfolio", label: "Portfolio", icon: "Image02Icon" },
- { href: "/freelancer/reviews", label: "Reviews", icon: "StarIcon" },
+  title: "Reputation",
+  items: [
+  { href: "/freelancer/portfolio", label: "Portfolio", icon: "Image02Icon" },
+  { href: "/freelancer/reviews", label: "Reviews", icon: "StarIcon" },
   { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
- { href: "/freelancer/settings", label: "Settings", icon: "Settings01Icon" },
- ],
+  { href: "/freelancer/settings", label: "Settings", icon: "Settings01Icon" },
+  ],
  },
 ];
 
 export const clientNav: NavSection[] = [
  {
- title: "Overview",
- items: [{ href: "/client/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true }],
+  title: "Overview",
+  items: [{ href: "/client/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true }],
  },
  {
- title: "Hiring",
- items: [
- { href: "/client/post-project", label: "Post a project", icon: "Pen01Icon" },
- { href: "/client/projects", label: "Projects", icon: "Briefcase02Icon" },
- { href: "/client/proposals", label: "Proposals", icon: "File02Icon" },
- { href: "/client/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
- { href: "/client/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
-{ href: "/notifications", label: "Notifications", icon: "Notification01Icon", badge: "notifications" },
- ],
+  title: "Hiring",
+  items: [
+  { href: "/client/post-project", label: "Post a project", icon: "Pen01Icon" },
+  { href: "/client/projects", label: "Projects", icon: "Briefcase02Icon" },
+  { href: "/client/proposals", label: "Proposals", icon: "File02Icon" },
+  { href: "/client/contracts", label: "Contracts", icon: "HandshakeIcon", badge: "review" },
+  { href: "/client/messages", label: "Messages", icon: "Message01Icon", badge: "messages" },
+  { href: "/client/shortlist", label: "Shortlist", icon: "HeartIcon", badge: "proposals" },
+  { href: "/notifications", label: "Notifications", icon: "Notification01Icon", badge: "notifications" },
+  ],
  },
  {
- title: "Money",
- items: [
- { href: "/client/payments", label: "Payments", icon: "Payment01Icon" },
- { href: "/client/transactions", label: "Transactions", icon: "CreditCardIcon" },
- ],
+  title: "Money",
+  items: [
+  { href: "/client/payments", label: "Payments", icon: "Payment01Icon" },
+  { href: "/client/transactions", label: "Transactions", icon: "CreditCardIcon" },
+  ],
  },
  {
- title: "Reputation",
- items: [
- { href: "/client/reviews", label: "Reviews", icon: "StarIcon" },
+  title: "Reputation",
+  items: [
+  { href: "/client/reviews", label: "Reviews", icon: "StarIcon" },
   { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
- { href: "/client/settings", label: "Settings", icon: "Settings01Icon" },
- ],
+  { href: "/client/settings", label: "Settings", icon: "Settings01Icon" },
+  ],
  },
 ];
 
 export const adminNav: NavSection[] = [
  {
- title: "Overview",
- items: [
- { href: "/admin/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true },
- { href: "/admin/analytics", label: "Analytics", icon: "Analytics02Icon" },
- ],
+  title: "Overview",
+  items: [
+  { href: "/admin/dashboard", label: "Dashboard", icon: "Home01Icon", exact: true },
+  { href: "/admin/analytics", label: "Analytics", icon: "Analytics02Icon" },
+  ],
  },
  {
- title: "People",
- items: [
- { href: "/admin/freelancers", label: "Freelancers", icon: "UserCircleIcon" },
- { href: "/admin/clients", label: "Clients", icon: "Building01Icon" },
- ],
+  title: "People",
+  items: [
+  { href: "/admin/freelancers", label: "Freelancers", icon: "UserCircleIcon" },
+  { href: "/admin/clients", label: "Clients", icon: "Building01Icon" },
+  ],
  },
  {
- title: "Marketplace",
- items: [
- { href: "/admin/projects", label: "Listings", icon: "Briefcase02Icon", badge: "flagged" },
- { href: "/admin/contracts", label: "Contracts", icon: "HandshakeIcon" },
- { href: "/admin/transactions", label: "Transactions", icon: "CreditCardIcon" },
- { href: "/admin/disputes", label: "Disputes", icon: "Alert02Icon", badge: "disputes" },
- { href: "/admin/reviews", label: "Reviews", icon: "StarIcon", badge: "review" },
- { href: "/admin/categories", label: "Categories", icon: "Tag01Icon" },
- ],
+  title: "Marketplace",
+  items: [
+  { href: "/admin/projects", label: "Listings", icon: "Briefcase02Icon", badge: "flagged" },
+  { href: "/admin/contracts", label: "Contracts", icon: "HandshakeIcon" },
+  { href: "/admin/transactions", label: "Transactions", icon: "CreditCardIcon" },
+  { href: "/admin/disputes", label: "Disputes", icon: "Alert02Icon", badge: "disputes" },
+  { href: "/admin/reviews", label: "Reviews", icon: "StarIcon", badge: "review" },
+  { href: "/admin/categories", label: "Categories", icon: "Tag01Icon" },
+  ],
  },
  {
- title: "Trust & billing",
- items: [
- { href: "/admin/contact", label: "Contact inbox", icon: "Mail01Icon" },
- { href: "/admin/subscriptions", label: "Subscriptions", icon: "CrownIcon" },
- ],
+  title: "Trust & billing",
+  items: [
+  { href: "/admin/contact", label: "Contact inbox", icon: "Mail01Icon" },
+  { href: "/admin/subscriptions", label: "Subscriptions", icon: "CrownIcon" },
+  ],
  },
  {
- title: "Platform",
- items: [
- { href: "/admin/reports", label: "Reports", icon: "ChartLineIcon" },
- { href: "/admin/notifications", label: "Notifications", icon: "Notification01Icon" },
- { href: "/admin/settings", label: "Settings", icon: "Settings01Icon" },
- ],
+  title: "Platform",
+  items: [
+  { href: "/admin/reports", label: "Reports", icon: "ChartLineIcon" },
+  { href: "/admin/notifications", label: "Notifications", icon: "Notification01Icon" },
+  { href: "/admin/settings", label: "Settings", icon: "Settings01Icon" },
+  ],
  },
 ];
 

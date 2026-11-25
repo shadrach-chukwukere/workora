@@ -3,11 +3,14 @@ import { BUDGET_RANGES, EXPERIENCE_LEVELS, SORT_OPTIONS } from "@/lib/constants"
 import { formatMoney, formatNumber, formatRelative, labelize } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Monogram } from "@/components/ui/logo";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
+import { useState } from "react";
 import { ArrowUpRight02Icon, Briefcase02Icon, Icon, Search01Icon, SearchRemoveIcon } from "@/lib/icons";
 import { serverApiBase } from "@/lib/api-base";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 9;
 
@@ -251,6 +254,39 @@ export default async function FindWorkPage({
         <ul className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {pageItems.map((project) => {
             const skills = skillsById.get(project.id) ?? [];
+            const [isSaved, setIsSaved] = useState(() => {
+              // Check if project is saved by checking localStorage or defaulting to false
+              return false;
+            });
+
+            async function toggleSave() {
+              try {
+                if (isSaved) {
+                  const res = await fetch(`${serverApiBase}/api/v1/projects/${project.id}/save`, {
+                    method: "DELETE",
+                    credentials: "include",
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setIsSaved(data.data.saved ?? false);
+                    toast.success(data.message ?? "Project removed from saved");
+                  }
+                } else {
+                  const res = await fetch(`${serverApiBase}/api/v1/projects/${project.id}/save`, {
+                    method: "POST",
+                    credentials: "include",
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setIsSaved(data.data.saved ?? true);
+                    toast.success(data.message ?? "Project saved");
+                  }
+                }
+              } catch (e) {
+                toast.error("Failed to save project");
+              }
+            }
+
             return (
               <li key={project.id}>
                 <Link
@@ -265,6 +301,25 @@ export default async function FindWorkPage({
                       </span>
                     </span>
                     <Badge tone="neutral">{labelize(project.status)}</Badge>
+                    {isSaved ? (
+                      <Button
+                        size="link"
+                        variant="ghost"
+                        className="text-neutral-500 hover:text-neutral-700"
+                        onClick={toggleSave}
+                      >
+                        Saved
+                      </Button>
+                    ) : (
+                      <Button
+                        size="link"
+                        variant="ghost"
+                        className="text-brand-600 hover:text-brand-800"
+                        onClick={toggleSave}
+                      >
+                        Save
+                      </Button>
+                    )}
                   </div>
                   <p className="mt-3 line-clamp-2 text-[15px] font-semibold leading-snug text-neutral-900 group-hover:text-brand-800">
                     {project.title}

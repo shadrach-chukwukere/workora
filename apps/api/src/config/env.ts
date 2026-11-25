@@ -21,6 +21,12 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().min(1).default("Workora <no-reply@example.com>"),
   /** Vercel Blob read/write token. When set, OAuth avatars are mirrored to our own storage. */
   BLOB_READ_WRITE_TOKEN: z.string().default(""),
+  /** Google Gemini is used for resume parsing and profile suggestions. */
+  GEMINI_API_KEY: z.string().default(""),
+  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
+  AI_DAILY_LIMIT_FREE: z.coerce.number().int().min(1).default(10),
+  AI_DAILY_LIMIT_PAID: z.coerce.number().int().min(1).default(50),
+  AI_GLOBAL_DAILY_CAP: z.coerce.number().int().min(1).default(500),
   STRIPE_SECRET_KEY: z.string().default(""),
   STRIPE_WEBHOOK_SECRET: z.string().default(""),
   PAYSTACK_SECRET_KEY: z.string().default(""),

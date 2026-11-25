@@ -1,4 +1,5 @@
 import type { Transaction } from "kysely";
+import { sql } from "kysely";
 import { db } from "../../database/connection.js";
 import type { DB } from "../../database/types.js";
 import { AppError, badRequest, conflict, forbidden, notFound } from "../../plugins/error-handler.js";
@@ -278,10 +279,47 @@ export async function getProposalDetail(user: AuthedUser, proposalId: string) {
     throw forbidden("You do not have access to this proposal");
   }
   const dto = toProposalDto(row);
+  const freelancer = await sql<{
+    id: string;
+    name: string;
+    image: string | null;
+    headline: string | null;
+    about: string | null;
+    location: string | null;
+    hourly_rate_minor: string | null;
+    availability: string;
+    response_time_hours: number;
+    rating_avg: string | null;
+    rating_count: number;
+    completed_count: number;
+    verified_identity: boolean;
+    skills: string[] | null;
+  }>`
+    SELECT u.id, u.name, u.image, fp.headline, fp.about, fp.location,
+           fp.hourly_rate_minor::text AS hourly_rate_minor, fp.availability, fp.response_time_hours,
+           fp.rating_avg, fp.rating_count, fp.completed_count, fp.verified_identity,
+           COALESCE((
+             SELECT array_agg(s.name ORDER BY s.name)
+             FROM freelancer_skills fs JOIN skills s ON s.id = fs.skill_id
+             WHERE fs.freelancer_id = u.id
+           ), '{}') AS skills
+    FROM users u
+    LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
+    WHERE u.id = ${row.freelancer_id}
+  `.execute(dbi).then((result) => result.rows[0]);
+
   return {
     proposal: {
       ...dto,
       project: { ...dto.project, description: row.project_description },
+      freelancer: freelancer
+        ? {
+            ...freelancer,
+            hourly_rate_minor: freelancer.hourly_rate_minor === null ? null : Number(freelancer.hourly_rate_minor),
+            rating_avg: freelancer.rating_avg === null ? null : Number(freelancer.rating_avg),
+            skills: freelancer.skills ?? [],
+          }
+        : null,
     },
   };
 }

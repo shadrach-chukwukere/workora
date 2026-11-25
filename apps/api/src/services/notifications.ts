@@ -121,6 +121,27 @@ export async function sendRevisionRequestedEmail(freelancer: User, milestoneTitl
   });
 }
 
+export async function sendProjectInviteEmail(
+  freelancer: User,
+  clientName: string,
+  projectTitle: string,
+  message: string,
+  inboxUrl: string,
+) {
+  await sendEmail({
+    to: freelancer.email,
+    subject: `${clientName} invited you to "${projectTitle}" — Workora`,
+    html: htmlWrap(`
+      <p>Hi ${esc(freelancer.name)},</p>
+      <p><strong>${esc(clientName)}</strong> invited you to submit a proposal on <strong>"${esc(projectTitle)}"</strong>.</p>
+      ${message ? `<p><strong>Message:</strong> ${esc(message)}</p>` : ""}
+      <a class="btn" href="${esc(inboxUrl)}">View Invitation</a>
+      <p>You can accept the invitation and send a proposal from your Workora workspace.</p>
+    `),
+    text: `Hi ${freelancer.name}, ${clientName} invited you to "${projectTitle}" on Workora. ${message}`,
+  });
+}
+
 export async function sendContractCompletedEmail(user: User, projectTitle: string, dashboardUrl: string) {
   await sendEmail({
     to: user.email,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
 import { apiServer, apiServerOr } from "@/lib/api-data";
 import { formatDate, formatMoney, formatNumber, labelize } from "@/lib/format";
 import { PLATFORM_FEE_PERCENT } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface ProjectClient {
   id: string;
@@ -84,6 +86,9 @@ interface ProjectListItem {
   budgetType: "fixed" | "hourly";
   budgetMinMinor: number | null;
   budgetMaxMinor: number | null;
+  currency: string;
+  experienceLevel: "entry" | "intermediate" | "expert" | null;
+  durationBucket: string | null;
   proposalsCount: number;
   publishedAt: string | null;
   createdAt: string;
@@ -91,11 +96,30 @@ interface ProjectListItem {
 
 async function getProject(encodedId: string): Promise<ProjectDetail | null> {
   try {
-    const data = await apiServer<{ project: ProjectDetail }>(`/api/v1/projects/${encodedId}`, { public: true });
+    const data = await apiServer<{ project: ProjectDetail }>(
+      `/api/v1/projects/${encodedId}`,
+      { public: true }
+    );
     return data.project;
   } catch {
     return null;
   }
+}
+
+function getViewerRole(): "freelancer" | "client" | "visitor" {
+  try {
+    const cookieStore = cookies();
+    const cookie = cookieStore.get("next-auth.session-token");
+    if (cookie) {
+      // User has a session cookie - they're authenticated
+      // We can't easily get the accountType from the cookie alone,
+      // but we can make an authenticated API call to check
+      return "authenticated";
+    }
+  } catch {
+    // No session cookie - visitor
+  }
+  return "visitor";
 }
 
 export async function generateMetadata({
@@ -126,6 +150,9 @@ export default async function ProjectPage({
   const clientName = client?.companyName ?? project.clientCompanyName ?? client?.name ?? "Client";
   const clientSince = client?.memberSince ? client.memberSince.slice(0, 4) : null;
 
+  // Determine viewer role for role-aware CTA
+  const viewerRole = getViewerRole();
+
   const relatedList = await apiServerOr<{ projects: ProjectListItem[] }>(
     "/api/v1/projects",
     { projects: [] },
@@ -147,6 +174,10 @@ export default async function ProjectPage({
     // Flags go to the trust queue; no external service in this build.
     redirect(`/project/${encodeURIComponent(id)}?flagged=1#flagged`);
   }
+
+  // Determine CTA text based on viewer role
+  const ctaText = viewerRole === "freelancer" ? "Apply" : viewerRole === "client" ? "Manage project" : "Create account to propose";
+  const ctaHref = viewerRole === "freelancer" ? "/freelancer/projects?apply=" + project.id : viewerRole === "client" ? "/client/projects" : "/register";
 
   return (
     <div className="bg-white">
@@ -210,7 +241,7 @@ export default async function ProjectPage({
               <MetaCell
                 icon={FolderCheckIcon}
                 label="Duration"
-                value={durationLabel(project.durationBucket)}
+                value={project.durationBucket ? formatRelative(project.durationBucket) : "-"}
               />
               <MetaCell
                 icon={Calendar03Icon}
@@ -282,7 +313,7 @@ export default async function ProjectPage({
               <div className="mt-5 border-t border-neutral-100 pt-5">
                 <p className="text-sm font-semibold text-neutral-900">About</p>
                 <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
-                  {client?.about?.trim() || "This client hasn’t added an About yet."}
+                  {client?.about?.trim() || "This client hasn't added an About yet."}
                 </p>
                 {client?.id ? (
                   <Link
@@ -308,8 +339,12 @@ export default async function ProjectPage({
               </p>
 
               <div className="mt-6 flex flex-col gap-2.5">
-                <Button href="/register" size="lg" className="w-full">
-                  Submit a proposal
+                <Button
+                  href={ctaHref}
+                  size="lg"
+                  className="w-full"
+                >
+                  {ctaText}
                   <Icon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
                 </Button>
                 <Button
@@ -320,126 +355,46 @@ export default async function ProjectPage({
                   <Icon icon={Share01Icon} size={16} strokeWidth={1.8} />
                   Share link
                 </Button>
-
-                {/* Report: native disclosure, no JS required */}
-                <details className="relative">
-                  <summary
-                    aria-label="Report this listing"
-                    className="inline-flex h-9 w-full cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 [&::-webkit-details-marker]:hidden"
-                  >
-                    <Icon icon={Flag01Icon} size={15} strokeWidth={1.8} />
-                    Report this listing
-                  </summary>
-                  <div className="anim-pop absolute left-0 right-0 z-20 mt-2 rounded-xl border border-neutral-200 bg-white p-4 shadow-dropdown">
-                    <form action={flagListing} className="flex flex-col gap-2">
-                      <label htmlFor="flag-reason" className="text-[13px] font-medium text-neutral-800">
-                        Why is this listing a problem?
-                      </label>
-                      <textarea
-                        id="flag-reason"
-                        name="reason"
-                        required
-                        minLength={10}
-                        rows={3}
-                        placeholder="Spam, scam, off-platform payment request, misleading budget..."
-                        className="w-full rounded-lg border border-neutral-200 p-2.5 text-sm leading-relaxed placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none"
-                      />
-                      <Button type="submit" size="sm">
-                        Send flag
-                      </Button>
-                    </form>
-                  </div>
-                </details>
               </div>
 
-              <p className="mt-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-neutral-500">
-                <Icon icon={InformationCircleIcon} size={13} strokeWidth={1.8} className="mt-0.5 shrink-0" />
-                You need an account to propose. Creating one is free and takes a minute.
-              </p>
-            </div>
+              {/* Report: native disclosure, no JS required */}
+              <details className="relative">
+                <summary
+                  aria-label="Report this listing"
+                  className="inline-flex h-9 w-full cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 [&::-webkit-details-marker]:hidden"
+                >
+                  <Icon icon={Flag01Icon} size={15} strokeWidth={1.8} />
+                  Report this listing
+                </summary>
+                <div className="anim-pop absolute left-0 right-0 z-20 mt-2 rounded-xl border border-neutral-200 bg-white p-4 shadow-dropdown">
+                  <form action={flagListing} className="flex flex-col gap-2">
+                    <label htmlFor="flag-reason" className="text-[13px] font-medium text-neutral-800">
+                      Why is this listing a problem?
+                    </label>
+                    <textarea
+                      id="flag-reason"
+                      name="reason"
+                      required
+                      minLength={10}
+                      rows={3}
+                      placeholder="Spam, scam, off-platform payment request, misleading budget..."
+                      className="w-full rounded-lg border border-neutral-200 p-2.5 text-sm leading-relaxed placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none"
+                    />
+                    <Button type="submit" size="sm">
+                      Send flag
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            </p className="mt-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-neutral-500">
+              <Icon icon={InformationCircleIcon} size={13} strokeWidth={1.8} className="mt-0.5 shrink-0" />
+              You need an account to propose. Creating one is free and takes a minute.
+            </p>
           </aside>
         </div>
-
-        {/* Related projects */}
-        {related.length > 0 ? (
-          <section aria-labelledby="related" className="mt-12">
-            <div className="flex items-center justify-between gap-4">
-              <h2 id="related" className="text-lg font-semibold tracking-tight text-neutral-900">More {project.categoryName ?? "open"} briefs</h2>
-              <Button href="/find-work" variant="ghost" size="sm">
-                View all open projects
-                <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
-              </Button>
-            </div>
-            <ul className="mt-4 grid gap-4 md:grid-cols-3">
-              {related.map((item) => (
-                <li key={item.id}>
-                  <Link href={`/project/${encodeURIComponent(item.id)}`} className="flex h-full flex-col rounded-xl border border-neutral-200 bg-white p-5 transition-colors hover:border-brand-200">
-                    <p className="line-clamp-2 text-[15px] font-medium leading-snug text-neutral-900">{item.title}</p>
-                    <p className="mt-2 text-sm font-semibold text-neutral-900">
-                      {priceLabel(item)}
-                      <span className="ml-1.5 font-normal text-neutral-500">
-                        {item.budgetType === "hourly" ? "hourly" : "fixed"}
-                      </span>
-                    </p>
-                    <p className="mt-auto pt-4 text-xs text-neutral-500">
-                      {item.proposalsCount} proposals · Posted {formatDate(item.publishedAt ?? item.createdAt)}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {/* Sign in band */}
-        <section className="mt-12 rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-10 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight text-neutral-900">See this brief? Sign in to propose.</h2>
-          <p className="mx-auto mt-2 max-w-md leading-relaxed text-neutral-600">
-            A free account gets you proposals, milestone contracts and payout history in one place.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Button href="/login" size="lg">
-              Sign in
-              <Icon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
-            </Button>
-            <Button href="/register" variant="secondary" size="lg">
-              Create an account
-            </Button>
-          </div>
-        </section>
       </div>
     </div>
   );
-}
-
-function priceLabel(project: {
-  budgetType: "fixed" | "hourly";
-  budgetMinMinor: number | null;
-  budgetMaxMinor: number | null;
-}): string {
-  const min = project.budgetMinMinor == null ? null : project.budgetMinMinor / 100;
-  const max = project.budgetMaxMinor == null ? null : project.budgetMaxMinor / 100;
-  if (project.budgetType === "fixed") {
-    if (min != null && max != null && min !== max) return `${formatMoney(min)} – ${formatMoney(max)}`;
-    return formatMoney(max ?? min ?? 0);
-  }
-  if (min != null && max != null && min !== max) return `${formatMoney(min)} – ${formatMoney(max)}/hr`;
-  return `${formatMoney(max ?? min ?? 0)}/hr`;
-}
-
-function durationLabel(duration: ProjectDetail["durationBucket"]): string {
-  switch (duration) {
-    case "lt-1m":
-      return "Less than 1 month";
-    case "1-3m":
-      return "1 to 3 months";
-    case "3-6m":
-      return "3 to 6 months";
-    case "gt-6m":
-      return "More than 6 months";
-    default:
-      return "-";
-  }
 }
 
 function MetaCell({
@@ -449,15 +404,10 @@ function MetaCell({
 }: {
   icon: IconName;
   label: string;
-  value: string;
+  value: string | number;
 }) {
   return (
-    <div className="flex flex-col gap-1 bg-white p-4">
-      <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-neutral-500">
-        <Icon icon={icon} size={12} strokeWidth={1.8} />
-        {label}
-      </dt>
-      <dd className="text-sm font-semibold text-neutral-900">{value}</dd>
-    </div>
+    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-500">{label}</div>
+    <dd className="mt-0.5 text-lg font-semibold text-neutral-900">{value}</dd>
   );
 }

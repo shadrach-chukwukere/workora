@@ -32,9 +32,14 @@ export default async function PricingPage() {
     plans = null;
   }
 
+  // Logged-in freelancers should only see freelancer pricing (and clients only
+  // client pricing). Visitors and admins still see both sides of the marketplace.
+  const audience =
+    account?.role === "freelancer" || account?.role === "client" ? account.role : null;
+
   return (
     <div className="bg-white">
-      <PricingClient plans={plans} />
+      <PricingClient plans={plans} audience={audience} />
 
       {/* Enterprise band */}
       <section className="container-page pb-16">
