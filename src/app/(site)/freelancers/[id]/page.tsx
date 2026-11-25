@@ -19,6 +19,13 @@ import {
 } from "@/lib/icons";
 import { apiServerOr } from "@/lib/api-data";
 import { ContactLinks } from "@/components/profile/contact-links";
+import { AuroraBackground } from "@/components/ui/aurora-background";
+import { BannerScrim } from "@/components/ui/banner-scrim";
+import { FloatingAvatar } from "@/components/ui/floating-avatar";
+import { AvailabilityPulse } from "@/components/ui/availability-pulse";
+import { GradientHeadline } from "@/components/ui/gradient-headline";
+import { RevealStagger } from "@/components/ui/reveal-stagger";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
 
@@ -127,22 +134,23 @@ export default async function FreelancerPublicProfile({
             fetchPriority="high"
             unoptimized
           />
+          <BannerScrim hasAurora={true} />
         </div>
       ) : null}
+      <AuroraBackground size="150%" />
 
       {/* Hero */}
       <div className="rounded-xl border border-neutral-200 bg-white grid gap-8 p-6 sm:p-8 lg:grid-cols-3 mt-4">
         <div className="lg:col-span-2">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <Avatar
+            <FloatingAvatar
               src={user.image ?? undefined}
-              name={user.name}
-              size="3xl"
-              alt=""
-              className="shrink-0 ring-4 ring-white"
+              alt={user.name}
+              className="shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
+              <GradientHeadline>
+                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
                 {user.name}
                 {profile.verified_identity ? (
                   <span title="Identity verified" className="inline-flex text-brand-600">
@@ -151,6 +159,7 @@ export default async function FreelancerPublicProfile({
                   </span>
                 ) : null}
               </h1>
+              </GradientHeadline>
               <p className="mt-1.5 text-[15px] leading-snug text-neutral-600">{profile.headline}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-neutral-500">
                 {profile.location ? (
@@ -177,6 +186,7 @@ export default async function FreelancerPublicProfile({
             </span>
           </div>
         </div>
+            <AvailabilityPulse status={profile.availability} />
 
         {/* Sidebar: rate + actions */}
         <div className="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50/70 p-5">
@@ -210,9 +220,7 @@ export default async function FreelancerPublicProfile({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Main column */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* About */}
-          <section className="rounded-xl border border-neutral-200 bg-white p-6">
+        <SpotlightCard>
             <h2 className="text-sm font-semibold text-neutral-900">About {user.name.split(" ")[0]}</h2>
             <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-neutral-700">
               {profile.about?.trim()
@@ -228,11 +236,11 @@ export default async function FreelancerPublicProfile({
                 ))}
               </div>
             ) : null}
-          </section>
+        </SpotlightCard>
 
           {/* Portfolio */}
           {portfolio.length > 0 ? (
-            <section className="rounded-xl border border-neutral-200 bg-white p-6">
+            <SpotlightCard>
               <h2 className="text-sm font-semibold text-neutral-900">Selected work</h2>
               <ul className="mt-4 grid gap-4 sm:grid-cols-2">
                 {portfolio.map((item) => (
@@ -270,12 +278,12 @@ export default async function FreelancerPublicProfile({
                   </li>
                 ))}
               </ul>
-            </section>
+            </SpotlightCard>
           ) : null}
 
           {/* Experience */}
           {experience.length > 0 ? (
-            <section className="rounded-xl border border-neutral-200 bg-white p-6">
+            <SpotlightCard>
               <h2 className="text-sm font-semibold text-neutral-900">Experience</h2>
               <ol className="mt-4 divide-y divide-neutral-100">
                 {experience.map((role) => (
@@ -291,13 +299,13 @@ export default async function FreelancerPublicProfile({
                   </li>
                 ))}
               </ol>
-            </section>
+            </SpotlightCard>
           ) : null}
 
           {/* Education + certifications */}
           <div className="grid gap-6 sm:grid-cols-2">
             {education.length > 0 ? (
-              <section className="rounded-xl border border-neutral-200 bg-white p-6">
+              <SpotlightCard>
                 <h2 className="text-sm font-semibold text-neutral-900">Education</h2>
                 <ul className="mt-3 space-y-3">
                   {education.map((edu) => (
@@ -312,10 +320,10 @@ export default async function FreelancerPublicProfile({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </SpotlightCard>
             ) : null}
             {certifications.length > 0 ? (
-              <section className="rounded-xl border border-neutral-200 bg-white p-6">
+              <SpotlightCard>
                 <h2 className="text-sm font-semibold text-neutral-900">Certifications</h2>
                 <ul className="mt-3 flex flex-wrap gap-1.5">
                   {certifications.map((cert) => (
@@ -324,7 +332,7 @@ export default async function FreelancerPublicProfile({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </SpotlightCard>
             ) : null}
           </div>
 
