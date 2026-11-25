@@ -8,8 +8,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { Logo } from "@/components/ui/logo";
+import { HeaderSearch } from "@/components/layout/header-search";
+import { NavDropdown, type NavDropdownItem } from "@/components/layout/nav-dropdown";
 import { publicNav } from "@/lib/navigation";
-import { Icon, Logout01Icon, Menu01Icon, Search01Icon, MultiplicationSignIcon, Home01Icon, Settings01Icon, ArrowDown01Icon } from "@/lib/icons";
+import { Icon, Logout01Icon, Menu01Icon, Search01Icon, MultiplicationSignIcon, Home01Icon, Settings01Icon, UserAccountIcon, Briefcase02Icon, Pen01Icon } from "@/lib/icons";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/sign-out";
@@ -21,12 +23,21 @@ interface PublicHeaderProps {
   account?: SessionAccount | null;
 }
 
+const hireTalentItems: NavDropdownItem[] = [
+  { label: "Find talent", href: "/find-talent", description: "Browse vetted freelancers by skill", icon: <Icon icon={UserAccountIcon} size={16} strokeWidth={1.8} /> },
+  { label: "Post a project", href: "/client/post-project", description: "Share your brief and get proposals", icon: <Icon icon={Pen01Icon} size={16} strokeWidth={1.8} /> },
+];
+
+const findWorkItems: NavDropdownItem[] = [
+  { label: "Browse briefs", href: "/find-work", description: "Open projects with public budgets", icon: <Icon icon={Briefcase02Icon} size={16} strokeWidth={1.8} /> },
+  { label: "Saved projects", href: "/freelancer/saved", description: "Keep the briefs you want to revisit", icon: <Icon icon={Settings01Icon} size={16} strokeWidth={1.8} /> },
+];
+
 export function PublicHeader({ account = null }: PublicHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [searchContext, setSearchContext] = useState<"talent" | "projects">("talent");
 
   useEffect(() => {
     if (menuOpen) {
@@ -55,9 +66,6 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
     await signOut("/login");
   };
 
-  // Nav items that show a dropdown chevron (Upwork-inspired)
-  const dropdownNav = ["/find-talent", "/find-work"];
-
   const accountItems = account
     ? [
         { type: "label" as const, label: `${account.name} · ${account.email}` },
@@ -81,61 +89,37 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
       </a>
 
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/50 backdrop-blur supports-backdrop-filter:bg-white/92">
-        <div className="container-page flex h-16 items-center gap-x-6">
-          {/* Brand - left, generous whitespace around it */}
+        <div className="container-page flex h-16 items-center gap-x-4">
+          {/* Brand */}
           <div className="flex shrink-0 items-center gap-2.5">
             <Logo className="shrink-0" size="md" />
           </div>
 
-          {/* Primary navigation - text links with dropdown chevrons (Upwork-inspired) */}
-          <nav aria-label="Primary" className="hidden items-center gap-1 shrink-0 md:flex md:ml-8">
-            {publicNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
-                aria-current={isActive(item.href) ? "page" : undefined}
-              >
-                {item.label}
-                {dropdownNav.includes(item.href) ? (
-                  <Icon icon={ArrowDown01Icon} size={14} strokeWidth={1.8} className="shrink-0 opacity-60" aria-hidden="true" />
-                ) : null}
-              </Link>
-            ))}
+          {/* Primary navigation with smart custom dropdowns */}
+          <nav aria-label="Primary" className="hidden items-center gap-1 shrink-0 md:flex md:ml-6">
+            <NavDropdown label="Hire talent" items={hireTalentItems} active={isActive("/find-talent")} />
+            <NavDropdown label="Find work" items={findWorkItems} active={isActive("/find-work")} />
+            {publicNav
+              .filter((item) => item.href === "/pricing")
+              .map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "inline-flex items-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900",
+                    isActive(item.href) ? "text-neutral-900" : "text-neutral-600",
+                  )}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </Link>
+              ))}
           </nav>
 
-          {/* Search bar - pill-shaped with context dropdown (Upwork-inspired) */}
-          <form
-            action={searchContext === "talent" ? "/find-talent" : "/find-work"}
-            method="get"
-            className="ml-auto hidden items-center rounded-full border border-neutral-200 bg-white pl-3.5 pr-1.5 h-10 transition-colors focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100 lg:flex"
-            role="search"
-          >
-            <Icon icon={Search01Icon} size={16} strokeWidth={1.8} className="shrink-0 text-neutral-400" aria-hidden="true" />
-            <input
-              type="search"
-              name="q"
-              placeholder="Search"
-              aria-label="Search talent or projects"
-              className="h-full w-28 min-w-0 bg-transparent px-2.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 xl:w-40"
-            />
-            <div className="h-5 w-px shrink-0 bg-neutral-200" aria-hidden="true" />
-            <label className="relative flex items-center">
-              <span className="sr-only">Search context</span>
-              <select
-                name="context"
-                value={searchContext}
-                onChange={(e) => setSearchContext(e.target.value as "talent" | "projects")}
-                className="h-full cursor-pointer appearance-none bg-transparent pl-2.5 pr-6 text-sm font-medium text-neutral-700 outline-none"
-              >
-                <option value="talent">Talent</option>
-                <option value="projects">Projects</option>
-              </select>
-              <Icon icon={ArrowDown01Icon} size={13} strokeWidth={1.8} className="pointer-events-none absolute right-1.5 text-neutral-500" aria-hidden="true" />
-            </label>
-          </form>
+          {/* Pill search using react-select */}
+          <HeaderSearch />
 
-          <div className="ml-auto flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {account ? (
               <>
                 <Link href={workspace} className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900">
@@ -154,12 +138,12 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               </>
             ) : (
               <>
-                  <Button href="/login" size={"md"} className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900">
-                    Log in
-                  </Button>
+                <Button href="/login" size="md" className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900">
+                  Log in
+                </Button>
                 <Button href="/register" size="md" className="hidden md:inline-flex rounded-full px-5">
                   Get started
-                  <HugeiconsIcon icon={ArrowRight01Icon}/>
+                  <HugeiconsIcon icon={ArrowRight01Icon} />
                 </Button>
               </>
             )}
@@ -228,11 +212,11 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                       <p className="truncate text-xs text-neutral-500">{account.email}</p>
                     </div>
                   </div>
-                  <Link href={workspace} className="mt-2 block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50">
+                  <Link href={workspace} className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50">
                     <Icon icon={Home01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
                     Open dashboard
                   </Link>
-                  <Link href={settingsHref} className="mt-1 block rounded-lg px-3 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900">
+                  <Link href={settingsHref} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900">
                     <Icon icon={Settings01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
                     Account settings
                   </Link>

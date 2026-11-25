@@ -3,14 +3,12 @@ import { BUDGET_RANGES, EXPERIENCE_LEVELS, SORT_OPTIONS } from "@/lib/constants"
 import { formatMoney, formatNumber, formatRelative, labelize } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Monogram } from "@/components/ui/logo";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
-import { useState } from "react";
+import { SaveProjectButton } from "@/components/project/save-project-button";
 import { ArrowUpRight02Icon, Briefcase02Icon, Icon, Search01Icon, SearchRemoveIcon } from "@/lib/icons";
 import { serverApiBase } from "@/lib/api-base";
-import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 9;
 
@@ -80,7 +78,7 @@ function budgetLabel(project: ApiProject): string {
   const min = project.budgetMinMinor != null ? project.budgetMinMinor / 100 : null;
   const max = project.budgetMaxMinor != null ? project.budgetMaxMinor / 100 : null;
   const suffix = project.budgetType === "hourly" ? "/hr" : "";
-  if (min != null && max != null && min !== max) return `${formatMoney(min)} – ${formatMoney(max)}${suffix}`;
+  if (min != null && max != null && min !== max) return `${formatMoney(min)} - ${formatMoney(max)}${suffix}`;
   return `${formatMoney(min ?? max ?? 0)}${suffix}`;
 }
 
@@ -152,15 +150,6 @@ export default async function FindWorkPage({
   if (exp !== "all") qs.set("exp", exp);
   if (sort !== "newest") qs.set("sort", sort);
   const chipHref = qs.toString() ? `/find-work?${qs.toString()}` : "/find-work";
-
-  const activeChips = (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-      {q ? <Chip href={chipHref} label={`Matches "${q}"`} clearKey="q" /> : null}
-      {category !== "all" ? <Chip href={chipHref} label={CATEGORIES.get(category)?.name ?? category} clearKey="category" /> : null}
-      {budget !== "all" ? <Chip href={chipHref} label={BUDGET_RANGES.find((b) => b.value === budget)?.label ?? budget} clearKey="budget" /> : null}
-      {exp !== "all" ? <Chip href={chipHref} label={`${EXPERIENCE.get(exp)?.label ?? exp} level`} clearKey="exp" /> : null}
-    </div>
-  );
 
   const hasActiveFilters = q !== "" || category !== "all" || budget !== "all" || exp !== "all";
 
@@ -234,7 +223,14 @@ export default async function FindWorkPage({
           Search
         </button>
       </form>
-      {hasActiveFilters ? <div className="mt-2">{activeChips}</div> : null}
+      {hasActiveFilters ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+          {q ? <Chip href={chipHref} label={`Matches "${q}"`} clearKey="q" /> : null}
+          {category !== "all" ? <Chip href={chipHref} label={CATEGORIES.get(category)?.name ?? category} clearKey="category" /> : null}
+          {budget !== "all" ? <Chip href={chipHref} label={BUDGET_RANGES.find((b) => b.value === budget)?.label ?? budget} clearKey="budget" /> : null}
+          {exp !== "all" ? <Chip href={chipHref} label={`${EXPERIENCE.get(exp)?.label ?? exp} level`} clearKey="exp" /> : null}
+        </div>
+      ) : null}
 
       {/* Results */}
       {pageItems.length === 0 ? (
@@ -254,39 +250,6 @@ export default async function FindWorkPage({
         <ul className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {pageItems.map((project) => {
             const skills = skillsById.get(project.id) ?? [];
-            const [isSaved, setIsSaved] = useState(() => {
-              // Check if project is saved by checking localStorage or defaulting to false
-              return false;
-            });
-
-            async function toggleSave() {
-              try {
-                if (isSaved) {
-                  const res = await fetch(`${serverApiBase}/api/v1/projects/${project.id}/save`, {
-                    method: "DELETE",
-                    credentials: "include",
-                  });
-                  const data = await res.json();
-                  if (data.success) {
-                    setIsSaved(data.data.saved ?? false);
-                    toast.success(data.message ?? "Project removed from saved");
-                  }
-                } else {
-                  const res = await fetch(`${serverApiBase}/api/v1/projects/${project.id}/save`, {
-                    method: "POST",
-                    credentials: "include",
-                  });
-                  const data = await res.json();
-                  if (data.success) {
-                    setIsSaved(data.data.saved ?? true);
-                    toast.success(data.message ?? "Project saved");
-                  }
-                }
-              } catch (e) {
-                toast.error("Failed to save project");
-              }
-            }
-
             return (
               <li key={project.id}>
                 <Link
@@ -301,25 +264,7 @@ export default async function FindWorkPage({
                       </span>
                     </span>
                     <Badge tone="neutral">{labelize(project.status)}</Badge>
-                    {isSaved ? (
-                      <Button
-                        size="link"
-                        variant="ghost"
-                        className="text-neutral-500 hover:text-neutral-700"
-                        onClick={toggleSave}
-                      >
-                        Saved
-                      </Button>
-                    ) : (
-                      <Button
-                        size="link"
-                        variant="ghost"
-                        className="text-brand-600 hover:text-brand-800"
-                        onClick={toggleSave}
-                      >
-                        Save
-                      </Button>
-                    )}
+                    <SaveProjectButton projectId={project.id} />
                   </div>
                   <p className="mt-3 line-clamp-2 text-[15px] font-semibold leading-snug text-neutral-900 group-hover:text-brand-800">
                     {project.title}

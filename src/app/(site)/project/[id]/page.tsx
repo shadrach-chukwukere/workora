@@ -385,11 +385,11 @@ export default async function ProjectPage({
                     </Button>
                   </form>
                 </div>
-              </div>
-            </p className="mt-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-neutral-500">
-              <Icon icon={InformationCircleIcon} size={13} strokeWidth={1.8} className="mt-0.5 shrink-0" />
-              You need an account to propose. Creating one is free and takes a minute.
-            </p>
+              </details>
+              <p className="mt-4 flex items-start gap-1.5 text-[12px] leading-relaxed text-neutral-500">
+                <Icon icon={InformationCircleIcon} size={13} strokeWidth={1.8} className="mt-0.5 shrink-0" />
+                You need an account to propose. Creating one is free and takes a minute.
+              </p>
           </aside>
         </div>
       </div>

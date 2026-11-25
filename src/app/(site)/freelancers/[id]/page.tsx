@@ -184,9 +184,9 @@ export default async function FreelancerPublicProfile({
             <span className="text-sm text-neutral-600">
               <span className="font-semibold text-neutral-900">~{profile.response_time_hours}h</span> response
             </span>
+            <AvailabilityPulse status={profile.availability} />
           </div>
         </div>
-            <AvailabilityPulse status={profile.availability} />
 
         {/* Sidebar: rate + actions */}
         <div className="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50/70 p-5">
@@ -220,7 +220,9 @@ export default async function FreelancerPublicProfile({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Main column */}
-        <SpotlightCard>
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          {/* About */}
+          <SpotlightCard>
             <h2 className="text-sm font-semibold text-neutral-900">About {user.name.split(" ")[0]}</h2>
             <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-neutral-700">
               {profile.about?.trim()
