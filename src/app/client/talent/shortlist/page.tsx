@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatMoney, formatRelative } from "@/lib/format";
-import { Icon, ChecklistIcon, HeartIcon } from "@/lib/icons";
+import { Icon, CheckListIcon, HeartIcon, MapPinIcon, StarIcon } from "@/lib/icons";
 
 interface ShortlistedTalent {
   id: string;
@@ -35,8 +35,8 @@ interface ShortlistListResponse {
   totalPages: number;
 }
 
-function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = fetch(path, {
+async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
     ...init,
     credentials: "include",
     headers: init?.body !== undefined ? { "content-type": "application/json", ...init?.headers } : init?.headers,
@@ -71,7 +71,7 @@ export default function ClientShortlistPage() {
   });
 
   const talent = data?.talent ?? [];
-  const pagination = data?.pagination ?? { page, perPage: 9, total: 0, totalPages: 1 };
+  const pagination = data ?? { page, perPage: 9, total: 0, totalPages: 1 };
 
   useEffect(() => {
     if (isError) {

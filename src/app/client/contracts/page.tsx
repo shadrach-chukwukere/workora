@@ -1,5 +1,3 @@
-"use client";
-
 import { redirect } from "next/navigation";
 import { apiServer, ApiServerError, sessionCookie } from "@/lib/api-server";
 import { ContractsClient, type ContractItem, type MilestoneRow } from "./contracts-client";
@@ -46,41 +44,5 @@ export default async function ClientContractsPage() {
     throw error;
   }
 
-  // Role-aware callbacks for the shared component
-  const onContractClick = (contract: ContractItem) => {
-    // Client views project detail
-    router.push(`/project/${contract.project_id}`);
-  };
-
-  const onMilestoneSubmit = (contractId: string, milestoneId: string, title: string) => {
-    // Client can submit milestones for funded ones
-    router.push(`/project/${contractId}`);
-  };
-
-  const onMilestoneApprove = (contractId: string, milestoneId: string) => {
-    // Client approves milestones
-    // Could show a confirm dialog
-  };
-
-  const onMilestoneRequestRevision = (contractId: string, milestoneId: string, note: string) => {
-    // Client can request revision
-  };
-
-  const onMilestoneFund = (contractId: string, milestoneId: string, amountMinor: number) => {
-    // Client funds milestones
-  };
-
-  const onCancelContract = (contractId: string, reason: string) => {
-    // Client cancels contract
-  };
-
-  return <ContractsClient
-    initialContracts={enriched}
-    onContractClick={onContractClick}
-    onMilestoneSubmit={onMilestoneSubmit}
-    onMilestoneApprove={onMilestoneApprove}
-    onMilestoneRequestRevision={onMilestoneRequestRevision}
-    onMilestoneFund={onMilestoneFund}
-    onCancelContract={onCancelContract}
-  />;
+  return <ContractsClient initialContracts={enriched} />;
 }

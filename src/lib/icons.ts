@@ -21,7 +21,9 @@ export {
   // Entities
   StarIcon,
   StarHalfIcon,
+  HeartIcon,
   Location01Icon,
+  MapPinIcon,
   GlobeIcon,
   Globe02Icon,
   GithubIcon,

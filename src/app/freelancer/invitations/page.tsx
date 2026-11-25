@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatDateShort } from "@/lib/format";
-import { Icon, Check02Icon, CloseIcon } from "@/lib/icons";
+import { Icon, Mail01Icon } from "@/lib/icons";
+import { serverApiBase } from "@/lib/api-base";
 
 interface ProjectInvitation {
   id: string;
@@ -32,8 +33,8 @@ interface InvitationsResponse {
   totalPages: number;
 }
 
-function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = fetch(path, {
+async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
     ...init,
     credentials: "include",
     headers: init?.body !== undefined ? { "content-type": "application/json", ...init?.headers } : init?.headers,
@@ -68,7 +69,9 @@ export default function FreelancerInvitationsPage() {
   });
 
   const invitations = data?.invitations ?? [];
-  const pagination = data?.pagination ?? { page, perPage: 9, total: 0, totalPages: 1 };
+  const pagination = data
+    ? { page: data.page, perPage: data.perPage, total: data.total, totalPages: data.totalPages }
+    : { page, perPage: 9, total: 0, totalPages: 1 };
 
   useEffect(() => {
     if (isError) {
@@ -188,7 +191,7 @@ export default function FreelancerInvitationsPage() {
                 {inv.status === "pending" && (
                   <>
                     <Button
-                      size="link"
+                      size="sm"
                       variant="ghost"
                       onClick={() => handleAccept(inv.id)}
                       className="text-brand-600 hover:text-brand-800"
@@ -196,7 +199,7 @@ export default function FreelancerInvitationsPage() {
                       Accept
                     </Button>
                     <Button
-                      size="link"
+                      size="sm"
                       variant="ghost"
                       onClick={() => handleDecline(inv.id)}
                       className="text-rose-600 hover:text-rose-700"
@@ -207,7 +210,7 @@ export default function FreelancerInvitationsPage() {
                 )}
                 {inv.status === "pending" && (
                   <Button
-                    size="link"
+                    size="sm"
                     variant="ghost"
                     onClick={() => handleWithdraw(inv.id)}
                     className="text-neutral-500 hover:text-neutral-700"

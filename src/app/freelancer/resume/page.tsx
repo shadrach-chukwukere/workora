@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatMoney, formatRelative } from "@/lib/format";
-import { Icon, Check02Icon, CheckCircleIcon, EyeIcon, TrashIcon, File01Icon } from "@/lib/icons";
+import { Icon, EyeIcon, TrashIcon, File01Icon } from "@/lib/icons";
+import { Input } from "@/components/ui/form";
 
 interface ResumeSection {
   headline: string | null;
@@ -39,14 +40,29 @@ interface AiQuota {
   remaining: number;
 }
 
+type PatchResume = (patch: Partial<ResumeSection>) => void;
+
 export default function FreelancerResumePage() {
   const router = useRouter();
-  const [section, setSection] = useState<headline | about | skills | experience | education | certifications>("headline");
+  const [section, setSection] = useState<keyof ResumeSection>("headline");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiQuota, setAiQuota] = useState<AiQuota>({ limit: 10, used: 0, remaining: 10 });
   const [aiKind, setAiKind] = useState<"parse" | "generate">("parse");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [draft, setDraft] = useState<ResumeSection>({
+    headline: null,
+    about: null,
+    skills: [],
+    experience: [],
+    education: [],
+    certifications: [],
+    resume_url: null,
+    resume_file_name: null,
+    resume_visibility: "public",
+  });
 
   // Load resume data
   const { data: resume, isLoading: isLoadingResume } = useQuery({
@@ -61,15 +77,6 @@ export default function FreelancerResumePage() {
     },
     staleTime: 60_000,
   });
-
-  if (isLoadingResume) {
-    return (
-      <div className="flex flex-col items-center py-12">
-        <span className="animation-spin rounded-full h-8 w-8 border-b border-brand-600"></span>
-        <span className="ml-4 text-sm text-neutral-500">Loading resume…</span>
-      </div>
-    );
-  }
 
   const resumeData: ResumeSection = resume || {
     headline: null,
@@ -95,7 +102,11 @@ export default function FreelancerResumePage() {
     setStep(prev => Math.max(1, prev));
   };
 
-  const handleSaveSection = async (values: Partial<ResumeSection>) => {
+  const patchDraft = (patch: Partial<ResumeSection>) => {
+    setDraft(prev => ({ ...prev, ...patch }));
+  };
+
+  const handleSaveSection = async (values: Partial<ResumeSection> = {}) => {
     setLoading(true);
     try {
       const res = await fetch("/api/v1/users/me/resume-file", {
@@ -133,12 +144,103 @@ export default function FreelancerResumePage() {
     setAiKind("generate");
   };
 
+  const useAiCredit = () => {
+    setAiQuota(prev => ({
+      ...prev,
+      used: prev.used + 1,
+      remaining: Math.max(0, prev.remaining - 1),
+    }));
+  };
+
+  const handleAiParse = async () => {
+    if (!resumeText.trim() && !resumeFile) {
+      toast.error("Paste your resume text or upload a PDF first");
+      return;
+    }
+    if (aiQuota.remaining <= 0) {
+      toast.error("You have no AI generations remaining today");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const body = new FormData();
+      body.append("text", resumeText);
+      if (resumeFile) body.append("file", resumeFile);
+      const res = await fetch("/api/v1/users/me/resume/parse", {
+        method: "POST",
+        credentials: "include",
+        body,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message ?? "Failed to parse resume");
+        return;
+      }
+      useAiCredit();
+      toast.success("Resume parsed. Review the imported sections below.");
+      setShowAiPanel(false);
+      router.refresh();
+    } catch {
+      toast.error("Failed to parse resume");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAiGenerateConfirm = async () => {
+    if (aiQuota.remaining <= 0) {
+      toast.error("You have no AI generations remaining today");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/users/me/resume/generate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          headline: draft.headline,
+          about: draft.about,
+          skills: draft.skills,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message ?? "Failed to generate profile");
+        return;
+      }
+      useAiCredit();
+      toast.success("Profile suggestions generated");
+      setShowAiPanel(false);
+      router.refresh();
+    } catch {
+      toast.error("Failed to generate profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // AI quota check and usage
   useEffect(() => {
     // Simulate quota fetch - in production would call /ai/quota
     const fakeQuota: AiQuota = { limit: 10, used: 3, remaining: 7 };
     setAiQuota(fakeQuota);
   }, []);
+
+  useEffect(() => {
+    if (resume) setDraft(resume as ResumeSection);
+  }, [resume]);
+
+  if (isLoadingResume) {
+    return (
+      <div className="flex flex-col items-center py-12">
+        <span className="animation-spin rounded-full h-8 w-8 border-b border-brand-600"></span>
+        <span className="ml-4 text-sm text-neutral-500">Loading resume…</span>
+      </div>
+    );
+  }
 
   if (step > 6) {
     return (
@@ -151,7 +253,7 @@ export default function FreelancerResumePage() {
           </div>
           <div className="card p-4">
             <h3 className="text-sm font-medium text-neutral-900">About</h3>
-            <p className="mt-1">{resumeData.about?.slice(0, 80) ?? "—"}{resumeData.about?.length > 80 ? "…" : ""}</p>
+            <p className="mt-1">{resumeData.about?.slice(0, 80) ?? "—"}{(resumeData.about ?? "").length > 80 ? "…" : ""}</p>
           </div>
           <div className="card p-4">
             <h3 className="text-sm font-medium text-neutral-900">Skills</h3>
@@ -185,12 +287,12 @@ export default function FreelancerResumePage() {
           {step}/6 - {getStepTitle(step)}
         </h2>
 
-        {step === 1 && renderHeadlineStep(resumeData)}
-        {step === 2 && renderAboutStep(resumeData)}
-        {step === 3 && renderSkillsStep(resumeData)}
-        {step === 4 && renderExperienceStep(resumeData)}
-        {step === 5 && renderEducationStep(resumeData)}
-        {step === 6 && renderCertificationsStep(resumeData)}
+        {step === 1 && renderHeadlineStep(draft, patchDraft)}
+        {step === 2 && renderAboutStep(draft, patchDraft)}
+        {step === 3 && renderSkillsStep(draft, patchDraft)}
+        {step === 4 && renderExperienceStep(draft)}
+        {step === 5 && renderEducationStep(draft)}
+        {step === 6 && renderCertificationsStep(draft)}
 
         {step < 6 && (
           <div className="mt-6 flex gap-2">
@@ -225,7 +327,7 @@ export default function FreelancerResumePage() {
             <Button
               variant="primary"
               size="sm"
-              onClick={handleSaveSection}
+              onClick={() => { void handleSaveSection(draft); }}
             >
               Save Resume
             </Button>
@@ -263,7 +365,7 @@ export default function FreelancerResumePage() {
                     type="file"
                     accept="application/pdf"
                     className="w-full rounded-lg border border-neutral-200 p-2.5 text-sm cursor-pointer hover:border-brand-500"
-                    onChange={(e) => setResumeFile(e.target.files?.[0])}
+                    onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
                   />
                   <p className="mt-1 text-[10px] text-neutral-500">
                     PDF must be 10 MB or smaller
@@ -308,7 +410,7 @@ function getStepTitle(step: number) {
   return titles[step - 1];
 }
 
-function renderHeadlineStep(resume: ResumeSection) {
+function renderHeadlineStep(resume: ResumeSection, onChange: PatchResume) {
   return (
     <div>
       <label className="block text-sm text-neutral-700 mb-2">
@@ -316,8 +418,7 @@ function renderHeadlineStep(resume: ResumeSection) {
       </label>
       <Input
         value={resume.headline ?? ""}
-        onChange={(e) => {/* update state */}
-        }
+        onChange={(e) => onChange({ headline: e.target.value })}
         placeholder="e.g. Senior Full Stack Engineer | React, TypeScript, Node.js"
         maxLength={120}
         className="block w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 hover:border-neutral-300"
@@ -326,7 +427,7 @@ function renderHeadlineStep(resume: ResumeSection) {
   );
 }
 
-function renderAboutStep(resume: ResumeSection) {
+function renderAboutStep(resume: ResumeSection, onChange: PatchResume) {
   return (
     <div>
       <label className="block text-sm text-neutral-700 mb-2">
@@ -335,15 +436,15 @@ function renderAboutStep(resume: ResumeSection) {
       <textarea
         className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 resize-none h-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 hover:border-neutral-300"
         rows={4}
+        value={resume.about ?? ""}
+        onChange={(e) => onChange({ about: e.target.value })}
         placeholder="Tell your story. What do you do? Why Workora? What are you passionate about?"
-      >
-        {resume.about ?? ""}
-      </textarea>
+      />
     </div>
   );
 }
 
-function renderSkillsStep(resume: ResumeSection) {
+function renderSkillsStep(resume: ResumeSection, onChange: PatchResume) {
   return (
     <div>
       <label className="block text-sm text-neutral-700 mb-2">
@@ -354,7 +455,15 @@ function renderSkillsStep(resume: ResumeSection) {
           <Button
             key={skill}
             size="sm"
-            variant="outline"
+            variant={resume.skills.includes(skill) ? "primary" : "secondary"}
+            aria-pressed={resume.skills.includes(skill)}
+            onClick={() =>
+              onChange({
+                skills: resume.skills.includes(skill)
+                  ? resume.skills.filter(item => item !== skill)
+                  : [...resume.skills, skill].slice(0, 30),
+              })
+            }
             className="w-full text-left"
           >
             {skill}

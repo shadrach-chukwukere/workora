@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatDateShort, formatMoney } from "@/lib/format";
-import { Icon, SaveIcon } from "@/lib/icons";
+import { Icon, SaveIcon, Clock01Icon } from "@/lib/icons";
 
 interface SavedProjectDto {
   id: string;
@@ -33,8 +34,8 @@ interface SavedProjectListResponse {
   totalPages: number;
 }
 
-function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = fetch(path, {
+async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
     ...init,
     credentials: "include",
     headers: init?.body !== undefined ? { "content-type": "application/json", ...init?.headers } : init?.headers,
@@ -69,7 +70,7 @@ export default function FreelancerSavedProjectsPage() {
   });
 
   const projects = data?.projects ?? [];
-  const pagination = data?.pagination ?? { page, perPage: 9, total: 0, totalPages: 1 };
+  const pagination = data ?? { page, perPage: 9, total: 0, totalPages: 1 };
 
   useEffect(() => {
     if (isError) {
@@ -128,7 +129,7 @@ export default function FreelancerSavedProjectsPage() {
           const budgetMax = project.budget_max_minor ? ` - ${formatMoney(Number(project.budget_max_minor) / 100)}` : "";
           const priceCaption = budgetMin + budgetMax;
           const title = project.title;
-          const summary = project.summary?.slice(0, 120) + (project.summary?.length > 120 ? "…" : "");
+          const summary = project.summary?.slice(0, 120) + ((project.summary?.length ?? 0) > 120 ? "…" : "");
           const year = project.created_at ? formatDateShort(new Date(project.created_at).toISOString().split("T")[0]) : "";
 
           return (

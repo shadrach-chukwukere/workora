@@ -17,9 +17,11 @@ import { MILESTONE_STATUS_META } from "@/lib/constants";
 import {
   Alert02Icon,
   ArrowRight02Icon,
+  HandshakeIcon,
   Icon,
   ShieldCheckIcon,
   StarIcon,
+  Tick02Icon,
 } from "@/lib/icons";
 
 export interface MilestoneRow {
@@ -52,13 +54,8 @@ export interface ContractItem {
 
 type MilestoneStatus = MilestoneRow["status"];
 
-const MILESTONE_STATUS_META: Record<MilestoneStatus, { label: string; tone: "neutral" | "warning" | "success" | "danger" | "brand" }> = {
-  upcoming: { label: "Upcoming", tone: "neutral" },
-  funded: { label: "Funded", tone: "brand" },
-  in_review: { label: "In review", tone: "warning" },
-  revision: { label: "Revision requested", tone: "danger" },
-  approved: { label: "Approved", tone: "success" },
-  paid: { label: "Paid", tone: "success" },
+const MILESTONE_META: Record<MilestoneStatus, { label: string; tone: "neutral" | "warning" | "success" | "danger" | "brand" }> = {
+  ...MILESTONE_STATUS_META,
   cancelled: { label: "Cancelled", tone: "neutral" },
 };
 
@@ -71,7 +68,7 @@ const CONTRACT_STATUS_META: Record<ContractItem["status"], { label: string; tone
 };
 
 function formatMilestoneMeta(status: MilestoneStatus) {
-  const meta = MILESTONE_STATUS_META[status];
+  const meta = MILESTONE_META[status];
   return meta ? `<span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-${meta.tone}-600}">${meta.label}</span>` : "";
 }
 
@@ -99,6 +96,9 @@ export function ContractsClient({
   const [revisionNote, setRevisionNote] = useState("");
   const [actionPending, setActionPending] = useState(false);
   const [fundTarget, setFundTarget] = useState<{ contractId: string; milestoneId: string; title: string; amountMinor: number } | null>(null);
+  const [submitTarget, setSubmitTarget] = useState<{ contractId: string; milestoneId: string; title: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<{ contractId: string } | null>(null);
 
   const active = contracts.filter((c) => c.status === "active" || c.status === "paused" || c.status === "disputed");
   const past = contracts.filter((c) => c.status === "completed");
@@ -279,7 +279,7 @@ export function ContractsClient({
         />
         <StatCard
           label="Completed contracts"
-          value={String(completed.length)}
+          value={String(past.length)}
           hint="All milestones paid out"
           icon={<Icon icon={Tick02Icon} size={16} strokeWidth={1.8} />}
         />
@@ -331,7 +331,7 @@ export function ContractsClient({
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <StatusBadge status={contract.status} meta={{ ...CONTRACT_STATUS_META[contract.status] }} />
+                    <StatusBadge status={contract.status} meta={CONTRACT_STATUS_META} />
                   </div>
                 </div>
                 <div className="px-5 py-3">
@@ -435,7 +435,7 @@ export function ContractsClient({
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <StatusBadge status="cancelled" meta={{ label: "Cancelled", tone: "danger" }} />
+                    <StatusBadge status="cancelled" meta={{ cancelled: { label: "Cancelled", tone: "danger" } }} />
                   </div>
                 </li>
               );
