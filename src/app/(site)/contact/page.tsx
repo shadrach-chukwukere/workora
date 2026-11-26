@@ -73,7 +73,7 @@ export default function ContactPage() {
       const message = error instanceof Error ? error.message : "Please try again.";
       setFailure(message);
       toast.error("We could not deliver that message.", {
-        description: "Try again, or email hello@workora.com directly.",
+        description: "Try again, or email hello@workora-phi.vercel.app directly.",
       });
     } finally {
       setSending(false);
@@ -168,8 +168,8 @@ export default function ContactPage() {
               <h2 className="mt-3 text-base font-semibold text-neutral-900">Security reports</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-neutral-600">
                 Found a vulnerability or suspect an account is compromised? Write to{" "}
-                <a href="mailto:security@workora.com" className="font-medium text-brand-700 hover:underline">
-                  security@workora.com
+                <a href="mailto:security@workora-phi.vercel.app" className="font-medium text-brand-700 hover:underline">
+                  security@workora-phi.vercel.app
                 </a>
                 . These go straight to our security team, not the general queue.
               </p>
@@ -182,8 +182,8 @@ export default function ContactPage() {
               <h2 className="mt-3 text-base font-semibold text-neutral-900">Commercial and enterprise</h2>
               <p className="mt-1.5 text-sm leading-relaxed text-neutral-600">
                 Custom contracts, team seats, SSO or a security review? Reach{" "}
-                <a href="mailto:plans@workora.com" className="font-medium text-brand-700 hover:underline">
-                  plans@workora.com
+                <a href="mailto:plans@workora-phi.vercel.app" className="font-medium text-brand-700 hover:underline">
+                  plans@workora-phi.vercel.app
                 </a>{" "}
                 and we will scope it with you.
               </p>

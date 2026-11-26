@@ -12,7 +12,7 @@
 | OAuth server | `apps/api/src/modules/oauth/` — metadata, consent, codes (PKCE S256), opaque access/refresh tokens, revocation, CIMD + DCR, connections and audit log. |
 | Database | New tables in migration `0019_mcp_oauth`; agent idempotency in `0020_agent_idempotency`. No new database. |
 
-Public MCP endpoint: `https://workora-phi.vercel.app/api/mcp` (Next.js rewrite forwards to the backend).
+Public MCP endpoint: `https://<canonical-workora-origin>/api/mcp` (Next.js rewrite forwards to the backend). Every MCP request requires a user-bound OAuth token.
 
 ## 2. Discovery endpoints
 
@@ -20,7 +20,7 @@ Public MCP endpoint: `https://workora-phi.vercel.app/api/mcp` (Next.js rewrite f
 | --- | --- | --- |
 | MCP | `/api/mcp` | `/api/mcp` |
 | Authorization Server metadata (RFC 8414) | `/.well-known/oauth-authorization-server` | `/api/v1/oauth/metadata` |
-| Protected Resource metadata (RFC 9728) | `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp` | `/api/v1/oauth/protected-resource` |
+| Protected Resource metadata (RFC 9728) | `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/api/mcp` | `/api/v1/oauth/protected-resource` |
 | Consent screen | `/oauth/authorize` | (Next.js page, posts to `/api/oauth/authorize`) |
 | Token | `/api/oauth/token` | `/api/v1/oauth/token` |
 | Dynamic registration | `/api/oauth/register` | `/api/v1/oauth/register` |
@@ -51,7 +51,7 @@ Frontend/Vercel: `API_URL` must point at the backend origin; `NEXT_PUBLIC_API_UR
 
 The authoritative tool list lives in `apps/api/src/modules/agent/operations.ts` (`AGENT_OPERATIONS`) and is described on the public developer page `/ai`.
 
-- Public, anonymous: job/freelancer search, public details/portfolio, sign-up URL.
+- Every tool, including job/freelancer search, public details/portfolio and the sign-up URL tool, requires an authenticated Workora user and a matching scope.
 - Scoped: `profile:read/write`, `projects:read`, `jobs:read/write`, `proposals:read/write`, `invitations:read/write`, `contracts:read`, `notifications:read`, `connections:read`, `messages:read/write`.
 - Consequential writes (`publish_job`, `invite_freelancer`, `submit_proposal`, `review_application`, `respond_to_invitation`, `send_message`, `update_profile`) are **two-step**: the first call returns a preview + HMAC-signed confirmation token and writes nothing; the second call must repeat the same parameters with the token.
 - Workora has no stored proposal-draft state. `create_proposal_draft` returns a transient signed preview consumed by `submit_proposal`; no fake draft records are created.
@@ -96,6 +96,6 @@ Actual ChatGPT/Claude compatibility requires credentials and accounts and must b
 ## 10. Known limitations
 
 - `@modelcontextprotocol/sdk` v1 implements MCP spec 2025-11-25; 2026-07-28 features are not claimed. A v2 SDK migration is a documented follow-up.
-- Anonymous public tools are intentionally readable without a token; all private tools require authorization.
+- No anonymous MCP tool calls: unauthenticated requests receive a 401 OAuth challenge. Public website pages remain crawlable without an account.
 - `private_key_jwt` CIMD clients are not supported; only public clients (`token_endpoint_auth_method: none`) with PKCE.
 - No official ChatGPT/Claude directory listing has been requested or approved.

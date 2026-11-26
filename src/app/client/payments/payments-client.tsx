@@ -54,7 +54,7 @@ export function PaymentsClient({
       `Description: ${tx.description}`,
       `Status: ${tx.status}`,
       `Amount: ${formatMoney(amount)}`,
-      "workora.com",
+      "workora-phi.vercel.app",
     ].join("\n");
     const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);

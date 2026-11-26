@@ -6,7 +6,7 @@ import * as repository from "./repository.js";
 import type { ContactRow } from "./repository.js";
 import type { ContactStatus, ContactSubmissionInput, UpdateContactInput } from "./schemas.js";
 
-const SUPPORT_EMAIL = "hello@workora.com";
+const SUPPORT_EMAIL = "hello@workora-phi.vercel.app";
 
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();

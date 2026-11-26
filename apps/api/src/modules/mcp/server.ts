@@ -25,8 +25,8 @@ function safeError(error: unknown): { message: string; code: string } {
 }
 
 /**
- * A fresh MCP server per HTTP request. Public discovery tools work anonymously;
- * private tools are bound to the OAuth token resolved by the transport route.
+ * A fresh MCP server per HTTP request. Every request is bound to the OAuth
+ * token resolved by the transport route; there are no anonymous tool calls.
  * All business logic lives in the shared agent operations registry.
  */
 export function buildMcpServer(ctx: TokenContext | null): McpServer {

@@ -29,7 +29,7 @@ Sources checked: Anthropic's current connector build/authentication, review-crit
 | Public documentation | Implemented | `/ai` technical docs with endpoint, OAuth flow, tools, scopes, prompts, errors, security, troubleshooting and support contact. |
 | OpenAPI documentation | Implemented | `/openapi.json`, generated from shared schemas. |
 | Public Privacy Policy and Terms of Service | Implemented | `/privacy` and `/terms` are public pages and now cover MCP access, third-party AI providers, consent, token security, revocation, AI-agent acceptable use. |
-| Business contact information / support channel | Partially | `support@workora.com` and `/contact` exist; add verified business details in the Anthropic developer portal manually. |
+| Business contact information / support channel | Partially | `support@workora-phi.vercel.app` and `/contact` exist; add verified business details in the Anthropic developer portal manually. |
 | Dedicated test account with realistic sample data | Pending manual | Must be created in the deployed environment and provided to Anthropic during Verified review. Do not use production user data. |
 | Three working example prompts | Implemented | Five examples in `/ai`; validate them against the live connector manually. |
 | Domain and API endpoints controlled by Workora | Pending manual | Confirm DNS ownership and that `/api/*`, `/.well-known/*` and `/openapi.json` are served from the canonical origin. |

@@ -101,9 +101,10 @@ export default function AiPage() {
 
       <Section title="Browser-agent tools (WebMCP)">
         <p>
-          In browsers that implement <code className={CODE}>document.modelContext</code>, Workora registers tools only
-          for the current page: search jobs, read job details, prepare and confirm a proposal, search freelancers and
-          read a public freelancer profile. Other browsers keep the normal accessible website with no extra UI.
+          In browsers that implement <code className={CODE}>document.modelContext</code>, Workora registers a navigation
+          tool with stable public links on every page, plus page-specific tools: search jobs, read job details, prepare
+          and confirm a proposal, search freelancers and read a public freelancer profile. Other browsers keep the
+          normal accessible website with no extra UI.
         </p>
         <p>
           Tool responses are explicit allowlists of public fields. Marketplace text is treated as untrusted data, never
@@ -249,7 +250,7 @@ export default function AiPage() {
 
       <Section title="Developer support">
         <p>
-          Technical questions: <a className="text-brand-700 hover:underline" href="mailto:support@workora.com">support@workora.com</a>{" "}
+          Technical questions: <a className="text-brand-700 hover:underline" href="mailto:support@workora-phi.vercel.app">support@workora-phi.vercel.app</a>{" "}
           or the <Link className="text-brand-700 hover:underline" href="/contact">contact page</Link>. Include the tool
           name, request ID, and timestamp — never include a token or password.
         </p>
@@ -260,7 +261,8 @@ export default function AiPage() {
         <p>
           Want to browse first? Public pages remain public: <Link className="text-brand-700 hover:underline" href="/find-work">open work</Link>,{" "}
           <Link className="text-brand-700 hover:underline" href="/find-talent">talent profiles</Link>, and public company
-          pages need no account. Authentication applies only to agent tools and private account data.
+          pages need no account. Authentication applies only to the developer MCP endpoint, optional scopes, and private
+          account data.
         </p>
       </div>
     </div>

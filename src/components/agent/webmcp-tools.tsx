@@ -198,21 +198,6 @@ const FREELANCER_PROFILE: Obj = {
   additionalProperties: false,
 };
 
-const CONNECTION: Obj = {
-  type: "object",
-  properties: {
-    id: { type: "string" },
-    clientId: { type: "string" },
-    clientName: { type: "string" },
-    scopes: { type: "array", items: { type: "string" } },
-    createdAt: { type: "string" },
-    lastUsedAt: { type: ["string", "null"] },
-    revokedAt: { type: ["string", "null"] },
-  },
-  required: ["id", "clientId", "clientName", "scopes", "createdAt", "lastUsedAt", "revokedAt"],
-  additionalProperties: false,
-};
-
 /* -------------------------------------------------------------------------- */
 /* Annotations                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -463,19 +448,6 @@ function freelancerProfile(value: unknown): Obj {
       portfolio_url: text(contact.portfolio_url),
     },
     url: `${window.location.origin}/freelancers/${encodeURIComponent(id)}`,
-  };
-}
-
-function connection(value: unknown): Obj {
-  const item = isObj(value) ? value : {};
-  return {
-    id: text(item.id) ?? "",
-    clientId: text(item.clientId) ?? "",
-    clientName: text(item.clientName) ?? "",
-    scopes: asArray(item.scopes).filter((scope): scope is string => typeof scope === "string"),
-    createdAt: text(item.createdAt) ?? "",
-    lastUsedAt: text(item.lastUsedAt),
-    revokedAt: text(item.revokedAt),
   };
 }
 
@@ -740,6 +712,54 @@ function getFreelancerProfileTool(pathFreelancerId: string | undefined): WebMcpT
   };
 }
 
+/** Stable public links, including the existing registration and sign-in flows. */
+function getSiteNavigationTool(): WebMcpTool {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const linkSchema: Obj = {
+    type: "object",
+    properties: {
+      label: { type: "string" },
+      href: { type: "string", format: "uri" },
+      description: { type: "string" },
+    },
+    required: ["label", "href", "description"],
+    additionalProperties: false,
+  };
+  const links = (
+    [
+      ["Find work", "/find-work", "Browse open projects with public budgets, skills and proposal counts."],
+      ["Find talent", "/find-talent", "Search public freelancer profiles by skill, rate and availability."],
+      ["Categories", "/categories", "Browse the marketplace taxonomy."],
+      ["How Workora works", "/about", "Read how hiring, proposals, milestones and reviews work."],
+      ["Pricing", "/pricing", "Read marketplace fees and plan details."],
+      ["Register", "/register", "Open the existing account creation flow; normal verification still applies."],
+      ["Sign in", "/login", "Open the existing authentication flow."],
+      ["AI agent guide", "/ai", "Read discoverability, WebMCP and developer API documentation."],
+      ["llms.txt", "/llms.txt", "Machine-readable index of public Workora pages."],
+      ["sitemap.xml", "/sitemap.xml", "Full public page index for crawlers."],
+      ["robots.txt", "/robots.txt", "Crawler rules for public and private areas."],
+      ["Privacy policy", "/privacy", "Read how Workora handles personal information."],
+      ["Terms of service", "/terms", "Read marketplace rules and acceptable use."],
+    ] as const
+  ).map(([label, path, description]) => ({ label, href: `${origin}${path}`, description }));
+
+  return {
+    name: "get_site_navigation",
+    title: "Get Workora navigation",
+    description:
+      "Return stable public links for browsing Workora, reading policies, and opening the existing registration and sign-in flows. Use normal browser navigation to open a link; this tool does not create an account or sign in.",
+    inputSchema: inputSchema({}),
+    outputSchema: outputSchema({
+      type: "object",
+      properties: { links: { type: "array", items: linkSchema } },
+      required: ["links"],
+      additionalProperties: false,
+    }),
+    annotations: READ_ONLY_PRIVATE,
+    execute: async () => ({ links }),
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Pathname-based registration                                                 */
 /* -------------------------------------------------------------------------- */
@@ -755,19 +775,20 @@ function pathId(pathname: string, prefix: string): string | undefined {
 
 function toolsForPath(pathname: string): WebMcpTool[] {
   const path = pathname.replace(/\/+$/, "") || "/";
+  const navigation = getSiteNavigationTool();
 
-  if (path === "/" || path === "/find-work") return [searchJobsTool()];
+  if (path === "/" || path === "/find-work") return [navigation, searchJobsTool()];
 
   if (path.startsWith("/project/")) {
     const id = pathId(path, "/project/");
-    return [getJobDetailsTool(id), prepareApplicationTool(id), confirmApplicationTool(id)];
+    return [navigation, getJobDetailsTool(id), prepareApplicationTool(id), confirmApplicationTool(id)];
   }
 
   if (path === "/find-talent" || path.startsWith("/freelancers/")) {
-    return [searchFreelancersTool(), getFreelancerProfileTool(pathId(path, "/freelancers/"))];
+    return [navigation, searchFreelancersTool(), getFreelancerProfileTool(pathId(path, "/freelancers/"))];
   }
 
-  return [];
+  return [navigation];
 }
 
 /**

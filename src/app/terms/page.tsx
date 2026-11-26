@@ -164,7 +164,7 @@ export default function TermsPage() {
         <p className={bodyClass}>
           If you have questions about these Terms, contact us at{" "}
           <Link href="/contact" className="text-brand-600 hover:underline">
-            support@workora.com
+            support@workora-phi.vercel.app
           </Link>
           .
         </p>

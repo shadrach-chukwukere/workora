@@ -15,7 +15,7 @@
         "migrate": "node --import tsx src/database/migrate.ts",
         "seed": "node --import tsx src/database/seeds/seed.ts",
         "db:setup": "node --import tsx -e \"import('./src/database/migrate.js').then(m => m.migrate()).then(() => import('./src/database/seeds/seed.js')).then(s => s.seed()).then(() => console.log('database up to date'))\"",
-        "test": "node --import tsx --test test/*.test.ts",
+        "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
         "test:watch": "node --import tsx --test --watch test/*.test.ts",
         "admin:create": "node --import tsx src/modules/admin/create-admin.ts"
     },
