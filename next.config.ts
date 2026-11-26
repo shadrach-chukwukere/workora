@@ -61,8 +61,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiOrigin}`,
-              `connect-src 'self' ${apiOrigin} https://api.paystack.co https://*.vercel-storage.com`,
+              `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiOrigin} https://www.googletagmanager.com https://www.google-analytics.com`,
+              `connect-src 'self' ${apiOrigin} https://api.paystack.co https://*.vercel-storage.com https://www.googletagmanager.com https://www.google-analytics.com`,
               `img-src 'self' data: https:`,
               `style-src 'self' 'unsafe-inline'`,
               "font-src 'self'",

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Toaster } from "sonner";
@@ -31,7 +32,10 @@ export const metadata: Metadata = {
     type: "website",
   },
   verification: {
-    google: "-z6Vmxp38nxjZc5y0MaHydjRmhx4o2r1lQWpALRB_bg",
+    google: [
+      "-z6Vmxp38nxjZc5y0MaHydjRmhx4o2r1lQWpALRB_bg",
+      "WeGmy7dSEszYU7O3sJI5LYWVdeRj4p09HBrSKTxkM2M",
+    ],
   },
 };
 
@@ -41,12 +45,29 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+const analyticsSnippet = `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-dvh bg-white font-sans text-neutral-900 antialiased">
+        <Script
+          id="workora-gtm"
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-TQ3Q7HWR"
+          strategy="beforeInteractive"
+          async
+        />
+        <Script
+          id="workora-gtm-inline"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: analyticsSnippet }}
+        />
         <QueryProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </QueryProvider>

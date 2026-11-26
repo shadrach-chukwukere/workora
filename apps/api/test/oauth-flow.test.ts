@@ -121,6 +121,7 @@ describe("OAuth 2.1 authorization code flow", () => {
     const ctx = await verifyAccessToken(tokens.access_token);
     assert.equal(ctx?.userId, userId);
     assert.equal(ctx?.clientId, client.client_id);
+    assert.deepEqual(ctx?.scopes, ["profile:read", "projects:read"]);
 
     // Claude sends form-encoded token requests.
     const code2 = await createAuthorizationCode({ userId, client, redirectUri, scopes: ["profile:read"], codeChallenge: challenge, resource: mcpResourceUrl });
@@ -147,7 +148,9 @@ describe("OAuth 2.1 authorization code flow", () => {
     const refreshed = await refreshTokens({ refreshToken: formTokens.refresh_token, clientId: client.client_id, resource: mcpResourceUrl });
     assert.ok(refreshed.access_token);
     assert.notEqual(refreshed.refresh_token, formTokens.refresh_token);
-    assert.equal(await verifyAccessToken(refreshed.access_token)?.userId, userId);
+    const refreshedCtx = await verifyAccessToken(refreshed.access_token);
+    assert.equal(refreshedCtx?.userId, userId);
+    assert.deepEqual(refreshedCtx?.scopes, ["profile:read"]);
     assert.equal(await revokeToken({ token: refreshed.access_token }), true);
     assert.equal(await verifyAccessToken(refreshed.access_token), null);
   });

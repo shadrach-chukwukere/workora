@@ -379,7 +379,8 @@ export async function exchangeCode(input: {
     if (sha256(input.codeVerifier, "base64url") !== code.code_challenge) {
       throw new OAuthError("invalid_grant", "PKCE verification failed");
     }
-    const scopes = parseScopes(JSON.parse(code.scopes) as string);
+    // Scopes are persisted as a JSON array; parseScopes expects a space-separated string.
+    const scopes = parseScopes((JSON.parse(code.scopes) as string[]).join(" "));
     const result = await issueTokens(trx, {
       userId: code.user_id,
       client,
@@ -426,7 +427,7 @@ export async function refreshTokens(input: { refreshToken: string; clientId: str
       .set({ revoked_at: new Date() })
       .where("id", "=", row.id)
       .execute();
-    const scopes = parseScopes(JSON.parse(row.scopes) as string);
+    const scopes = parseScopes((JSON.parse(row.scopes) as string[]).join(" "));
     const result = await issueTokens(trx, {
       userId: row.user_id,
       client,
@@ -565,6 +566,9 @@ export function authorizationServerMetadata() {
     authorization_response_iss_parameter_supported: true,
   };
 }
+
+/** Least-privilege default scopes for clients that do not request a specific set. */
+export const MINIMUM_MCP_SCOPES = ["projects:read", "freelancers:read", "profile:read"] as const;
 
 export function protectedResourceMetadata() {
   return {
