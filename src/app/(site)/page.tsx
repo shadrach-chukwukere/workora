@@ -13,6 +13,7 @@ import { LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons
 import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
 import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
 import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
+import { AiMcpBanner } from "@/components/layout/ai-mcp-banner";
 
 const WORDMARKS = [
   "Loopwork",
@@ -86,6 +87,8 @@ export default async function Home() {
 
       {/* Hero */}
       <Hero account={account} />
+
+      <AiMcpBanner />
 
       <TrustedByMarquee wordmarks={WORDMARKS} />
 

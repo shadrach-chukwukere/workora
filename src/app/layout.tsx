@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { QueryProvider } from "@/components/layout/query-provider";
+import { InstallApp } from "@/components/pwa/install-app";
 
 export const metadata: Metadata = {
   title: {
@@ -14,6 +15,16 @@ export const metadata: Metadata = {
   description:
     "Workora is a modern freelance marketplace connecting businesses with vetted independent professionals worldwide. Find talent or find work.",
   metadataBase: new URL("https://workora.com"),
+  manifest: "/manifest.webmanifest",
+  applicationName: "Workora",
+  appleWebApp: { capable: true, title: "Workora", statusBarStyle: "default" },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     siteName: "Workora",
     type: "website",
@@ -39,6 +50,7 @@ export default function RootLayout({
           <ThemeProvider>{children}</ThemeProvider>
         </QueryProvider>
         <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font-geist-sans)" } }} />
+        <InstallApp />
       </body>
     </html>
   );

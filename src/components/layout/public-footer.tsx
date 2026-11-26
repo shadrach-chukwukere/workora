@@ -19,6 +19,13 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
     ],
   },
   {
+    title: "Developers",
+    links: [
+      { label: "MCP & AI assistants", href: "/developers/mcp" },
+      { label: "AI integrations", href: "/settings/integrations" },
+    ],
+  },
+  {
     title: "Legal",
     links: [
        { label: "About Workora", href: "/about" },
