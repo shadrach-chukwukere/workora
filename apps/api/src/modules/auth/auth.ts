@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { kyselyAdapter } from "@better-auth/kysely-adapter";
 import { env } from "../../config/env.js";
 import { db } from "../../database/connection.js";
+import { sendEmail } from "../../services/email.js";
 import { mirrorProviderAvatarToBlob } from "./oauth-avatar.js";
 
 /** Better Auth is constructed over the shared Kysely instance, with our table/column names. */
@@ -50,9 +51,8 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    autoSignIn: true,
-    // Users are verified by default — no email service required.
-    requireEmailVerification: false,
+    autoSignIn: env.NODE_ENV !== "production",
+    requireEmailVerification: true,
     // Argon2id, per project security requirements
     password: {
       hash: async (password: string) => hash(password),
@@ -60,7 +60,12 @@ export const auth = betterAuth({
         verify(storedHash, password),
     },
     sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-      // No email service integrated; verification is automatic.
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your Workora password",
+        text: `Someone asked to reset your Workora password. This link expires shortly.\n\n${url}\n\nIf you did not ask for a reset, ignore this email.`,
+        html: `<p>Someone asked to reset your Workora password.</p><p><a href="${url}">Reset your password</a></p><p>If you did not ask for a reset, ignore this email.</p>`,
+      });
     },
   },
 
@@ -68,7 +73,12 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
-      // No email service integrated; verification is automatic.
+      await sendEmail({
+        to: user.email,
+        subject: "Verify your Workora email",
+        text: `Welcome to Workora. Please verify your email:\n\n${url}`,
+        html: `<p>Welcome to Workora. Please verify your email:</p><p><a href="${url}">Verify your account</a></p>`,
+      });
     },
   },
 
@@ -168,7 +178,7 @@ export const auth = betterAuth({
 
   rateLimit: {
     window: 60,
-    max: 60,
+    max: 5, // 5 auth attempts per minute per IP (sign-in and sign-up)
   },
 });
 

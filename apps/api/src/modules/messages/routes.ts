@@ -11,7 +11,16 @@ import {
 
 const attachmentSchema = z.object({
   fileName: z.string().trim().min(1).max(255),
-  url: z.string().min(1).max(2048),
+  url: z.string().url().max(2048).refine((u) => {
+    try {
+      const parsed = new URL(u);
+      // Only allow https on our own storage hosts — blocks javascript: and phishing links.
+      return parsed.protocol === "https:" &&
+        (parsed.hostname.endsWith(".vercel-storage.com") || parsed.hostname.endsWith(".blob.vercel-storage.com"));
+    } catch {
+      return false;
+    }
+  }, { message: "Attachment URL must be an https URL on our storage host" }),
   mimeType: z.string().trim().min(1).max(255),
   sizeBytes: z.number().int().min(0),
 });

@@ -41,6 +41,36 @@ const nextConfig: NextConfig = {
             key: "Link",
             value: `<https://images.unsplash.com>; rel=dns-prefetch`,
           },
+          // Clickjacking protection.
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          // Prevent MIME-type sniffing.
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          // Referrer policy.
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          // Content Security Policy.
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiOrigin}`,
+              `connect-src 'self' ${apiOrigin} https://api.paystack.co https://*.vercel-storage.com`,
+              `img-src 'self' data: https:`,
+              `style-src 'self' 'unsafe-inline'`,
+              "font-src 'self'",
+              `frame-ancestors 'none'`,
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

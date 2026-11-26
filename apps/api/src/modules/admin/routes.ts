@@ -7,7 +7,7 @@ import { requireAccountType, requirePermission } from "../../middleware/authenti
 /** Admin dashboard + user management. Everything here requires admin access. */
 export default async function adminRoutes(app: FastifyInstance) {
   /** GET /admin/overview — platform counters. */
-  app.get("/admin/overview", { preHandler: [requireAccountType("admin")] }, async (_request, reply) => {
+  app.get("/admin/overview", { preHandler: [requirePermission("admin.access")] }, async (_request, reply) => {
     const instance = await db();
     const [users, projects, contracts, disputes, verification, revenue] = await Promise.all([
       sql<{ freelancers: string; clients: string; admins: string; new_this_month: string }>`
@@ -63,7 +63,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/users — search and filter. */
-  app.get("/admin/users", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/users", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const q = String((request.query as Record<string, string>).q ?? "").trim();
     const status = (request.query as Record<string, string>).status;
     const accountType = (request.query as Record<string, string>).accountType;
@@ -90,7 +90,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/users/:id — the complete account record plus all content it owns. */
-  app.get("/admin/users/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/users/:id", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const instance = await db();
     const user = await instance.selectFrom("users").selectAll().where("id", "=", id).executeTakeFirst();
@@ -128,7 +128,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** PATCH /admin/users/:id — edit identity, contact details, status and role profile. Never changes account_type. */
-  app.patch("/admin/users/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.patch("/admin/users/:id", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = (request.body ?? {}) as Record<string, unknown>;
     const instance = await db();
@@ -234,7 +234,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   };
 
   /** PATCH /admin/content/:kind/:id — edit one piece of owned content. */
-  app.patch("/admin/content/:kind/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.patch("/admin/content/:kind/:id", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const { kind, id } = request.params as { kind: string; id: string };
     const table = ADMIN_CONTENT_TABLES[kind];
     if (!table) {
@@ -268,7 +268,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** DELETE /admin/content/:kind/:id — remove one piece of owned content (never a user). */
-  app.delete("/admin/content/:kind/:id", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.delete("/admin/content/:kind/:id", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const { kind, id } = request.params as { kind: string; id: string };
     const table = ADMIN_CONTENT_TABLES[kind];
     if (!table) {
@@ -338,7 +338,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/projects — every project across the platform, optional status/q/categoryId filters. */
-  app.get("/admin/projects", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/projects", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
     const q = (query.q ?? "").trim();
     const status = query.status;
@@ -346,7 +346,6 @@ export default async function adminRoutes(app: FastifyInstance) {
     const page = Math.max(1, Number(query.page ?? "1") || 1);
     const perPage = Math.min(100, Math.max(1, Number(query.perPage ?? "50") || 50));
     const instance = await db();
-    const whereSql = 'WHERE 1 = 1';
     const filters = [
       status ? sql`AND p.status = ${status}` : sql``,
       q ? sql`AND (p.title ILIKE ${"%" + q + "%"} OR p.summary ILIKE ${"%" + q + "%"})` : sql``,
@@ -364,21 +363,20 @@ export default async function adminRoutes(app: FastifyInstance) {
       LEFT JOIN categories c ON c.id = p.category_id
       JOIN users cu ON cu.id = p.client_id
       LEFT JOIN client_profiles cp ON cp.user_id = p.client_id
-      WHERE 1 = 1 ${whereSql}}
+      WHERE 1 = 1 ${sql.join(filters, sql` `)}
       ORDER BY p.created_at DESC
       LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
     `.execute(instance).then((r) => r.rows);
-    const total = Number((await sql<{ count: string }>`SELECT COUNT(*)::text AS count FROM projects p WHERE 1 = 1 ${whereSql}}`.execute(instance).then((r) => r.rows[0]!.count)));
+    const total = Number((await sql<{ count: string }>`SELECT COUNT(*)::text AS count FROM projects p WHERE 1 = 1 ${sql.join(filters, sql` `)}`.execute(instance).then((r) => r.rows[0]!.count)));
     reply.send(ok({ projects: rows, page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) }));
   });
 
   /** GET /admin/contracts — every contract with both parties and milestone tallies. */
-  app.get("/admin/contracts", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/contracts", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
     const q = (query.q ?? "").trim();
     const status = query.status;
     const instance = await db();
-    const whereSql = 'WHERE 1 = 1';
     const filters = [
       status ? sql`AND c.status = ${status}` : sql``,
       q ? sql`AND (c.title_snapshot ILIKE ${"%" + q + "%"} OR cu.name ILIKE ${"%" + q + "%"} OR fu.name ILIKE ${"%" + q + "%"})` : sql``,
@@ -401,7 +399,7 @@ export default async function adminRoutes(app: FastifyInstance) {
                SUM(amount_minor) AS total_amount, SUM(amount_minor) FILTER (WHERE status = 'paid') AS paid_amount
         FROM contract_milestones GROUP BY contract_id
       ) m ON m.contract_id = c.id
-      WHERE 1 = 1 ${whereSql}}
+      WHERE 1 = 1 ${sql.join(filters, sql` `)}
       ORDER BY c.created_at DESC
       LIMIT 100
     `.execute(instance).then((r) => r.rows);
@@ -409,14 +407,13 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/transactions — the full platform ledger with user names. */
-  app.get("/admin/transactions", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/transactions", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
     const q = (query.q ?? "").trim();
     const type = query.type;
     const status = query.status;
     const limit = Math.min(200, Math.max(1, Number(query.limit ?? "100") || 100));
     const instance = await db();
-    const whereSql = 'WHERE 1 = 1';
     const filters = [
       type ? sql`AND t.type = ${type}` : sql``,
       status ? sql`AND t.status = ${status}` : sql``,
@@ -428,7 +425,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       SELECT t.id, t.user_id, u.name AS user_name, t.type, t.amount_minor::text AS amount_minor, t.currency, t.status, t.description, t.created_at, t.contract_id
       FROM transactions t
       JOIN users u ON u.id = t.user_id
-      WHERE 1 = 1 ${whereSql}}
+      WHERE 1 = 1 ${sql.join(filters, sql` `)}
       ORDER BY t.created_at DESC
       LIMIT ${limit}
     `.execute(instance).then((r) => r.rows);
@@ -436,11 +433,10 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/disputes — every dispute in the platform, newest first. */
-  app.get("/admin/disputes", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/disputes", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
     const status = query.status;
     const instance = await db();
-    const whereSql = 'WHERE 1 = 1';
     const filters = [status ? sql`AND d.status = ${status}` : sql``];
     const rows = await sql<{
       id: string; contract_id: string; title_snapshot: string; contract_total_minor: string; opened_by: string; opened_by_name: string; client_name: string; freelancer_name: string;
@@ -455,7 +451,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       JOIN users opener ON opener.id = d.opened_by
       JOIN users cu ON cu.id = c.client_id
       JOIN users fu ON fu.id = c.freelancer_id
-      WHERE 1 = 1 ${whereSql}}
+      WHERE 1 = 1 ${sql.join(filters, sql` `)}
       ORDER BY d.opened_at DESC
       LIMIT 100
     `.execute(instance).then((r) => r.rows);
@@ -463,12 +459,11 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/reviews — all reviews with author + subject names, optional status filter via review_reports. */
-  app.get("/admin/reviews", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/reviews", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const query = request.query as Record<string, string>;
     const q = (query.q ?? "").trim();
     const reportedOnly = query.reported === "true" || query.reported === "1";
     const instance = await db();
-    const whereSql = 'WHERE 1 = 1';
     const filters = [
       q ? sql`AND (ru.name ILIKE ${"%" + q + "%"} OR su.name ILIKE ${"%" + q + "%"} OR r.comment ILIKE ${"%" + q + "%"})` : sql``,
     ];
@@ -481,7 +476,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       FROM reviews r
       JOIN users ru ON ru.id = r.reviewer_id
       JOIN users su ON su.id = r.reviewee_id
-      WHERE 1 = 1 ${whereSql}}
+      WHERE 1 = 1 ${sql.join(filters, sql` `)}
       ORDER BY r.created_at DESC
       LIMIT 200
     `.execute(instance).then((r) => r.rows);
@@ -490,7 +485,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/subscriptions — every subscription with plan and user. */
-  app.get("/admin/subscriptions", { preHandler: [requireAccountType("admin")] }, async (_request, reply) => {
+  app.get("/admin/subscriptions", { preHandler: [requirePermission("admin.access")] }, async (_request, reply) => {
     const instance = await db();
     const rows = await sql<{
       id: string; status: string; interval: string; amount_minor: string; currency: string; provider: string;
@@ -510,7 +505,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/categories — every category with project volume. */
-  app.get("/admin/categories", { preHandler: [requireAccountType("admin")] }, async (_request, reply) => {
+  app.get("/admin/categories", { preHandler: [requirePermission("admin.access")] }, async (_request, reply) => {
     const instance = await db();
     const rows = await sql<{
       id: string; slug: string; name: string; description: string; kind: string; sort_order: number;
@@ -594,7 +589,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** GET /admin/analytics/monthly?months=12 — trailing monthly trend, sparse months filled with zeros. */
-  app.get("/admin/analytics/monthly", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.get("/admin/analytics/monthly", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const months = Math.min(24, Math.max(1, Number((request.query as Record<string, string>).months ?? "12") || 12));
     const instance = await db();
     const rows = await sql<{
@@ -632,7 +627,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** POST /admin/users/:id/suspend — suspend a user. */
-  app.post("/admin/users/:id/suspend", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.post("/admin/users/:id/suspend", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const id = (request.params as { id: string }).id;
     const instance = await db();
     await sql`UPDATE users SET status = 'suspended' WHERE id = ${id}`.execute(instance);
@@ -640,7 +635,7 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** POST /admin/users/:id/activate — reactivate a user. */
-  app.post("/admin/users/:id/activate", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.post("/admin/users/:id/activate", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const id = (request.params as { id: string }).id;
     const instance = await db();
     await sql`UPDATE users SET status = 'active' WHERE id = ${id}`.execute(instance);
@@ -648,22 +643,11 @@ export default async function adminRoutes(app: FastifyInstance) {
   });
 
   /** POST /admin/users/:id/restrict — restrict a user. */
-  app.post("/admin/users/:id/restrict", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
+  app.post("/admin/users/:id/restrict", { preHandler: [requirePermission("admin.access")] }, async (request, reply) => {
     const id = (request.params as { id: string }).id;
     const instance = await db();
     await sql`UPDATE users SET status = 'restricted' WHERE id = ${id}`.execute(instance);
     reply.send(ok(null, "User restricted"));
   });
 
-  /** POST /admin/impersonate — returns a short-lived impersonation token. For demo, returns user summary. */
-  app.post("/admin/impersonate", { preHandler: [requireAccountType("admin")] }, async (request, reply) => {
-    const id = (request.body as { id?: string }).id;
-    const instance = await db();
-    const row = await instance.selectFrom("users").select(["id", "name", "email", "account_type"]).where("id", "=", id ?? "").executeTakeFirst();
-    if (!row) {
-      reply.status(404).send({ success: false, message: "User not found", error: { code: "NOT_FOUND", details: {} } });
-      return;
-    }
-    reply.send(ok({ impersonated: row, message: "Demo only: production would issue a scoped session token" }));
-  });
 }

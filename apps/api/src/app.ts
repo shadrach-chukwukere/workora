@@ -22,12 +22,7 @@ export async function buildApp(options: { logger?: boolean } = {}) {
             level: env.NODE_ENV === "test" ? "warn" : "info",
             timestamp: env.NODE_ENV === "production" ? undefined : true,
           },
-    genReqId: (request) => {
-      const header = request.headers["x-request-id"];
-      return typeof header === "string" && header.length > 0
-        ? header
-        : crypto.randomUUID();
-    },
+    genReqId: () => crypto.randomUUID(),
     trustProxy: env.NODE_ENV === "production",
     exposeHeadRoutes: false,
   });
@@ -80,8 +75,6 @@ export async function buildApp(options: { logger?: boolean } = {}) {
         data: {
           server: "up",
           db: "down",
-          error:
-            error instanceof Error ? error.message : "Unknown database error",
         },
       });
     }
