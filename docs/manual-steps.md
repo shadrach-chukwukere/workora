@@ -35,7 +35,7 @@ API (Render service settings):
 ## Verification before announcing
 
 - [ ] `GET /robots.txt`, `/sitemap.xml`, `/openapi.json`, `/llms.txt`, `/ai` return 200 from the public origin.
-- [ ] MCP Inspector connects to `https://<origin>/api/mcp`, lists tools, completes browser OAuth, and calls a public read and one confirmed write in staging.
+- [ ] MCP Inspector connects to `https://<origin>/api/mcp`, receives a 401 challenge first, completes browser OAuth, lists tools, and calls an authenticated read and one confirmed write in staging.
 - [ ] Revoke the test client with `DELETE /api/oauth/connections/:id` and confirm its next tool call gets `401`.
 - [ ] Validate JobPosting / ProfilePage JSON-LD in Google Rich Results Test.
 - [ ] Test ChatGPT and Claude connections separately with real accounts; record results in the final report. If access is unavailable, mark them untested.
