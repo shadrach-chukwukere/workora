@@ -34,8 +34,10 @@ function isValidReference(ref: string | undefined): boolean {
   return /^[a-zA-Z0-9_-]{3,64}$/.test(ref);
 }
 
+type SessionUser = { id: string; email: string };
+
 /** Verify the caller has an active Better Auth session. */
-async function requireSession(request: Request): Promise<{ ok: true } | { ok: false; status: number; body: unknown }> {
+async function requireSession(request: Request): Promise<{ ok: true; user: SessionUser } | { ok: false; status: number; body: unknown }> {
   const cookieStore = await cookies();
   const cookie = cookieStore
     .getAll()
@@ -59,11 +61,11 @@ async function requireSession(request: Request): Promise<{ ok: true } | { ok: fa
     if (!res.ok) {
       return { ok: false, status: 401, body: { error: 'Authentication required' } };
     }
-    const session = (await res.json()) as { user?: { id: string; email: string } } | null;
+    const session = (await res.json()) as { user?: SessionUser } | null;
     if (!session?.user) {
       return { ok: false, status: 401, body: { error: 'Authentication required' } };
     }
-    return { ok: true, status: 200, body: session.user };
+    return { ok: true, user: session.user };
   } catch {
     return { ok: false, status: 401, body: { error: 'Authentication required' } };
   }
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
   if (!session.ok) {
     return NextResponse.json(session.body, { status: session.status });
   }
-  const user = (session as { ok: true; status: number; body: { email: string } }).body;
+  const user = session.user;
 
   try {
     const { amount, email, reference, callback_url, currency } = await request.json();
