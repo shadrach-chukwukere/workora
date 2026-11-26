@@ -12,6 +12,7 @@ const routeModules = [
   { name: "messages", path: "./messages/routes.js" },
   { name: "notifications", path: "./notifications/routes.js" },
   { name: "realtime", path: "./realtime/routes.js" },
+  { name: "oauth", path: "./oauth/routes.js" },
   { name: "reviews", path: "./reviews/routes.js" },
   { name: "disputes", path: "./disputes/routes.js" },
   { name: "subscriptions", path: "./subscriptions/routes.js" },
