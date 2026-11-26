@@ -24,8 +24,7 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
       {
         caption: "Get proposals and hire",
         helper: "Screen, interview, or book a consult with an expert before hiring.",
-        image:
-          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
+        image: "/videos/workora-intro-poster.jpg",
         video: "/videos/workora-intro.mp4",
         alt: "Workora client platform walkthrough showing how to hire a freelancer",
       },
@@ -45,8 +44,7 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
       {
         caption: "Find work that fits you",
         helper: "Browse briefs with public budgets and apply in a couple of clicks.",
-        image:
-          "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=900&q=80",
+        image: "/videos/workora-freelancer-poster.jpg",
         video: "/videos/workora-freelancer.mp4",
         alt: "Workora freelancer platform walkthrough showing how to find projects",
       },

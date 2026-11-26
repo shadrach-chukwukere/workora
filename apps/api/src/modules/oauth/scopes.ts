@@ -3,6 +3,9 @@ export const MCP_SCOPES = [
   "freelancers:read",
   "projects:read",
   "profile:read",
+  "profile:write",
+  "messages:read",
+  "messages:write",
   "proposals:read",
   "proposals:write",
   "jobs:read",
@@ -12,6 +15,9 @@ export const MCP_SCOPES = [
   "contracts:read",
   "notifications:read",
   "connections:read",
+  "messages:read",
+  "messages:write",
+  "profile:write",
 ] as const;
 
 export type McpScope = (typeof MCP_SCOPES)[number];
@@ -20,6 +26,9 @@ export const SCOPE_DESCRIPTIONS: Record<McpScope, string> = {
   "freelancers:read": "Search freelancers and view public profiles",
   "projects:read": "Search projects and view public project details",
   "profile:read": "Read your own profile and account summary",
+  "profile:write": "Update your own public profile fields",
+  "messages:read": "Read messages in conversations you already participate in",
+  "messages:write": "Send a message in an existing conversation (with confirmation)",
   "proposals:read": "Read your submitted proposals",
   "proposals:write": "Prepare and submit your proposals",
   "jobs:read": "Read your client projects and invitations",
@@ -29,6 +38,9 @@ export const SCOPE_DESCRIPTIONS: Record<McpScope, string> = {
   "contracts:read": "Read contracts you are a party to",
   "notifications:read": "Read your notifications",
   "connections:read": "Read your connections",
+  "messages:read": "Read conversations you participate in",
+  "messages:write": "Send messages in conversations you participate in",
+  "profile:write": "Edit your own profile fields",
 };
 
 export function isMcpScope(value: string): value is McpScope {

@@ -91,6 +91,12 @@ const nextConfig: NextConfig = {
         // are relative (same-origin cookies); Next.js rewrites them to Render.
         { source: "/api/v1/:path*", destination: `${apiOrigin}/api/v1/:path*` },
         { source: "/api/auth/:path*", destination: `${apiOrigin}/api/auth/:path*` },
+        // Remote MCP server and OAuth 2.1 authorization endpoints.
+        { source: "/api/mcp", destination: `${apiOrigin}/api/mcp` },
+        { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },
+        { source: "/.well-known/oauth-protected-resource/mcp", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
+        { source: "/.well-known/oauth-protected-resource", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
+        { source: "/.well-known/oauth-authorization-server", destination: `${apiOrigin}/api/v1/oauth/metadata` },
       ],
     };
   },

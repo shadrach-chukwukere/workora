@@ -13,7 +13,9 @@ export type ErrorCode =
   | "PAYMENT_FAILED"
   | "BAD_REQUEST"
   | "INTERNAL_ERROR"
-  | "SERVICE_UNAVAILABLE";
+  | "SERVICE_UNAVAILABLE"
+  | "INSUFFICIENT_SCOPE"
+  | "INVALID_CONFIRMATION";
 
 export class AppError extends Error {
   constructor(

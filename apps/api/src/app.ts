@@ -8,6 +8,7 @@ import { ok } from "./utils/response.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { auth } from "./modules/auth/auth.js";
 import { registerModules } from "./modules/index.js";
+import mcpRoutes from "./modules/mcp/routes.js";
 
 /**
  * The API app. Kept free of process-side effects so tests can inject into it;
@@ -131,6 +132,13 @@ export async function buildApp(options: { logger?: boolean } = {}) {
   });
 
   await registerModules(app);
+
+  // MCP Streamable HTTP is mounted at /mcp on the API origin. The web app
+  // proxies https://<web-origin>/api/mcp to this path with a Next.js rewrite.
+  await app.register(mcpRoutes);
+
+  // Remote MCP endpoint (Streamable HTTP), mounted at /api/mcp on the same instance.
+  await app.register(mcpRoutes, { prefix: "/api" });
 
   // Fail-fast placeholder for unmatched business module routes
   app.all("/api/v1/*", async (request, reply) => {

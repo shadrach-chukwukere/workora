@@ -50,23 +50,21 @@ export interface FreelancerSearchInput {
   perPage: number;
 }
 
-function skillsFor(instance: Db, userIds: string[]): Map<string, string[]> {
+async function skillsFor(instance: Db, userIds: string[]): Promise<Map<string, string[]>> {
   if (userIds.length === 0) return new Map();
-  return instance
+  const rows = await instance
     .selectFrom("freelancer_skills")
     .innerJoin("skills", "skills.id", "freelancer_skills.skill_id")
-    .select(["freelancer_skills.user_id", "skills.name"])
-    .where("freelancer_skills.user_id", "in", userIds)
-    .execute()
-    .then((rows) => {
-      const map = new Map<string, string[]>();
-      for (const row of rows) {
-        const list = map.get(row.user_id) ?? [];
-        list.push(row.name);
-        map.set(row.user_id, list);
-      }
-      return map;
-    });
+    .select(["freelancer_skills.freelancer_id", "skills.name"])
+    .where("freelancer_skills.freelancer_id", "in", userIds)
+    .execute();
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = map.get(row.freelancer_id) ?? [];
+    list.push(row.name);
+    map.set(row.freelancer_id, list);
+  }
+  return map;
 }
 
 export async function searchFreelancers(input: FreelancerSearchInput) {
@@ -114,8 +112,8 @@ export async function searchFreelancers(input: FreelancerSearchInput) {
         eb
           .selectFrom("freelancer_skills")
           .innerJoin("skills", "skills.id", "freelancer_skills.skill_id")
-          .select("freelancer_skills.user_id")
-          .whereRef("freelancer_skills.user_id", "=", "users.id")
+          .select("freelancer_skills.freelancer_id")
+          .whereRef("freelancer_skills.freelancer_id", "=", "users.id")
           .where("skills.name", "ilike", `%${input.skill}%`),
       ),
     );
@@ -193,7 +191,7 @@ export async function getFreelancerProfile(id: string) {
       .selectFrom("freelancer_skills")
       .innerJoin("skills", "skills.id", "freelancer_skills.skill_id")
       .select(["skills.name", "skills.slug"])
-      .where("freelancer_skills.user_id", "=", id)
+      .where("freelancer_skills.freelancer_id", "=", id)
       .execute(),
     instance
       .selectFrom("portfolio_projects")
@@ -380,7 +378,7 @@ export async function recommendedProjects(freelancerId: string, limit: number) {
     .selectFrom("freelancer_skills")
     .innerJoin("skills", "skills.id", "freelancer_skills.skill_id")
     .select("skills.name")
-    .where("freelancer_skills.user_id", "=", freelancerId)
+    .where("freelancer_skills.freelancer_id", "=", freelancerId)
     .execute();
   if (skills.length === 0) return { projects: [], matchedSkills: [] as string[] };
   const names = skills.map((s) => s.name);

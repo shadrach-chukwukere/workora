@@ -21,6 +21,7 @@ import * as m0016 from "./migrations/0016_user_verification.js";
 import * as m0017 from "./migrations/0017_contact_submissions.js";
 import * as m0018 from "./migrations/0018_resume_ai.js";
 import * as m0019 from "./migrations/0019_mcp_oauth.js";
+import * as m0020 from "./migrations/0020_agent_idempotency.js";
 
 export const migrations: Record<string, Migration> = {
   "0001_extensions": m0001,
@@ -42,6 +43,7 @@ export const migrations: Record<string, Migration> = {
   "0017_contact_submissions": m0017,
   "0018_resume_ai": m0018,
   "0019_mcp_oauth": m0019,
+  "0020_agent_idempotency": m0020,
 };
 
 const provider: MigrationProvider = {

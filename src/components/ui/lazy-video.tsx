@@ -93,6 +93,7 @@ export function LazyVideo({
         alt={alt}
         fill
         sizes="(max-width: 768px) 100vw, 33vw"
+        unoptimized
         className={cn(
           "object-cover transition-opacity duration-500",
           playing ? "opacity-0" : "opacity-100",
