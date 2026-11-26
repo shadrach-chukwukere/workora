@@ -4,7 +4,9 @@ This list describes **implemented** functionality only. It is the canonical answ
 
 ## Supported
 
-### Public, read-only (no account needed)
+### Read-only marketplace tools (account + OAuth token required)
+
+These tools expose only public marketplace data, but they are **not anonymous**: each call resolves to a specific authenticated Workora user and requires the matching scope.
 
 | Tool | What it returns |
 | --- | --- |
