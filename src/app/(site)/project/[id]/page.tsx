@@ -196,8 +196,7 @@ export default async function ProjectPage({
     title: project.title,
     description: project.description,
     datePosted: toIsoDate(project.publishedAt ?? project.createdAt),
-    ...(toIsoDate(project.deadline) ? { validThrough: project.deadline } : {}),
-    employmentType: "CONTRACT",
+    ...(toIsoDate(project.deadline) ? { validThrough: toIsoDate(project.deadline) } : {}),
     ...(hasBudget
       ? {
           baseSalary: {

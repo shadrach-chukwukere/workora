@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "postbuild": "next-sitemap"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@chispecial/web_auth": "^1.1.7",

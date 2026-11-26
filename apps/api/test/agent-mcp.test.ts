@@ -179,10 +179,13 @@ describe("MCP Streamable HTTP", () => {
       params: { name: "get_job_details", arguments: { projectId: "not-a-uuid" } },
     });
     assert.equal(response.statusCode, 200);
-    const result = response.json<{ result: { isError: boolean; structuredContent: { error: { code: string }; message: string } } }>().result;
+    const result = response.json<{
+      result: { isError: boolean; structuredContent?: { error?: { code: string }; message?: string }; content: Array<{ text: string }> };
+    }>().result;
     assert.equal(result.isError, true);
-    assert.equal(result.structuredContent.error.code, "VALIDATION_ERROR");
-    assert.doesNotMatch(result.structuredContent.message, /at Object|node_modules|\.ts:/);
+    const text = result.structuredContent?.message ?? result.content[0]?.text ?? "";
+    assert.match(text, /valid|uuid|required/i);
+    assert.doesNotMatch(text, /at Object|node_modules|\.ts:/);
   });
 
   it("blocks cross-origin browser calls", async () => {

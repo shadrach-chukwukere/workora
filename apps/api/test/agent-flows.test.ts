@@ -33,6 +33,7 @@ before(async () => {
 
 after(async () => {
   const instance = await db();
+  await sql`DELETE FROM projects WHERE client_id = ${clientId}`.execute(instance);
   await sql`DELETE FROM users WHERE id IN (${clientId}, ${freelancerId})`.execute(instance);
   await sql`DELETE FROM agent_idempotency WHERE user_id IN (${clientId}, ${freelancerId})`.execute(instance);
 });
@@ -72,7 +73,8 @@ describe("two-step confirmation", () => {
         bidAmountMinor: 150000,
         confirmationToken: "invalid.token",
       }),
-      /INVALID_CONFIRMATION/,
+      (error: unknown) =>
+        typeof error === "object" && error !== null && "code" in error && error.code === "INVALID_CONFIRMATION",
     );
   });
 });

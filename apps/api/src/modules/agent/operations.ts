@@ -161,6 +161,9 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     annotations: { title: "Get job details", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     http: { method: "GET", path: "/agent/jobs/:projectId" },
     handler: async (actor, input) => {
+      if (!(await data.isUuid(input.projectId))) {
+        throw new AgentError(400, "VALIDATION_ERROR", "projectId must be a valid UUID");
+      }
       const instance = await db();
       const user = actor.userId ? await data.loadAuthedUser(actor.userId) : undefined;
       const project = await projectService.getProjectById(instance, input.projectId, user);
