@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import { ok, requireAccountType, requireAuth } from "../common/index.js";
 import { db } from "../../database/connection.js";
 import { sendProjectInviteEmail } from "../../services/notifications.js";
+import { realtime } from "../../services/realtime.js";
 
 const UUID = /^[0-9a-fA-F-]{36}$/;
 
@@ -95,6 +96,17 @@ export default async function invitationsRoutes(app: FastifyInstance) {
           entity_id: invitation.id,
         })
         .execute();
+
+      realtime.publish(freelancerId, {
+        type: "notification",
+        notificationType: "system",
+        title: "You have a project invitation",
+        body: `A client invited you to "${project.title}".`,
+        url: "/freelancer/invitations",
+        entityType: "project_invitation",
+        entityId: invitation.id,
+        at: new Date().toISOString(),
+      });
 
       const client = await instance
         .selectFrom("users")
@@ -260,6 +272,17 @@ export default async function invitationsRoutes(app: FastifyInstance) {
           entity_id: updated.id,
         })
         .execute();
+
+      realtime.publish(updated.client_id, {
+        type: "notification",
+        notificationType: "system",
+        title: "Invitation accepted",
+        body: "A freelancer accepted your project invitation.",
+        url: "/client/projects",
+        entityType: "project_invitation",
+        entityId: updated.id,
+        at: new Date().toISOString(),
+      });
       reply.send(ok({ invitationId: updated.id, projectId: updated.project_id, status: "accepted" }, "Invitation accepted"));
     },
   );

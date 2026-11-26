@@ -84,9 +84,13 @@ export function CategoryExplorer() {
           </p>
         </div>
 
-        {/* Tabs — horizontally scrollable on small screens */}
+        {/* Tabs — scrollable on phones, evenly spread on larger screens */}
         <div className="mt-10 overflow-x-auto border-b border-neutral-200">
-          <div role="tablist" aria-label="Freelancer categories" className="mx-auto flex min-w-max gap-2 sm:gap-4">
+          <div
+            role="tablist"
+            aria-label="Freelancer categories"
+            className="mx-auto flex w-max gap-2 sm:w-full sm:justify-around sm:gap-4 lg:gap-6"
+          >
             {TABS.map((tab) => {
               const selected = tab.id === activeTab;
               return (
@@ -97,7 +101,7 @@ export function CategoryExplorer() {
                   aria-selected={selected}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex min-w-[92px] flex-col items-center gap-2 border-b-2 px-2 pb-3 pt-1 transition-colors sm:min-w-[112px]",
+                    "flex min-w-[92px] flex-col items-center gap-2 border-b-2 px-2 pb-3 pt-1 transition-colors sm:min-w-[112px] lg:min-w-[132px]",
                     selected
                       ? "border-brand-600 text-brand-700"
                       : "border-transparent text-neutral-500 hover:text-neutral-900",

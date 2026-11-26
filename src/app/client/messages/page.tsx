@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-blocks";
+import { useRealtimeEvent } from "@/components/layout/realtime-provider";
 import {
   ArrowLeft02Icon,
   AttachmentIcon,
@@ -172,32 +173,50 @@ export default function ClientMessagesPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages.length, selectedId]);
 
+  const loadMessages = useCallback(
+    async (id: string, showError = true) => {
+      setLoadingMessages(true);
+      try {
+        const res = await fetch(`/api/v1/conversations/${encodeURIComponent(id)}/messages`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (res.status === 401 || res.status === 403) {
+          router.push("/login");
+          return;
+        }
+        const envelope = (await res.json().catch(() => null)) as
+          | { success?: boolean; data?: { messages?: ConversationMessage[] } }
+          | null;
+        const rows = envelope?.data?.messages ?? [];
+        /* API returns newest first; render oldest at the top. */
+        setMessagesById((prev) => ({ ...prev, [id]: [...rows].reverse() }));
+      } catch {
+        if (showError) toast.error("Could not load messages", { description: "Network error. Please try again." });
+      } finally {
+        setLoadingMessages(false);
+      }
+    },
+    [router],
+  );
+
   async function openThread(id: string) {
     setSelectedId(id);
     setMobileView("thread");
     setUnreadByThread((prev) => (prev[id] ? { ...prev, [id]: 0 } : prev));
-    setLoadingMessages(true);
-    try {
-      const [messagesRes] = await Promise.all([
-        fetch(`${""}/api/v1/conversations/${encodeURIComponent(id)}/messages`, { credentials: "include", cache: "no-store" }),
-        fetch(`${""}/api/v1/conversations/${encodeURIComponent(id)}/read`, { method: "POST", credentials: "include" }),
-      ]);
-      if (messagesRes.status === 401 || messagesRes.status === 403) {
-        router.push("/login");
-        return;
-      }
-      const envelope = (await messagesRes.json().catch(() => null)) as
-        | { success?: boolean; data?: { messages?: ConversationMessage[] } }
-        | null;
-      const rows = envelope?.data?.messages ?? [];
-      /* API returns newest first; render oldest at the top. */
-      setMessagesById((prev) => ({ ...prev, [id]: [...rows].reverse() }));
-    } catch {
-      toast.error("Could not load messages", { description: "Network error. Please try again." });
-    } finally {
-      setLoadingMessages(false);
-    }
+    await Promise.all([
+      loadMessages(id),
+      fetch(`/api/v1/conversations/${encodeURIComponent(id)}/read`, { method: "POST", credentials: "include" }).catch(
+        () => undefined,
+      ),
+    ]);
   }
+
+  // Live delivery: refresh the thread list and the open thread on new messages.
+  useRealtimeEvent("message.created", (event) => {
+    void loadConversations();
+    if (event.conversationId === selectedId) void loadMessages(event.conversationId, false);
+  });
 
   async function sendMessage() {
     if (!selected) return;

@@ -1,6 +1,7 @@
 import type { Kysely, Transaction } from "kysely";
 import { sql } from "kysely";
 import type { DB } from "../../database/types.js";
+import { realtime } from "../../services/realtime.js";
 
 export type Executor = Kysely<DB> | Transaction<DB>;
 
@@ -212,4 +213,16 @@ export async function insertNotification(
       entity_id: input.entityId ?? null,
     })
     .execute();
+
+  // Advisory only — clients refetch from the DB when they receive this.
+  realtime.publish(input.userId, {
+    type: "notification",
+    notificationType: input.type,
+    title: input.title,
+    body: input.body,
+    url: input.url ?? null,
+    entityType: input.entityType ?? null,
+    entityId: input.entityId ?? null,
+    at: new Date().toISOString(),
+  });
 }

@@ -1,6 +1,7 @@
 import { db } from "../../database/connection.js";
 import { AppError } from "../../plugins/error-handler.js";
 import { parsePage } from "../common/index.js";
+import { realtime } from "../../services/realtime.js";
 import {
   countMessages,
   createAttachments,
@@ -74,6 +75,7 @@ export async function postMessage(conversationId: string, senderId: string, inpu
   const { instance } = await requireParticipant(conversationId, senderId);
   const sender = await findUserById(instance, senderId);
 
+  const preview = input.body.length > 140 ? `${input.body.slice(0, 137)}...` : input.body;
   const result = await instance.transaction().execute(async (trx) => {
     const message = await createMessage(trx, conversationId, senderId, input.body);
     const attachments = await createAttachments(trx, message.id, input.attachments ?? []);
@@ -81,11 +83,31 @@ export async function postMessage(conversationId: string, senderId: string, inpu
     const recipients = participantIds.filter((id) => id !== senderId);
     await insertMessageNotifications(trx, recipients, {
       title: "New message",
-      body: input.body.length > 140 ? `${input.body.slice(0, 137)}...` : input.body,
+      body: preview,
       url: `/conversations/${conversationId}`,
       messageId: message.id,
     });
-    return { message, attachments };
+    return { message, attachments, recipients };
+  });
+
+  // Publish only after the transaction commits so a rollback cannot push a ghost event.
+  const at = new Date().toISOString();
+  realtime.publishMany(result.recipients, {
+    type: "notification",
+    notificationType: "message",
+    title: "New message",
+    body: preview,
+    url: `/conversations/${conversationId}`,
+    entityType: "message",
+    entityId: result.message.id,
+    at,
+  });
+  realtime.publishMany(result.recipients, {
+    type: "message.created",
+    conversationId,
+    messageId: result.message.id,
+    senderId,
+    at,
   });
 
   return serializeMessage(

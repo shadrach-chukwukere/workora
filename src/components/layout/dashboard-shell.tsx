@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { RealtimeProvider, useRealtimeEvent } from "@/components/layout/realtime-provider";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -225,46 +226,71 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
   );
 
   return (
-    <AccountContext.Provider value={account}>
-      <div className="min-h-screen bg-neutral-50">
-        <aside className="fixed inset-y-0 left-0 z-40 hidden lg:block">{sidebar}</aside>
+    <RealtimeProvider enabled={Boolean(account.userId)}>
+      <AccountContext.Provider value={account}>
+        <RealtimeRefresh />
+        <div className="min-h-screen bg-neutral-50">
+          <aside className="fixed inset-y-0 left-0 z-40 hidden lg:block">{sidebar}</aside>
 
-        {drawerOpen ? (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <button type="button" aria-label="Close menu" className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
-            <div className="anim-pop absolute inset-y-0 left-0">
-              <div className="h-full shadow-overlay">{sidebar}</div>
+          {drawerOpen ? (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <button type="button" aria-label="Close menu" className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
+              <div className="anim-pop absolute inset-y-0 left-0">
+                <div className="h-full shadow-overlay">{sidebar}</div>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className="lg:pl-[256px]">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/[0.92] px-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Open menu"
-                className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 lg:hidden touch-target"
-              >
-                <Icon icon={Menu01Icon} size={20} strokeWidth={1.8} />
-              </button>
+          <div className="lg:pl-[256px]">
+            <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/[0.92] px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Open menu"
+                  className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 lg:hidden touch-target"
+                >
+                  <Icon icon={Menu01Icon} size={20} strokeWidth={1.8} />
+                </button>
+              </div>
+
+              <div className="min-w-0 flex-1" />
+
+              <div className="flex items-center gap-2">
+                <NotificationsBell open={bellOpen} setOpen={setBellOpen} />
+              </div>
+            </header>
+
+            <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+              <div className={cn("mx-auto", role === "admin" ? "max-w-7xl" : "max-w-6xl")}>{children}</div>
             </div>
-
-            <div className="min-w-0 flex-1" />
-
-            <div className="flex items-center gap-2">
-              <NotificationsBell open={bellOpen} setOpen={setBellOpen} />
-            </div>
-          </header>
-
-          <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-            <div className={cn("mx-auto", role === "admin" ? "max-w-7xl" : "max-w-6xl")}>{children}</div>
           </div>
         </div>
-      </div>
-    </AccountContext.Provider>
+      </AccountContext.Provider>
+    </RealtimeProvider>
   );
+}
+
+/** Keeps server-rendered dashboard data fresh when a relevant event arrives. */
+function RealtimeRefresh() {
+  const router = useRouter();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useRealtimeEvent("notification", (event) => {
+    if (event.notificationType === "message") return; // the messages pages refetch themselves
+    if (timer.current) clearTimeout(timer.current);
+    // Coalesce bursts of events from one transaction into a single refresh.
+    timer.current = setTimeout(() => router.refresh(), 400);
+  });
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  return null;
 }
 
 const NOTIFICATION_ICONS: Record<NotificationPayload["type"], { icon: IconName; className: string }> = {
@@ -297,24 +323,26 @@ function NotificationsBell({
     };
   }, [open]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        // Same-origin request so the Better Auth cookie is included and accepted.
-        const data = await api<{ notifications: NotificationPayload[] }>("/api/v1/notifications");
-        if (!cancelled) setItems(data.notifications);
-      } catch {
-        // keep previous list on network error
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const load = useCallback(async () => {
+    try {
+      // Same-origin request so the Better Auth cookie is included and accepted.
+      const data = await api<{ notifications: NotificationPayload[] }>("/api/v1/notifications");
+      setItems(data.notifications);
+    } catch {
+      // keep previous list on network error
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Live update: refetch the feed whenever the backend emits a notification.
+  useRealtimeEvent("notification", () => {
+    void load();
+  });
 
   const markAllRead = async () => {
     setItems((list) => list.map((n) => ({ ...n, is_read: true })));

@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui/page-blocks";
+import { useRealtimeEvent } from "@/components/layout/realtime-provider";
 import { cn } from "@/lib/utils";
 import { formatDateShort, formatRelative } from "@/lib/format";
 import {
@@ -150,6 +151,12 @@ export default function FreelancerMessagesPage() {
     },
     [router],
   );
+
+  // Live delivery: refresh the thread list and the open thread on new messages.
+  useRealtimeEvent("message.created", (event) => {
+    void loadConversations();
+    if (event.conversationId === activeId) void loadMessages(event.conversationId);
+  });
 
   const filteredThreads = useMemo(() => {
     const q = query.trim().toLowerCase();

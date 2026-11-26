@@ -10,8 +10,8 @@ import { auth } from "./modules/auth/auth.js";
 import { registerModules } from "./modules/index.js";
 
 /**
- * The API app. Kept free of process-side effects so tests can inject into it
- * and the WebSocket server can attach later on the same instance.
+ * The API app. Kept free of process-side effects so tests can inject into it;
+ * the SSE event stream attaches through the regular module registry.
  */
 export async function buildApp(options: { logger?: boolean } = {}) {
   const app = Fastify({
