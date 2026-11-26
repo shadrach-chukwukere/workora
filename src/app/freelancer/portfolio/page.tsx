@@ -21,6 +21,7 @@ import {
 } from "@/lib/icons";
 import { useBlobUpload } from "@/components/upload/blob-upload";
 import { cn } from "@/lib/utils";
+import { normalizeExternalUrl } from "@/lib/urls";
 
 interface PortfolioItemDto {
   id: string;
@@ -77,7 +78,7 @@ function fromDto(item: PortfolioItemDto): PortfolioItem {
     description: item.description ?? "",
     tags: (item.role ?? "").split(",").map((tag) => tag.trim()).filter(Boolean),
     year: typeof item.year === "number" ? item.year : null,
-    link: item.project_url ?? null,
+    link: normalizeExternalUrl(item.project_url),
     imageUrl: item.image_url ?? null,
   };
 }
@@ -124,7 +125,7 @@ export default function FreelancerPortfolioPage() {
       description: input.description,
       tags: input.tags,
       year: input.year,
-      project_url: input.link ?? "",
+      project_url: normalizeExternalUrl(input.link) ?? "",
       image_url: input.imageUrl ?? null,
     };
     try {

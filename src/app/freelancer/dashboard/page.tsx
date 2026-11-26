@@ -162,18 +162,17 @@ export default async function FreelancerDashboard() {
       categoriesRes,
       followersRes,
       followingRes,
-    ] =
-      await Promise.all([
-        apiServer<MeResponse>("/api/v1/users/me", undefined, cookie),
-        apiOptional(apiServer<ContractsResponse>("/api/v1/contracts?status=active", undefined, cookie)),
-        apiOptional(apiServer<ProposalsResponse>("/api/v1/proposals/me", undefined, cookie)),
-        apiOptional(apiServer<TransactionsResponse>("/api/v1/payments/transactions?perPage=50", undefined, cookie)),
-        apiOptional(apiServer<ConversationsResponse>("/api/v1/conversations", undefined, cookie)),
-        apiOptional(apiServer<ProjectsResponse>("/api/v1/projects", undefined, cookie)),
-        apiOptional(apiServer<CategoriesResponse>("/api/v1/categories", undefined, cookie)),
-        apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/followers?perPage=4", undefined, cookie)),
-        apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/following?perPage=4", undefined, cookie)),
-      ]);
+    ] = await Promise.all([
+      apiServer<MeResponse>("/api/v1/users/me", undefined, cookie),
+      apiOptional(apiServer<ContractsResponse>("/api/v1/contracts?status=active", undefined, cookie)),
+      apiOptional(apiServer<ProposalsResponse>("/api/v1/proposals/me", undefined, cookie)),
+      apiOptional(apiServer<TransactionsResponse>("/api/v1/payments/transactions?perPage=50", undefined, cookie)),
+      apiOptional(apiServer<ConversationsResponse>("/api/v1/conversations", undefined, cookie)),
+      apiOptional(apiServer<ProjectsResponse>("/api/v1/projects", undefined, cookie)),
+      apiOptional(apiServer<CategoriesResponse>("/api/v1/categories", undefined, cookie)),
+      apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/followers?perPage=4", undefined, cookie)),
+      apiOptional(apiServer<ConnectionList>("/api/v1/connections/me/following?perPage=4", undefined, cookie)),
+    ]);
   } catch (error) {
     if (isAuthError(error)) redirect("/login");
     throw error;
@@ -243,6 +242,7 @@ export default async function FreelancerDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ===== POLISHED PROFILE WIDGET ===== */}
       <ProfileHeader
         name={user.name}
         headline={user.headline}
@@ -251,21 +251,36 @@ export default async function FreelancerDashboard() {
         bannerSrc={user.banner_url}
         verified={user.verified_identity ?? false}
         connectionsLabel={`${formatNumber(followersRes?.total ?? 0)} followers · ${formatNumber(followingRes?.total ?? 0)} following`}
+        meta={
+          <>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Icon icon={ShieldCheckIcon} size={14} strokeWidth={1.8} className="shrink-0 text-neutral-400" />
+              {user.verified_identity ? "Identity verified" : "Identity not verified"}
+            </span>
+            {user.response_time_hours != null ? (
+              <span className="whitespace-nowrap">{user.response_time_hours}h avg response</span>
+            ) : null}
+          </>
+        }
         isSelf
         editHref="/freelancer/settings"
+        actionsClassName="w-full sm:w-auto sm:justify-start"
         actions={
           <>
-            <Button href={`/freelancers/${user.id}`} size="md" variant="secondary">
+            <Button href={`/freelancers/${user.id}`} size="md" variant="secondary" className="w-full sm:w-auto">
               View public profile
             </Button>
-            <Button href="/freelancer/projects" size="md">
+            <Button href="/freelancer/settings" size="md" className="w-full sm:w-auto">
+              Edit profile
+            </Button>
+            <Button href="/freelancer/projects" size="md" className="w-full sm:w-auto">
               Find new projects
             </Button>
           </>
         }
       />
 
-      {/* Stats */}
+      {/* ===== STATS ===== */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Available balance"
@@ -294,10 +309,11 @@ export default async function FreelancerDashboard() {
         />
       </div>
 
+      {/* ===== ACTIVE CONTRACTS + NEEDS ATTENTION ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Active contracts */}
         <section className="card lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 sm:px-6 sm:py-4.5">
             <h2 className="text-sm font-semibold text-neutral-900">Active contracts</h2>
             <Link href="/freelancer/contracts" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
               All contracts
@@ -306,7 +322,7 @@ export default async function FreelancerDashboard() {
           </div>
           <ul className="divide-y divide-neutral-100">
             {activeContracts.length === 0 ? (
-              <li className="px-5 py-12 text-center text-sm text-neutral-500">
+              <li className="px-5 py-12 sm:px-6 text-center text-sm text-neutral-500">
                 <span className="mb-3 inline-flex size-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
                   <Icon icon={HandshakeIcon} size={20} strokeWidth={1.8} />
                 </span>
@@ -323,7 +339,7 @@ export default async function FreelancerDashboard() {
               const counterpartName = contract.counterpart?.company_name ?? contract.counterpart?.name ?? "Client";
               return (
                 <li key={contract.id}>
-                  <Link href={`/freelancer/contracts/${contract.id}`} className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50">
+                  <Link href={`/freelancer/contracts/${contract.id}`} className="flex items-start gap-4 px-5 py-4 sm:px-6 transition-colors hover:bg-neutral-50">
                     <span aria-hidden className="mt-0.5 hidden bg-neutral-100 p-2 rounded-lg text-neutral-600 sm:inline-flex">
                       <Icon icon={HandshakeIcon} size={18} strokeWidth={1.8} />
                     </span>
@@ -362,7 +378,7 @@ export default async function FreelancerDashboard() {
                   {/* Milestone timeline for this contract */}
                   {milestones.length > 0 && (
                     <div className="border-t border-neutral-100 bg-neutral-50/40">
-                      <div className="px-5 py-4">
+                      <div className="px-5 py-4 sm:px-6">
                         <StatusTimeline
                           milestones={milestones.filter((m) => m.status !== "cancelled").map((m) => ({
                             id: m.id,
@@ -384,7 +400,7 @@ export default async function FreelancerDashboard() {
 
         {/* Needs attention */}
         <section className="card">
-          <div className="border-b border-neutral-100 px-5 py-4">
+          <div className="border-b border-neutral-100 px-5 py-4 sm:px-6 sm:py-4.5">
             <h2 className="text-sm font-semibold text-neutral-900">Needs your attention</h2>
           </div>
           <ul className="divide-y divide-neutral-100">
@@ -426,7 +442,7 @@ export default async function FreelancerDashboard() {
               <Link
                 key={proposal.id}
                 href="/freelancer/proposals"
-                className="flex items-center gap-3 border-t border-neutral-100 px-5 py-3.5 transition-colors hover:bg-neutral-50"
+                className="flex items-center gap-3 border-t border-neutral-100 px-5 py-3.5 sm:px-6 transition-colors hover:bg-neutral-50"
               >
                 <span aria-hidden>
                   <Monogram name={project.title} size={22} />
@@ -444,17 +460,18 @@ export default async function FreelancerDashboard() {
         </section>
       </div>
 
+      {/* ===== EARNINGS TREND + PUBLIC PROFILE PREVIEW + CONNECTIONS + REPUTATION ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Earnings trend */}
         <section className="card lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 sm:px-6 sm:py-4.5">
             <h2 className="text-sm font-semibold text-neutral-900">Earnings trend</h2>
             <Link href="/freelancer/earnings" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
               Earnings details
               <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
             </Link>
           </div>
-          <div className="px-3 py-4 sm:px-5">
+          <div className="px-3 py-4 sm:px-6">
             <EarningsAreaChart data={series.map((p) => ({ label: p.label, value: p.earningsMinor / 100 }))} />
             <p className="mt-2 text-center text-[11px] text-neutral-400">
               Milestone earnings, net of the platform commission · {thisMonth ? monthLabel(thisMonth.month) : "This month"} is month to date
@@ -463,7 +480,7 @@ export default async function FreelancerDashboard() {
         </section>
 
         {/* Public profile preview */}
-        <section className="card flex flex-col p-5">
+        <section className="card flex flex-col p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold text-neutral-900">Your public profile</h2>
             <Link href="/freelancer/settings" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
@@ -486,7 +503,7 @@ export default async function FreelancerDashboard() {
         <ConnectionsCard followers={followersRes} following={followingRes} />
 
         {/* Reputation snapshot */}
-        <section className="card flex flex-col p-5">
+        <section className="card flex flex-col p-5 sm:p-6">
           <h2 className="text-sm font-semibold text-neutral-900">Reputation</h2>
           <div className="mt-3 flex items-center gap-3">
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-800">
@@ -518,9 +535,9 @@ export default async function FreelancerDashboard() {
         </section>
       </div>
 
-      {/* Recommended work */}
+      {/* ===== RECOMMENDED WORK ===== */}
       <section className="card">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 sm:px-6 sm:py-4.5">
           <h2 className="text-sm font-semibold text-neutral-900">Open roles in your categories</h2>
           <Link href="/find-work" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
             Browse all projects
@@ -529,12 +546,12 @@ export default async function FreelancerDashboard() {
         </div>
         <div className="grid gap-px bg-neutral-100 sm:grid-cols-3">
           {featured.length === 0 ? (
-            <p className="col-span-full bg-white px-5 py-6 text-sm text-neutral-500">
+            <p className="col-span-full bg-white px-5 py-6 sm:px-6 text-sm text-neutral-500">
               No open projects in your categories right now.
             </p>
           ) : null}
           {featured.map((project) => (
-            <Link key={project.id} href={`/project/${project.id}`} className="group flex flex-col gap-2 bg-white p-5 transition-colors hover:bg-neutral-50">
+            <Link key={project.id} href={`/project/${project.id}`} className="group flex flex-col gap-2 bg-white p-5 sm:p-6 transition-colors hover:bg-neutral-50">
               <div className="flex items-center justify-between">
                 <Monogram name={project.title} size={26} />
                 <Badge tone="neutral">Open</Badge>
@@ -575,7 +592,7 @@ function AttentionItem({
   tone?: "warning" | "brand";
 }) {
   return (
-    <Link href={href} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50">
+    <Link href={href} className="flex items-start gap-3 px-5 py-3.5 sm:px-6 transition-colors hover:bg-neutral-50">
       <span
         aria-hidden
         className={`mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full ${tone === "warning" ? "bg-amber-100 text-amber-800" : tone === "brand" ? "bg-brand-100 text-brand-700" : "bg-neutral-100 text-neutral-600"}`}

@@ -7,6 +7,7 @@ import { PageHeader, StatCard } from "@/components/ui/page-blocks";
 import { Progress } from "@/components/ui/progress";
 import { Monogram } from "@/components/ui/logo";
 import { StatusTimeline } from "@/components/ui/status-timeline";
+import { ProfileHeader } from "@/components/ui/profile-header";
 import {
   ArrowRight02Icon,
   Briefcase02Icon,
@@ -25,6 +26,8 @@ interface MeResponse {
   user: {
     id: string;
     name: string;
+    image: string | null;
+    banner_url: string | null;
     company_name: string | null;
     company_size: string | null;
     industry: string | null;
@@ -331,30 +334,34 @@ export default async function ClientDashboard() {
         <div className="flex flex-col gap-6">
           {/* Public profile preview */}
           {profileUser ? (
-            <section className="card flex flex-col p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold text-neutral-900">Your public profile</h2>
-                <Link href="/client/settings" className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-700 hover:text-brand-800">
-                  Edit
-                  <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
-                </Link>
-              </div>
-              <p className="mt-3 text-sm font-medium text-neutral-900">
-                {profileUser.company_name?.trim() || profileUser.name}
-              </p>
-              <p className="mt-2 text-[13px] text-neutral-500">
-                {[profileUser.industry, profileUser.company_size ? `${profileUser.company_size} people` : null]
-                  .filter(Boolean)
-                  .join(" · ") || "Add your company details in settings."}
-              </p>
-              <p className="mt-2 max-h-24 overflow-hidden text-[13px] leading-relaxed text-neutral-500">
-                {profileUser.about?.trim() || "Your About is public. Add it in settings so freelancers can learn more about your company."}
-              </p>
-              <Link href={`/clients/${profileUser.id}`} className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-neutral-600 hover:text-neutral-900">
-                View public page
-                <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
-              </Link>
-            </section>
+            <ProfileHeader
+              name={profileUser.name}
+              headline={[
+                profileUser.company_name?.trim(),
+                profileUser.industry,
+                profileUser.company_size ? `${profileUser.company_size} people` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || undefined}
+              location={null}
+              avatarSrc={profileUser.image ?? null}
+              bannerSrc={null}
+              verified={false}
+              connectionsLabel={undefined}
+              meta={
+                <>
+                  <span className="whitespace-nowrap">Client account</span>
+                </>
+              }
+              isSelf
+              editHref="/client/settings"
+              actionsClassName="w-full sm:w-auto sm:justify-start"
+              actions={
+                <Button href={`/clients/${profileUser.id}`} size="md" variant="secondary" className="w-full sm:w-auto">
+                  View public page
+                </Button>
+              }
+            />
           ) : null}
 
           <ConnectionsCard followers={followersRes} following={followingRes} />

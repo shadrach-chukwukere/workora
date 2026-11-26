@@ -52,6 +52,29 @@
   --color-text-inverse-dark: #111827;
   --shadow-dropdown-dark: 0 10px 30px -12px rgba(0, 0, 0, 0.45), 0 2px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-overlay-dark: 0 24px 60px -20px rgba(0, 0, 0, 0.55), 0 8px 24px -12px rgba(0, 0, 0, 0.35);
+
+  /* Responsive spacing scale */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+
+  /* Responsive typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Touch target minimum */
+  --touch-target: 44px;
 }
 
 /* Dark mode - removed. Light mode only. */
@@ -73,6 +96,88 @@
   /* Skip link for keyboard users - visible on focus. */
   .skip-link {
     @apply absolute -top-12 left-4 z-50 px-3 py-1.5 rounded-lg bg-brand-600 text-white text-sm font-medium transition-transform transform -translate-y-full focus-visible:translate-y-0;
+  }
+
+  /* Responsive container with consistent horizontal padding */
+  .container-responsive {
+    @apply mx-auto w-full px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Section vertical padding that scales by breakpoint */
+  .section-py {
+    @apply py-8 sm:py-12 lg:py-16;
+  }
+
+  /* Grid that collapses to single column on mobile */
+  .grid-responsive {
+    @apply grid gap-4 sm:gap-6 lg:gap-8;
+  }
+
+  /* Two-column grid that stacks on mobile */
+  .grid-two-col {
+    @apply grid gap-6 sm:grid-cols-2 lg:gap-8;
+  }
+
+  /* Three-column grid that stacks on mobile, two on tablet */
+  .grid-three-col {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* Four-column grid that stacks on mobile */
+  .grid-four-col {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  /* Card with subtle border and rounded corners */
+  .card-premium {
+    @apply rounded-xl border border-neutral-200 bg-white;
+  }
+
+  /* Touch-friendly button minimum size */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Section header with title and optional actions */
+  .section-header {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3 sm:flex-nowrap sm:pb-4;
+  }
+
+  .section-header h2 {
+    @apply text-sm font-semibold text-neutral-900;
+  }
+
+  /* Profile stat layout */
+  .profile-stat {
+    @apply flex items-center justify-between;
+  }
+
+  .profile-stat dt {
+    @apply text-xs text-neutral-500;
+  }
+
+  .profile-stat dd {
+    @apply text-sm font-semibold text-neutral-900 tabular-nums;
+  }
+
+  /* Action button group that wraps on mobile */
+  .action-group {
+    @apply flex flex-wrap items-center gap-2 sm:gap-3;
+  }
+
+  /* Primary action button styling */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700 active:bg-brand-800 touch-target;
+  }
+
+  /* Secondary action button styling */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 hover:border-neutral-300 touch-target;
+  }
+
+  /* Ghost action button styling */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 touch-target;
   }
 }
 

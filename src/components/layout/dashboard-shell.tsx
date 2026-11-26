@@ -239,19 +239,23 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
         ) : null}
 
         <div className="lg:pl-[256px]">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/[0.92] px-4 sm:px-6">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open menu"
-              className="inline-flex size-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 lg:hidden"
-            >
-              <Icon icon={Menu01Icon} size={18} strokeWidth={1.8} />
-            </button>
+          <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/[0.92] px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open menu"
+                className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 lg:hidden touch-target"
+              >
+                <Icon icon={Menu01Icon} size={20} strokeWidth={1.8} />
+              </button>
+            </div>
 
             <div className="min-w-0 flex-1" />
 
-            <NotificationsBell open={bellOpen} setOpen={setBellOpen} />
+            <div className="flex items-center gap-2">
+              <NotificationsBell open={bellOpen} setOpen={setBellOpen} />
+            </div>
           </header>
 
           <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-8">

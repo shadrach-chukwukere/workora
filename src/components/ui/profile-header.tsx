@@ -5,11 +5,13 @@ import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * LinkedIn-style identity header: a cover banner with a circular profile photo
+ * Premium identity header: a cover banner with a circular profile photo
  * overlapping its bottom edge, followed by name, headline, location,
  * connections and actions.
  *
- * Deliberately static — no floating or looping motion on the profile photo.
+ * Responsive by design:
+ * - Mobile: avatar sits below the cover, stacked vertically with actions full-width
+ * - Tablet+: avatar overlaps cover, actions sit side-by-side with identity
  */
 export function ProfileHeader({
   name,
@@ -43,9 +45,9 @@ export function ProfileHeader({
   className?: string;
 }) {
   return (
-    <section className={cn("w-full max-w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm", className)}>
+    <section className={cn("w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm", className)}>
       {/* Cover banner */}
-      <div className="relative h-24 w-full overflow-hidden bg-gradient-to-br from-brand-50 via-brand-100/70 to-sky-50 sm:h-40 lg:h-44">
+      <div className="relative h-32 w-full overflow-hidden bg-gradient-to-br from-brand-50 via-brand-100/70 to-sky-50 sm:h-40 lg:h-48">
         {bannerSrc ? (
           <Image
             src={bannerSrc}
@@ -62,23 +64,23 @@ export function ProfileHeader({
             href={editHref}
             aria-label="Edit cover photo"
             title="Edit cover photo"
-            className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full bg-white text-neutral-700 shadow-sm ring-1 ring-black/5 hover:bg-neutral-50 sm:right-4 sm:top-4 sm:size-9"
+            className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white text-neutral-700 shadow-sm ring-1 ring-black/5 hover:bg-neutral-50 sm:right-4 sm:top-4 sm:size-10"
           >
-            <Icon icon={Pen01Icon} size={16} strokeWidth={1.8} />
+            <Icon icon={Pen01Icon} size={17} strokeWidth={1.8} />
           </Link>
         ) : null}
       </div>
 
-      <div className="px-4 pb-4 sm:px-6 sm:pb-6">
-        {/* Circular photo overlapping the cover — no animation */}
-        <div className="relative -mt-10 sm:-mt-14">
-          <div className="inline-flex size-20 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-xl font-semibold text-brand-800 ring-4 ring-white sm:size-28 sm:text-2xl">
+      <div className="px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8">
+        {/* Circular photo overlapping the cover */}
+        <div className="relative -mt-10 sm:-mt-14 lg:-mt-16">
+          <div className="inline-flex size-24 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-2xl font-semibold text-brand-800 ring-6 ring-white sm:size-32 sm:text-3xl lg:size-40 lg:text-4xl">
             {avatarSrc ? (
               <Image
                 src={avatarSrc}
                 alt={`${name}'s profile photo`}
-                width={128}
-                height={128}
+                width={160}
+                height={160}
                 className="size-full object-cover"
                 unoptimized
               />
@@ -88,21 +90,22 @@ export function ProfileHeader({
           </div>
         </div>
 
-        <div className="mt-2 flex min-w-0 flex-col gap-2 sm:mt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        {/* Identity block — name, headline, location, connections, meta */}
+        <div className="mt-3 flex min-w-0 flex-col gap-2 sm:mt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 lg:gap-6">
           <div className="min-w-0 flex-1">
             <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight text-neutral-900 sm:text-2xl lg:text-3xl">
               <span className="min-w-0 break-words">{name}</span>
               {verified ? (
-                <span title="Identity verified" className="inline-flex shrink-0 text-brand-600">
-                  <Icon icon={ShieldCheckIcon} size={18} strokeWidth={1.8} />
-                  <span className="sr-only">Identity verified</span>
+                <span title="Identity verified" className="inline-flex shrink-0 items-center gap-1 text-brand-600 sm:text-sm">
+                  <Icon icon={ShieldCheckIcon} size={16} strokeWidth={1.8} />
+                  Verified
                 </span>
               ) : null}
             </h1>
             {headline ? (
-              <p className="mt-1 max-w-2xl break-words text-sm leading-snug text-neutral-700 sm:text-[15px]">{headline}</p>
+              <p className="mt-1 max-w-2xl break-words text-sm leading-snug text-neutral-700 sm:text-[15px] lg:text-base">{headline}</p>
             ) : null}
-            <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 sm:text-[13px]">
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-neutral-500 sm:text-[13px]">
               {location ? (
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <Icon icon={Location01Icon} size={14} strokeWidth={1.8} className="shrink-0 text-neutral-400" />
@@ -110,7 +113,7 @@ export function ProfileHeader({
                 </span>
               ) : null}
               {connectionsLabel ? (
-                <span className="whitespace-nowrap font-semibold text-brand-700">{connectionsLabel}</span>
+                <span className="whitespace-nowrap font-semibold text-brand-700 text-xs sm:text-sm">{connectionsLabel}</span>
               ) : null}
               {meta}
             </div>
@@ -120,17 +123,20 @@ export function ProfileHeader({
               href={editHref}
               aria-label="Edit profile"
               title="Edit profile"
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 sm:size-11"
             >
-              <Icon icon={Pen01Icon} size={16} strokeWidth={1.8} />
+              <Icon icon={Pen01Icon} size={17} strokeWidth={1.8} />
             </Link>
           ) : null}
         </div>
 
+        {/* Actions — full width on mobile, inline on desktop */}
         {actions ? (
-          <div className={cn("mt-4 flex flex-wrap items-center gap-2", actionsClassName)}>{actions}</div>
+          <div className={cn("mt-5 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:justify-start sm:gap-3", actionsClassName)}>
+            {actions}
+          </div>
         ) : null}
-        {children ? <div className="mt-4 border-t border-neutral-100 pt-4">{children}</div> : null}
+        {children ? <div className="mt-5 border-t border-neutral-100 pt-5 sm:mt-8 sm:pt-6">{children}</div> : null}
       </div>
     </section>
   );

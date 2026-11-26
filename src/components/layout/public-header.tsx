@@ -11,7 +11,18 @@ import { Logo } from "@/components/ui/logo";
 import { HeaderSearch } from "@/components/layout/header-search";
 import { NavDropdown, type NavDropdownItem } from "@/components/layout/nav-dropdown";
 import { publicNav } from "@/lib/navigation";
-import { Icon, Logout01Icon, Menu01Icon, Search01Icon, MultiplicationSignIcon, Home01Icon, Settings01Icon, UserAccountIcon, Briefcase02Icon, Pen01Icon } from "@/lib/icons";
+import {
+  Icon,
+  Logout01Icon,
+  Menu01Icon,
+  Search01Icon,
+  MultiplicationSignIcon,
+  Home01Icon,
+  Settings01Icon,
+  UserAccountIcon,
+  Briefcase02Icon,
+  Pen01Icon,
+} from "@/lib/icons";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/sign-out";
@@ -88,15 +99,15 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
         Skip to content
       </a>
 
-      <header className="sticky top-0 z-40 bg-white/70 backdrop-blur supports-backdrop-filter:bg-white/92">
-        <div className="container-page flex h-16 items-center gap-x-4">
-          {/* Brand */}
-          <div className="flex shrink-0 items-center gap-2.5">
-            <Logo className="shrink-0" size="md" />
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/94 border-b border-neutral-200/50">
+        <div className="container-page flex h-14 items-center justify-between gap-x-3 px-4 sm:px-6 lg:px-8">
+          {/* Brand — always visible on left */}
+          <div className="flex shrink-0 items-center gap-2">
+            <Logo className="shrink-0" size="sm" />
           </div>
 
-          {/* Primary navigation with smart custom dropdowns */}
-          <nav aria-label="Primary" className="hidden items-center gap-1 shrink-0 md:flex md:ml-6">
+          {/* Primary navigation (desktop only) */}
+          <nav aria-label="Primary" className="hidden items-center gap-1 shrink-0 md:flex md:ml-4">
             <NavDropdown label="Hire talent" items={hireTalentItems} active={isActive("/find-talent")} />
             <NavDropdown label="Find work" items={findWorkItems} active={isActive("/find-work")} />
             {publicNav
@@ -116,13 +127,20 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               ))}
           </nav>
 
-          {/* Pill search using react-select */}
-          <HeaderSearch />
-
+          {/* Right side: search (desktop), account actions, hamburger */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Search — desktop only */}
+            <div className="hidden md:flex items-center">
+              <HeaderSearch />
+            </div>
+
+            {/* Account actions — signed in */}
             {account ? (
               <>
-                <Link href={workspace} className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900">
+                <Link
+                  href={workspace}
+                  className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                >
                   <Icon icon={Home01Icon} size={14} strokeWidth={1.8} className="shrink-0" />
                   Dashboard
                 </Link>
@@ -138,23 +156,28 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               </>
             ) : (
               <>
-                <Button href="/login" size="md" className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900">
+                <Button
+                  href="/login"
+                  size="md"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
+                >
                   Log in
                 </Button>
-                <Button href="/register" size="md" className="hidden md:inline-flex rounded-full px-5">
+                <Button href="/register" size="md" className="hidden sm:inline-flex rounded-full px-4">
                   Get started
                   <HugeiconsIcon icon={ArrowRight01Icon} />
                 </Button>
               </>
             )}
 
+            {/* Hamburger — mobile only */}
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              className="inline-flex size-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 md:hidden"
+              className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 md:hidden touch-target"
             >
-              <Icon icon={Menu01Icon} size={18} strokeWidth={1.8} />
+              <Icon icon={Menu01Icon} size={20} strokeWidth={1.8} />
             </button>
           </div>
         </div>
@@ -165,15 +188,15 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Site menu">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <div className="anim-pop absolute inset-y-0 right-0 flex w-full max-w-[85vw] flex-col border-l border-neutral-200 bg-white shadow-dropdown">
-            <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-4">
+            <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-4">
               <Logo size="md" />
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"
-                className="inline-flex size-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100"
+                className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 touch-target"
               >
-                <Icon icon={MultiplicationSignIcon} size={18} strokeWidth={1.8} />
+                <Icon icon={MultiplicationSignIcon} size={20} strokeWidth={1.8} />
               </button>
             </div>
             <div className="border-b border-neutral-50 px-4 py-2">
@@ -185,7 +208,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                   type="search"
                   name="q"
                   placeholder="Search talent, skills or keywords"
-                  className="w-full h-9 rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                  className="w-full h-10 rounded-xl border border-neutral-200 bg-white pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                 />
               </form>
             </div>
@@ -229,17 +252,17 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                   type="button"
                   onClick={handleSignOut}
                   disabled={signingOut}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 touch-target"
                 >
                   <Icon icon={Logout01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
                   {signingOut ? "Signing out…" : "Sign out"}
                 </button>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Button href="/login" variant="secondary" size="md" className="flex-1 rounded-full">
+                <div className="flex flex-col items-center gap-2">
+                  <Button href="/login" variant="secondary" size="md" className="w-full rounded-full">
                     Log in
                   </Button>
-                  <Button href="/register" size="md" className="flex-1 rounded-full">
+                  <Button href="/register" size="md" className="w-full rounded-full">
                     Get started
                   </Button>
                 </div>

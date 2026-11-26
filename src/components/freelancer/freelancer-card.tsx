@@ -34,7 +34,7 @@ export function FreelancerCard({
     <li>
       <Link
         href={`/freelancers/${freelancer.id}`}
-        className="group relative block h-[300px] overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-18px_rgba(0,0,0,0.35)] sm:h-[320px]"
+        className="group relative block min-h-[220px] h-[280px] overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-18px_rgba(0,0,0,0.35)] sm:h-[300px] md:h-[320px]"
       >
         {/* Full-height portrait; blends into the card, slightly more than half visible */}
         <img
