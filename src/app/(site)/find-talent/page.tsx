@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { AVAILABILITY_OPTIONS, CATEGORY_BASE, RATE_RANGES, SORT_OPTIONS } from "@/lib/constants";
-import { formatMoney, formatNumber } from "@/lib/format";
-import { Avatar } from "@/components/ui/avatar";
+import { formatNumber } from "@/lib/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
-import { ShortlistButton } from "@/components/freelancer/shortlist-button";
-import { Icon, Search01Icon, SearchRemoveIcon, StarIcon, Tick02Icon, UserMultiple02Icon } from "@/lib/icons";
+import { FreelancerCard } from "@/components/freelancer/freelancer-card";
+import { Icon, Search01Icon, SearchRemoveIcon, StarIcon } from "@/lib/icons";
 import type { PublicFreelancer } from "@/lib/api-data";
 import { serverApiBase } from "@/lib/api-base";
 import { getSessionAccount } from "@/components/layout/session-guard";
@@ -14,7 +13,6 @@ import { getSessionAccount } from "@/components/layout/session-guard";
 const PAGE_SIZE = 9;
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.talent)[number]>(SORT_OPTIONS.talent.map((s) => [s.value, s]));
-const AVAILABILITY = new Map<string, (typeof AVAILABILITY_OPTIONS)[number]>(AVAILABILITY_OPTIONS.map((a) => [a.value, a]));
 const CATEGORIES = new Map(CATEGORY_BASE.map((c) => [c.id, c]));
 
 /** Best-effort public GET with 30s revalidation. Returns null when the API is down or the envelope is bad. */
@@ -192,71 +190,10 @@ export default async function FindTalentPage({
           />
         </div>
       ) : (
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {pageItems.map((freelancer) => {
-            const availabilityTone =
-              freelancer.availability === "available" ? "available" : freelancer.availability === "limited" ? "limited" : "booked";
-            const rating = freelancer.rating_avg != null ? Number(freelancer.rating_avg) : null;
-            return (
-              <li key={freelancer.id}>
-                <Link
-                  href={`/freelancers/${freelancer.id}`}
-                  className="group flex h-full flex-col rounded-xl border border-neutral-200 bg-white p-5 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Avatar src={freelancer.image ?? `https://i.pravatar.cc/150?u=${freelancer.id}`} name={freelancer.name} size="lg" alt="" />
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 truncate text-[15px] font-semibold text-neutral-900 group-hover:text-brand-800">
-                          {freelancer.name}
-                          {freelancer.verified_identity ? (
-                            <Icon icon={Tick02Icon} size={14} strokeWidth={2} className="shrink-0 text-brand-600" aria-label="Identity verified" />
-                          ) : null}
-                        </p>
-                      </div>
-                    </div>
-                    <ShortlistButton freelancerId={freelancer.id} />
-                  </div>
-                  <span
-                    className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-neutral-500"
-                    title={AVAILABILITY.get(freelancer.availability)?.label}
-                  >
-                    <span
-                      aria-hidden
-                      className={`size-2 rounded-full ${availabilityTone === "available" ? "bg-emerald-500" : availabilityTone === "limited" ? "bg-amber-400" : "bg-neutral-300"}`}
-                    />
-                    {freelancer.availability === "available" ? "Open" : freelancer.availability === "limited" ? "Limited" : "Booked"}
-                  </span>
-                  <p className="mt-3 line-clamp-2 text-sm leading-snug text-neutral-700">{freelancer.headline}</p>
-                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-neutral-500">
-                    <Icon icon={UserMultiple02Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
-                    <span className="font-semibold text-neutral-800 tabular-nums">
-                      {formatNumber(freelancer.followers_count ?? 0)}
-                    </span>
-                    followers
-                  </p>
-                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-neutral-100 pt-4 text-xs text-neutral-500">
-                    <span className="text-sm font-semibold text-neutral-900">
-                      {freelancer.hourly_rate_minor != null ? `${formatMoney(freelancer.hourly_rate_minor / 100)}/hr` : "Unset"}
-                    </span>
-                    {rating != null && Number.isFinite(rating) ? (
-                      <span className="inline-flex items-center gap-1 font-semibold text-neutral-900">
-                        <Icon icon={StarIcon} size={12} strokeWidth={2} className="text-amber-500" />
-                        {rating.toFixed(2)}
-                        <span className="font-normal text-neutral-400">({freelancer.rating_count})</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 font-semibold text-neutral-900">
-                        <Icon icon={StarIcon} size={12} strokeWidth={2} className="text-neutral-300" />
-                        New
-                      </span>
-                    )}
-                    <span>{formatNumber(freelancer.completed_count)} jobs</span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
+        <ul className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {pageItems.map((freelancer) => (
+            <FreelancerCard key={freelancer.id} freelancer={freelancer} />
+          ))}
         </ul>
       )}
 
