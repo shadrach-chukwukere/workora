@@ -183,6 +183,7 @@ Workora exposes one MCP endpoint at `/api/mcp` and one shared operation layer us
 - [`docs/agent-capabilities.md`](docs/agent-capabilities.md) — supported and explicitly unsupported operations
 - [`docs/manual-steps.md`](docs/manual-steps.md) — DNS, env vars, platform configuration and directory submissions
 - [`docs/claude-directory-readiness.md`](docs/claude-directory-readiness.md) — Claude connector submission checklist (not submitted or approved)
+- [`docs/final-report.md`](docs/final-report.md) — what was built, tested and not tested
 
 The generated OpenAPI 3.1 document is served at `/openapi.json`; the public explainer is at `/ai`.
 
