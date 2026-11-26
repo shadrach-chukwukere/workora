@@ -115,7 +115,21 @@ export default function TermsPage() {
           <li>Do not misrepresent your identity, skills, company, availability, credentials, or reviews.</li>
           <li>Do not spam, scrape, or harvest other users’ data or contact details.</li>
           <li>Do not interfere with the platform, security controls, payments, or other users’ access.</li>
+          <li>
+            Do not use an AI agent, MCP client, or script to bypass verification, rate limits, confirmation steps,
+            or another user’s privacy settings.
+          </li>
         </ul>
+
+        <h2 className={headingClass}>AI Agent and MCP Access</h2>
+        <p className={bodyClass}>
+          Workora may offer a remote MCP endpoint for AI assistants. Agents act only with the permissions you grant
+          through OAuth 2.1 in your own browser and under your own account. Scoped access, per-user authorization,
+          input validation, rate limits, and explicit confirmation for consequential actions apply to every agent
+          operation. Agents cannot move money, manage payouts, create accounts, bypass security checks, or access
+          another user’s private data. You are responsible for the assistants you authorize and for reviewing the
+          actions they take on your behalf; you may revoke any connection in your account settings.
+        </p>
 
         <h2 className={headingClass}>Third-Party Services</h2>
         <p className={bodyClass}>

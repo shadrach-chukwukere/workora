@@ -45,7 +45,6 @@ export const freelancerNav: NavSection[] = [
   { href: "/freelancer/portfolio", label: "Portfolio", icon: "Image02Icon" },
   { href: "/freelancer/reviews", label: "Reviews", icon: "StarIcon" },
   { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
-  { href: "/settings/integrations", label: "AI integrations", icon: "Settings01Icon" },
   { href: "/freelancer/settings", label: "Settings", icon: "Settings01Icon" },
   ],
  },
@@ -80,7 +79,6 @@ export const clientNav: NavSection[] = [
   items: [
   { href: "/client/reviews", label: "Reviews", icon: "StarIcon" },
   { href: "/connections", label: "Connections", icon: "UserMultiple02Icon" },
-  { href: "/settings/integrations", label: "AI integrations", icon: "Settings01Icon" },
   { href: "/client/settings", label: "Settings", icon: "Settings01Icon" },
   ],
  },
@@ -124,7 +122,6 @@ export const adminNav: NavSection[] = [
   items: [
   { href: "/admin/reports", label: "Reports", icon: "ChartLineIcon" },
   { href: "/admin/notifications", label: "Notifications", icon: "Notification01Icon" },
-  { href: "/settings/integrations", label: "AI integrations", icon: "Settings01Icon" },
   { href: "/admin/settings", label: "Settings", icon: "Settings01Icon" },
   ],
  },

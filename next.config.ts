@@ -99,15 +99,10 @@ const nextConfig: NextConfig = {
         { source: "/.well-known/oauth-authorization-server", destination: `${apiOrigin}/api/v1/oauth/metadata` },
         { source: "/.well-known/oauth-protected-resource", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
         { source: "/.well-known/oauth-protected-resource/api/mcp", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
-        { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },
-        // Existing marketing links keep working; canonical docs live at /ai.
-        { source: "/developers/mcp", destination: "/ai" },
-        // Remote MCP server and OAuth 2.1 authorization endpoints.
-        { source: "/api/mcp", destination: `${apiOrigin}/api/mcp` },
-        { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },
         { source: "/.well-known/oauth-protected-resource/mcp", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
-        { source: "/.well-known/oauth-protected-resource", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
-        { source: "/.well-known/oauth-authorization-server", destination: `${apiOrigin}/api/v1/oauth/metadata` },
+        { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },
+        // Legacy documentation links resolve internally; no user-facing connection UI exists.
+        { source: "/developers/mcp", destination: "/ai" },
       ],
     };
   },

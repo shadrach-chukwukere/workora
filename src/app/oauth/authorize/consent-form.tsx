@@ -49,11 +49,8 @@ export function ConsentForm({ params, clientName, scopes, redirectHost }: Props)
       </ul>
       <p className="text-sm text-neutral-600">
         Workora will send the authorization code to <strong className="font-medium text-neutral-900">{redirectHost}</strong>.
-        You can review and revoke this connection any time in{" "}
-        <a className="underline" href="/settings/integrations">
-          AI integrations
-        </a>
-        .
+        Only approve a client you started yourself. Access is limited to the permissions listed above, and every
+        consequential action still asks for confirmation.
       </p>
       {error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null}
       <div className="flex flex-wrap gap-3">

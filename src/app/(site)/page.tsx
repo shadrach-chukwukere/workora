@@ -14,7 +14,6 @@ import { LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons
 import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
 import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
 import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
-import { AiMcpBanner } from "@/components/layout/ai-mcp-banner";
 
 const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
 
@@ -147,8 +146,6 @@ export default async function Home() {
       />
       {/* Hero */}
       <Hero account={account} />
-
-      <AiMcpBanner />
 
       <TrustedByMarquee wordmarks={WORDMARKS} />
 

@@ -104,6 +104,28 @@ export default function PrivacyPage() {
           platform. We may send service messages about your account, projects, payments, or security.
         </p>
 
+        <h2 className={headingClass}>AI Assistants, MCP, and Authorized Agents</h2>
+        <p className={bodyClass}>
+          Workora offers a remote Model Context Protocol (MCP) endpoint for AI assistants. Connecting an assistant uses
+          OAuth 2.1 with PKCE in your browser: you sign in with your existing Workora account, review the exact
+          permissions requested, and approve or deny them. Each connection is issued to one assistant and one Workora
+          user; there is no shared agent account. Access tokens are short-lived, refresh tokens rotate, and all token
+          values are stored only as SHA-256 hashes. Every tool call is audited with the client, user, and time.
+        </p>
+        <p className={bodyClass}>
+          With your permission, an agent can read public marketplace content and your own profile, proposals,
+          applications, messages, contracts, notifications, and invitations, limited to the scopes you approved. Draft
+          and publish, submit proposals, invitations, and messages require a separate preview and explicit confirmation
+          for each action. Workora does not expose payments, withdrawals, payouts, or payment credentials to agents, and
+          no tool can create an account, bypass verification, or access another user&apos;s private data.
+        </p>
+        <p className={bodyClass}>
+          Information returned by a tool is sent to the assistant and the AI provider you chose to use; their own
+          privacy terms apply to what happens next. We do not send your Workora data to an AI provider just because you
+          have an account with us — data is shared only through tool calls you authorized. Job descriptions, profiles,
+          reviews, and messages are user-supplied content and may be treated as untrusted data by agents.
+        </p>
+
         <h2 className={headingClass}>Media, Storage, and Third-Party Services</h2>
         <p className={bodyClass}>
           Profile photos, banners, and project cover images are uploaded to Vercel Blob and served by public
@@ -127,15 +149,17 @@ export default function PrivacyPage() {
           We keep profile and account information while your account is active and for as long as needed to
           provide the service, resolve disputes, comply with legal obligations, and protect the marketplace.
           Public profile content remains visible until you edit or remove it or your account is closed.
-          Transaction, verification, and dispute records may be retained longer where required. We use HTTPS,
-          access controls, and private storage for sensitive documents, but no system can be guaranteed
-          completely secure.
+          Transaction, verification, and dispute records may be retained longer where required. OAuth client,
+          authorization-code, token, connection, and audit records are kept while a connection is active and for a
+          limited period afterwards to support security investigations. We use HTTPS, access controls, and private
+          storage for sensitive documents, but no system can be guaranteed completely secure.
         </p>
 
         <h2 className={headingClass}>Your Choices</h2>
         <p className={bodyClass}>
           You can update your headline, About, contact details, media, and company details in settings at any
-          time. You can add or remove connections, revoke passkeys, and sign out to clear your local session.
+          time. You can revoke an AI assistant connection at any time from your account settings; revoking immediately
+          invalidates its tokens. You can also revoke passkeys and sign out to clear your local session.
           To request access to, correction of, or deletion of your personal information, contact us using the
           details below. We may need to verify your identity before acting on a request.
         </p>

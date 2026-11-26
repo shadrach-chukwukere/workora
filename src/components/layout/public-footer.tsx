@@ -21,8 +21,8 @@ const columns: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Developers",
     links: [
-      { label: "MCP & AI assistants", href: "/developers/mcp" },
-      { label: "AI integrations", href: "/settings/integrations" },
+      { label: "AI agent guide", href: "/ai" },
+      { label: "API specification", href: "/openapi.json" },
     ],
   },
   {

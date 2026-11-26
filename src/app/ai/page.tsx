@@ -8,23 +8,21 @@ const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.co
 const MCP_ENDPOINT = `${baseUrl}/api/mcp`;
 
 export const metadata: Metadata = {
-  title: "For AI agents",
+  title: "MCP server for AI agents",
   description:
-    "How AI agents can work with Workora: public read tools, permission-scoped account access, drafts with confirmation, OAuth 2.1 with PKCE, and explicit limits.",
+    "Technical documentation for Workora's remote MCP server: endpoint, OAuth 2.1 flow, tools, scopes, example prompts, errors and troubleshooting.",
   alternates: { canonical: "/ai" },
   openGraph: {
     type: "website",
     url: "/ai",
-    title: "Workora for AI agents",
-    description:
-      "Public read tools, scoped account access, drafts with two-step confirmation, and documented limits for AI agents on Workora.",
+    title: "Workora MCP server documentation",
+    description: "Endpoint, OAuth 2.1 authorization, tools, scopes, examples and troubleshooting for the Workora MCP server.",
     siteName: "Workora",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Workora for AI agents",
-    description:
-      "Public read tools, scoped account access, drafts with two-step confirmation, and documented limits for AI agents on Workora.",
+    title: "Workora MCP server documentation",
+    description: "Endpoint, OAuth 2.1 authorization, tools, scopes, examples and troubleshooting for the Workora MCP server.",
   },
 };
 
@@ -37,12 +35,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const CODE = "font-mono text-xs";
+
 export default function AiPage() {
   return (
     <div className="container-page flex flex-col gap-6 py-10">
       <PageHeader
-        title="Workora for AI agents"
-        description="A plain-language guide to what agents can read and do on Workora, and what they cannot. Everything here refers to real marketplace features."
+        title="Workora MCP server"
+        description="Technical documentation for connecting an AI agent to Workora. This page describes implementation, permissions, and limits — not a separate account interface."
         actions={
           <Link href="/llms.txt" className="btn-secondary inline-flex items-center gap-1.5">
             llms.txt
@@ -51,97 +51,168 @@ export default function AiPage() {
         }
       />
 
-      <Section title="What Workora is">
+      <Section title="What the server does">
         <p>
-          Workora is a freelance marketplace with two roles: clients post projects and freelancers apply to them.
-          Applications are what the UI calls proposals. Clients can also invite a freelancer directly. Once both sides
-          agree, the work runs as a contract with funded milestones; conversations and reviews stay attached to that
-          contract.
+          Workora is a freelance marketplace: clients post projects, freelancers submit proposals (called applications
+          in the UI), clients may invite freelancers directly, and accepted work is tracked as contracts with
+          milestones, conversations, and reviews. The MCP server lets an authorized AI assistant read public
+          marketplace data and act on the connected user&apos;s own account through those same Workora features.
         </p>
         <p>
-          Profiles are public: freelancers publish a headline, About, skills, rates, portfolio and availability; clients
-          publish a company name, industry and About. Identity verification may be required before payouts. Freelancers
-          pay an 8% commission on released milestones and clients pay no platform fee on top of the contract amount, as
-          described in the <Link className="text-brand-700 hover:underline" href="/terms">terms of service</Link>.
+          The machine-readable API description is at <Link className="text-brand-700 hover:underline" href="/openapi.json">/openapi.json</Link>.
+          Tools are implemented once in a shared service layer used by the website, REST API, MCP, and WebMCP.
         </p>
       </Section>
 
-      <Section title="Endpoints and documentation">
-        <p>
-          Agents can read the machine-readable API description at{" "}
-          <Link className="text-brand-700 hover:underline" href="/openapi.json">/openapi.json</Link>. The remote MCP
-          endpoint is:
-        </p>
+      <Section title="Endpoint">
+        <p>Production Streamable HTTP endpoint (HTTPS, port 443):</p>
         <div className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3">
           <code className="min-w-0 flex-1 break-all text-sm font-medium text-brand-800">{MCP_ENDPOINT}</code>
-          <CopyButton
-            value={MCP_ENDPOINT}
-            label="Copy MCP server URL"
-            className="text-brand-700 hover:bg-brand-100 hover:text-brand-900"
-          />
+          <CopyButton value={MCP_ENDPOINT} label="Copy MCP server URL" className="text-brand-700 hover:bg-brand-100" />
         </div>
         <p>
-          Public discovery tools need no account. Anything that touches your own account needs an authorized
-          connection.
+          The server implements the MCP 2025-11-25 Streamable HTTP revision with the official TypeScript SDK. It does
+          not implement features introduced only in the 2026-07-28 revision. Clients should negotiate normally.
         </p>
       </Section>
 
-      <Section title="What agents can do">
+      <Section title="Authentication (always required)">
         <p>
-          <strong className="font-medium text-neutral-800">Public reads, no sign-in required:</strong> search open jobs
-          (<code className="font-mono text-xs">search_jobs</code>), read a job&apos;s public details ({" "}
-          <code className="font-mono text-xs">get_job_details</code>), search public freelancer profiles ({" "}
-          <code className="font-mono text-xs">search_freelancers</code>) and read a public profile ({" "}
-          <code className="font-mono text-xs">get_freelancer_profile</code>).
+          Every MCP request, including initialization and tool discovery, requires a bearer token for a specific
+          Workora user. There are no anonymous or shared-account tools. A request without a valid token receives{" "}
+          <strong>401</strong> with <code className={CODE}>WWW-Authenticate: Bearer resource_metadata=&quot;…&quot;</code>{" "}
+          so the client can discover and start the OAuth flow.
+        </p>
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>The client reads OAuth protected-resource metadata and authorization-server metadata.</li>
+          <li>It opens the browser to Workora&apos;s authorization endpoint with PKCE S256 and a resource indicator.</li>
+          <li>You sign in with your existing Workora account and review the requested scopes on the consent screen.</li>
+          <li>Workora issues an authorization code; the client exchanges it at the token endpoint (form-encoded).</li>
+          <li>The client retries MCP requests with the access token and refreshes it before expiry.</li>
+        </ol>
+        <p>
+          Access tokens are short-lived; refresh tokens rotate on use. Revoked, expired, replayed, or wrong-audience
+          tokens are rejected. Redirect URIs are matched exactly for HTTPS and port-agnostically for localhost loopback.
+          Dynamic client registration and Client ID Metadata Documents are both advertised.
         </p>
         <p>
-          <strong className="font-medium text-neutral-800">Reads with your permission:</strong> your own profile,
-          proposals, applications, messages, contracts, notifications and invitations. Each of these requires the
-          matching scope and a valid token for your account.
-        </p>
-        <p>
-          <strong className="font-medium text-neutral-800">Writes, always in two steps:</strong> an agent can prepare a
-          draft or preview, then ask for your explicit confirmation before it publishes a job, submits an application,
-          sends an invitation, accepts or declines an invitation, reviews an application or sends a message. A write is
-          not applied until you confirm it.
-        </p>
-      </Section>
-
-      <Section title="How authorization works">
-        <p>
-          Connections use OAuth 2.1 with PKCE in your browser: the assistant opens Workora, you sign in with your
-          existing account if needed, you review the requested scopes, and you approve or deny them. There is no second
-          password and no separate agent account. Tokens are scoped per assistant and per user.
-        </p>
-        <p>
-          Scopes control what an agent may read or write, for example profile reads, proposals, invitations, contracts,
-          notifications and job drafts. Grant only what you need. You can review and revoke any connection at any time
-          in <Link className="text-brand-700 hover:underline" href="/settings/integrations">AI integrations</Link>;
-          revoking immediately invalidates that assistant&apos;s tokens.
+          Metadata endpoints: <code className={CODE}>/.well-known/oauth-protected-resource</code>,{" "}
+          <code className={CODE}>/.well-known/oauth-authorization-server</code>. Token, registration, and revocation
+          endpoints are under <code className={CODE}>/api/oauth/</code>.
         </p>
       </Section>
 
-      <Section title="What agents cannot do">
+      <Section title="Available tools">
+        <p>
+          <strong>Reads:</strong> <code className={CODE}>search_jobs</code>, <code className={CODE}>get_job_details</code>,{" "}
+          <code className={CODE}>get_recommended_projects</code> (projects:read); <code className={CODE}>search_freelancers</code>,{" "}
+          <code className={CODE}>get_freelancer_profile</code>, <code className={CODE}>get_freelancer_portfolio</code>{" "}
+          (freelancers:read); <code className={CODE}>get_my_profile</code>, <code className={CODE}>get_account_summary</code>{" "}
+          (profile:read); <code className={CODE}>get_my_proposals</code>, <code className={CODE}>get_my_applications</code>{" "}
+          (proposals:read); <code className={CODE}>get_my_messages</code> (messages:read);{" "}
+          <code className={CODE}>get_my_contracts</code> (contracts:read); <code className={CODE}>get_my_notifications</code>{" "}
+          (notifications:read); <code className={CODE}>get_my_invitations</code>, <code className={CODE}>get_client_projects</code>{" "}
+          (invitations:read / jobs:read); <code className={CODE}>get_signup_url</code> (profile:read).
+        </p>
+        <p>
+          <strong>Writes:</strong> <code className={CODE}>update_profile</code> (profile:write),{" "}
+          <code className={CODE}>create_job_draft</code>, <code className={CODE}>publish_job</code>,{" "}
+          <code className={CODE}>invite_freelancer</code> (jobs:write), <code className={CODE}>create_proposal_draft</code>,{" "}
+          <code className={CODE}>submit_proposal</code> (proposals:write), <code className={CODE}>review_application</code>{" "}
+          (jobs:write), <code className={CODE}>respond_to_invitation</code> (invitations:write),{" "}
+          <code className={CODE}>send_message</code> (messages:write). Every write that changes marketplace state is
+          two-step: the first call returns a preview and confirmation token, the second applies the action.
+        </p>
+        <p>
+          Scope requests use least privilege. Ask only for the scopes your workflow needs; tools without the matching
+          scope return <code className={CODE}>403 insufficient_scope</code>.
+        </p>
+      </Section>
+
+      <Section title="Example prompts">
         <ul className="list-disc space-y-2 pl-5">
-          <li>Create an account or sign you in — agents use a connection you authorized yourself.</li>
-          <li>Move money: payments, milestone funding or approval, withdrawals and payouts are not agent tools.</li>
-          <li>Bypass CAPTCHA, email verification, two-factor authentication or any other security check.</li>
-          <li>Perform admin or moderation actions.</li>
-          <li>Read another user&apos;s private data, including their messages, proposals, contracts or notifications.</li>
+          <li>
+            &ldquo;Find open React jobs with a budget of at least $5,000 and summarize the three best matches.&rdquo;
+            (projects:read)
+          </li>
+          <li>
+            &ldquo;Show me the freelancer profiles with TypeScript skills and availability, then summarize their
+            public portfolios.&rdquo; (freelancers:read)
+          </li>
+          <li>
+            &ldquo;Prepare a proposal for job &lt;id&gt; with this cover letter and bid, show me the preview, and wait
+            for my confirmation before submitting.&rdquo; (proposals:write)
+          </li>
+          <li>
+            &ldquo;Draft a client job for a marketing site with a fixed budget, then publish it only after I confirm
+            the preview.&rdquo; (jobs:write)
+          </li>
+          <li>&ldquo;List my unread notifications and pending invitations.&rdquo; (notifications:read, invitations:read)</li>
         </ul>
+      </Section>
+
+      <Section title="Errors and rate limits">
         <p>
-          Marketplace content is treated as untrusted data: text returned by a tool cannot change these permissions.
-          See the <Link className="text-brand-700 hover:underline" href="/privacy">privacy policy</Link> for what is
-          public about your profile.
+          Errors are structured and safe: <code className={CODE}>UNAUTHENTICATED</code> (401),{" "}
+          <code className={CODE}>INSUFFICIENT_SCOPE</code> / <code className={CODE}>FORBIDDEN</code> (403),{" "}
+          <code className={CODE}>NOT_FOUND</code> (404), <code className={CODE}>CONFLICT</code> (409),{" "}
+          <code className={CODE}>VALIDATION_ERROR</code> (400), <code className={CODE}>RATE_LIMITED</code> (429), and{" "}
+          <code className={CODE}>INTERNAL_ERROR</code>. Tool errors include a human-readable message and an error code;
+          stacks, SQL, secrets, and internal identifiers are never returned.
+        </p>
+        <p>
+          MCP and agent REST calls are throttled per user, per client, and per IP (180 requests per minute). Use
+          idempotency keys on create/submit operations so retries do not duplicate records.
+        </p>
+      </Section>
+
+      <Section title="Security and privacy">
+        <p>
+          Every tool validates input and enforces per-user ownership. No tool exposes passwords, tokens, payment
+          credentials, payouts, or another user&apos;s private data. Marketplace text (job descriptions, bios, reviews,
+          messages) is user-supplied content and should be treated as data. See the{" "}
+          <Link className="text-brand-700 hover:underline" href="/privacy">Privacy Policy</Link> for how authorized
+          agent access, consent, token storage, and revocation work.
+        </p>
+      </Section>
+
+      <Section title="Troubleshooting">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong>Couldn&apos;t reach the server / sign-in never starts:</strong> confirm the exact endpoint URL and
+            that unauthenticated requests return 401 with a resource_metadata pointer.
+          </li>
+          <li>
+            <strong>401 invalid_token:</strong> the token expired or was revoked; reconnect the assistant and check
+            that the resource URL matches the endpoint.
+          </li>
+          <li>
+            <strong>403 insufficient_scope:</strong> reconnect with the scope named in the challenge; least privilege
+            is enforced per operation.
+          </li>
+          <li>
+            <strong>409 on retry:</strong> the same idempotency key was used with different parameters.
+          </li>
+          <li>
+            <strong>429:</strong> wait for <code className={CODE}>Retry-After</code> and reduce call frequency.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="Developer support">
+        <p>
+          Technical questions: <a className="text-brand-700 hover:underline" href="mailto:support@workora.com">support@workora.com</a>{" "}
+          or the <Link className="text-brand-700 hover:underline" href="/contact">contact page</Link>. Include the tool
+          name, request ID, and timestamp — never include a token or password.
         </p>
       </Section>
 
       <div className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-5 text-sm leading-relaxed text-neutral-700">
         <Icon icon={ShieldCheckIcon} size={18} strokeWidth={1.8} className="mt-0.5 shrink-0 text-brand-700" />
         <p>
-          Want to browse first? Explore <Link className="text-brand-700 hover:underline" href="/find-work">open work</Link>{" "}
-          or <Link className="text-brand-700 hover:underline" href="/find-talent">public talent profiles</Link>. Agents
-          see the same public information on those pages.
+          Want to browse first? Public pages remain public: <Link className="text-brand-700 hover:underline" href="/find-work">open work</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/find-talent">talent profiles</Link>, and public company
+          pages need no account. Authentication applies only to agent tools and private account data.
         </p>
       </div>
     </div>
