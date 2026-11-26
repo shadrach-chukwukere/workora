@@ -99,7 +99,7 @@ describe("agent REST surface", () => {
     const app = await buildApp({ logger: false });
     await app.ready();
     const publicResponse = await app.inject({ method: "GET", url: "/api/v1/agent/jobs?perPage=1" });
-    const privateResponse = await app.inject({ method: "GET", url: "/api/v1/agent/jobs/drafts" });
+    const privateResponse = await app.inject({ method: "GET", url: "/api/v1/agent/me" });
     await app.close();
     assert.equal(publicResponse.statusCode, 200);
     assert.equal(privateResponse.statusCode, 401);
@@ -110,12 +110,12 @@ describe("agent REST surface", () => {
     await app.ready();
     const wrongScope = await app.inject({
       method: "GET",
-      url: "/api/v1/agent/jobs/drafts",
+      url: "/api/v1/agent/proposals",
       headers: { authorization: `Bearer ${accessToken}` },
     });
     const invalid = await app.inject({
       method: "GET",
-      url: "/api/v1/agent/jobs/drafts",
+      url: "/api/v1/agent/me",
       headers: { authorization: "Bearer not-a-real-token" },
     });
     await app.close();
