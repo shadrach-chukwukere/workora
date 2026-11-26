@@ -27,4 +27,14 @@ export default fp(async function rawBodyPlugin(app: FastifyInstance) {
       done(error, undefined);
     }
   });
+
+  // OAuth 2.1 token/revocation requests are form-encoded per RFC 6749.
+  app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_req, body, done) => {
+    try {
+      const params = new URLSearchParams(String(body));
+      done(null, Object.fromEntries(params.entries()));
+    } catch {
+      done(new Error("Invalid form body"), undefined);
+    }
+  });
 });
