@@ -88,7 +88,7 @@ const listData = loose({
 const okList = S.resultSchema(listData);
 const okOne = (field: string) => S.resultSchema(loose({ [field]: z.unknown() }));
 const okNone = S.resultSchema(loose({ updated: z.boolean() }));
-const confirmationOutput = z.union([okOne("result"), S.confirmationSchema]);
+const confirmationOutput = S.resultSchema(z.unknown());
 
 async function withIdempotency(actor: Actor, op: AgentOperation, key: string | undefined, run: () => Promise<unknown>) {
   if (!key) return run();

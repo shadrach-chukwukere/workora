@@ -175,24 +175,18 @@ export const getSignupUrlInput = z.object({
 
 /** A predictable envelope used by every agent-facing HTTP endpoint and tool result. */
 export function resultSchema<T extends z.ZodType>(data: T) {
-  // MCP clients validate structuredContent against this schema. Accept the
-  // success envelope plus the error/confirmation envelope so tools can return
-  // structured errors without being rejected by the SDK client.
-  return z.union([
-    z.object({
-      success: z.literal(true),
-      message: z.string(),
-      data,
-    }),
-    z.looseObject({
-      success: z.literal(false),
-      message: z.string(),
-      error: z.unknown().optional(),
-      requiresConfirmation: z.boolean().optional(),
-      confirmationToken: z.string().optional(),
-      preview: z.unknown().optional(),
-    }),
-  ]);
+  // Must stay an object schema: MCP SDK v1 normalizes only object schemas for
+  // tool output validation. Optional fields let confirmation/error envelopes
+  // pass the same schema without loosening any permission check.
+  return z.looseObject({
+    success: z.boolean(),
+    message: z.string().optional(),
+    data: data.optional(),
+    requiresConfirmation: z.boolean().optional(),
+    confirmationToken: z.string().optional(),
+    preview: z.unknown().optional(),
+    error: z.unknown().optional(),
+  });
 }
 
 export const pageInfoSchema = z.object({

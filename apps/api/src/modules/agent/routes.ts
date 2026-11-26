@@ -55,6 +55,18 @@ function jsonSchema(schema: z.ZodType) {
   return z.toJSONSchema(schema, { target: "draft-2020-12" });
 }
 
+/** HTTP query strings are strings; convert them to the types declared in the shared schema. */
+function coerceQuery(raw: unknown, schema: z.ZodType): Record<string, unknown> {
+  const out = { ...((raw ?? {}) as Record<string, unknown>) };
+  const shape = jsonSchema(schema) as { properties?: Record<string, { type?: string | string[] }> };
+  for (const [key, value] of Object.entries(out)) {
+    const type = shape.properties?.[key]?.type;
+    if (typeof value === "string" && (type === "number" || type === "integer") && value.trim() !== "") out[key] = Number(value);
+    if (typeof value === "string" && type === "boolean") out[key] = value === "true" || value === "1";
+  }
+  return out;
+}
+
 /** OpenAPI 3.1 generated from the same Zod schemas used by MCP and the REST handlers. */
 export function buildOpenApi() {
   const paths: Record<string, unknown> = {};
@@ -154,8 +166,14 @@ function exampleFor(name: string): Record<string, unknown> {
     search_jobs: { query: "react", perPage: 5 },
     get_job_details: { projectId: "00000000-0000-4000-8000-000000000000" },
     search_freelancers: { skill: "typescript", perPage: 5 },
+    update_profile: { headline: "Backend engineer" },
     create_job_draft: { title: "Build a marketing site", summary: "Short summary", description: "Detailed brief", budgetType: "fixed", budgetMinMinor: 100000 },
-    submit_proposal: { projectId: "00000000-0000-4000-8000-000000000000", coverLetter: "I can help with this project because...", bidType: "fixed", bidAmountMinor: 150000, confirmationToken: "<token from create_proposal_draft>" },
+    publish_job: { projectId: "00000000-0000-4000-8000-000000000000", confirmationToken: "<token from first call>" },
+    invite_freelancer: { projectId: "00000000-0000-4000-8000-000000000000", freelancerId: "00000000-0000-4000-8000-000000000001", message: "Would you like to collaborate?" },
+    create_proposal_draft: { projectId: "00000000-0000-4000-8000-000000000000", coverLetter: "I can help with this project because I have built similar systems for five years and can start next week.", bidType: "fixed", bidAmountMinor: 150000 },
+    submit_proposal: { projectId: "00000000-0000-4000-8000-000000000000", coverLetter: "I can help with this project because I have built similar systems for five years and can start next week.", bidType: "fixed", bidAmountMinor: 150000, confirmationToken: "<token from create_proposal_draft>" },
+    review_application: { proposalId: "00000000-0000-4000-8000-000000000000", action: "shortlist" },
+    respond_to_invitation: { invitationId: "00000000-0000-4000-8000-000000000000", response: "accept" },
     send_message: { conversationId: "00000000-0000-4000-8000-000000000000", body: "Hello, are you available?", confirmationToken: "<token from preview>" },
   };
   return examples[name] ?? {};
@@ -186,7 +204,7 @@ export default async function agentRoutes(app: FastifyInstance) {
           const body = (request.body ?? {}) as Record<string, unknown>;
           const idempotencyKey = (request.headers["idempotency-key"] as string | undefined) ?? (body.idempotencyKey as string | undefined);
           const params = (request.params ?? {}) as Record<string, unknown>;
-          const raw: Record<string, unknown> = { ...(op.http?.method === "GET" ? (request.query ?? {}) : body), ...params };
+          const raw: Record<string, unknown> = { ...(op.http?.method === "GET" ? coerceQuery(request.query, op.inputSchema) : body), ...params };
           if (idempotencyKey) raw.idempotencyKey = idempotencyKey;
           const result = await executeOperation(op, requestActor, raw);
           const payload = result as { requiresConfirmation?: boolean };
