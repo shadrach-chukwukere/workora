@@ -16,6 +16,7 @@ import {
   Icon,
 } from "@/lib/icons";
 import { signInWithPasskey } from "@/lib/webauthn";
+import { markClientSessionActive } from "@/lib/client-session";
 import type { Role } from "@/lib/types";
 /**
  * Social sign-in via Better Auth. The request is same-origin (relative URL) so
@@ -51,6 +52,7 @@ async function startSocialSignIn(provider: "google" | "github", next?: string | 
       );
       return;
     }
+    markClientSessionActive();
     window.location.href = body.url;
   } catch {
     toast.error("Sign-in failed. Check your connection and try again.");
@@ -97,6 +99,7 @@ export default function LoginForm({
       };
     } | null;
     toast.success("Welcome back");
+    markClientSessionActive();
     const meUser = meBody?.data?.user;
     const actualRole = meUser?.account_type ?? role;
     const verified = meUser?.verified === true;

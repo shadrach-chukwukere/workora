@@ -46,6 +46,7 @@ import {
 import type { IconName } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/sign-out";
+import { markClientSessionActive } from "@/lib/client-session";
 
 type AccountRole = "freelancer" | "client" | "admin";
 
@@ -118,6 +119,10 @@ export function DashboardShell({ role, account, children }: DashboardShellProps)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    markClientSessionActive();
+  }, []);
 
   useEffect(() => {
     setDrawerOpen(false);

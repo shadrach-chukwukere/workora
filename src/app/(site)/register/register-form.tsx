@@ -19,6 +19,7 @@ import {
 } from "@/lib/icons";
 import { RoleChoiceCards } from "@/components/onboarding/role-choice";
 import { safeNextPath, workspacePathForRole } from "@/lib/workspace";
+import { markClientSessionActive } from "@/lib/client-session";
 import { cn } from "@/lib/utils";
 
 type Role = "freelancer" | "client";
@@ -103,6 +104,7 @@ export default function RegisterForm({ next }: { next?: string | null }) {
         return;
       }
 
+      markClientSessionActive();
       setStep(3);
     } catch {
       toast.error("Network error. Please try again.");

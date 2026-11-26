@@ -1,3 +1,5 @@
+import { clearClientAccountCache } from "@/lib/client-session";
+
 /**
  * Client-side sign-out.
  *
@@ -29,6 +31,8 @@ const AUTH_STORAGE_PREFIXES = [
 
 function clearBrowserAuthState() {
   if (typeof window === "undefined") return;
+
+  clearClientAccountCache();
 
   for (const storage of [window.localStorage, window.sessionStorage]) {
     try {

@@ -24,7 +24,12 @@ import {
   Pen01Icon,
 } from "@/lib/icons";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
-import { getClientAccount, clearClientAccountCache } from "@/lib/client-session";
+import {
+  getClientAccount,
+  markClientSessionActive,
+  invalidateClientAccount,
+  clearClientAccountCache,
+} from "@/lib/client-session";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/sign-out";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -53,7 +58,10 @@ export function PublicHeader({ account: initialAccount }: PublicHeaderProps = {}
   const [account, setAccount] = useState<SessionAccount | null>(initialAccount ?? null);
 
   useEffect(() => {
-    if (initialAccount) return;
+    if (initialAccount) {
+      markClientSessionActive();
+      return;
+    }
     let active = true;
     const load = () => {
       void getClientAccount().then((value) => {
@@ -62,7 +70,7 @@ export function PublicHeader({ account: initialAccount }: PublicHeaderProps = {}
     };
     const onRestore = (event: PageTransitionEvent) => {
       if (event.persisted) {
-        clearClientAccountCache();
+        invalidateClientAccount();
         load();
       }
     };
