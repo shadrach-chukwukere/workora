@@ -45,8 +45,10 @@ WebMCP is a W3C Community Group draft (24 Nov 2026) using `document.modelContext
 
 `AGENT_OPERATIONS` is authoritative. Names:
 
-- Public read: `search_jobs`, `get_job_details`, `search_freelancers`, `get_freelancer_profile`, `get_freelancer_portfolio`, `get_signup_url`.
-- Authenticated read: `get_recommended_projects`, `get_client_projects`, `get_my_profile`, `get_my_proposals`, `get_my_applications`, `get_my_messages`, `get_my_contracts`, `get_my_notifications`, `get_my_connections`, `get_my_invitations`, `get_account_summary`.
+- Marketplace read (authenticated, `projects:read` / `freelancers:read`): `search_jobs`, `get_job_details`, `search_freelancers`, `get_freelancer_profile`, `get_freelancer_portfolio`, `get_signup_url` (the signup-link tool requires `profile:read`).
+- Private read: `get_recommended_projects`, `get_client_projects`, `get_my_profile`, `get_my_proposals`, `get_my_applications`, `get_my_messages`, `get_my_contracts`, `get_my_notifications`, `get_my_connections`, `get_my_invitations`, `get_account_summary`.
+
+**Every tool requires a valid user-bound token, including read-only marketplace tools. There are no anonymous MCP tool calls and no shared credentials.** Protocol discovery is only possible after authentication; unauthenticated requests receive the OAuth 401 challenge.
 - Write (draft/prepare or two-step confirm): `update_profile`, `create_job_draft`, `publish_job`, `invite_freelancer`, `create_proposal_draft`, `submit_proposal`, `review_application`, `respond_to_invitation`, `send_message`.
 
 Scopes: `freelancers:read`, `jobs:read`, `jobs:write`, `projects:read`, `profile:read`, `profile:write`, `proposals:read`, `proposals:write`, `messages:read`, `messages:write`, `invitations:read`, `invitations:write`, `contracts:read`, `notifications:read`, `connections:read`.
@@ -91,5 +93,5 @@ Consequential operations return HTTP 202 / tool result `{success:false, requires
 | Browser client gets `403 invalid_origin` | `Origin` header host differs from the issuer host. Use the canonical web origin. |
 | `202 requiresConfirmation` repeated | Confirmation token must be passed unchanged with identical arguments within 10 minutes. |
 | `409 CONFLICT` on retry | Idempotency key was reused with different parameters. |
-| Tools missing for a user | Tool list is global, but protected calls fail scope/role checks; verify granted scopes in `/settings/integrations`. |
+| Tools missing for a user | Tool list is global, but protected calls fail scope/role checks; verify granted scopes on the `/oauth/authorize` consent screen or via the OAuth API. |
 | `/api/v1/mcp/connections` 404 | Use `/api/oauth/connections` (rewritten to the real OAuth module route). |

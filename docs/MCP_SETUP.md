@@ -49,7 +49,7 @@ Frontend/Vercel: `API_URL` must point at the backend origin; `NEXT_PUBLIC_API_UR
 
 ## 5. Tools and permissions
 
-The authoritative tool list lives in `apps/api/src/modules/agent/operations.ts` (`AGENT_OPERATIONS`) and is mirrored on the public page `/developers/mcp`.
+The authoritative tool list lives in `apps/api/src/modules/agent/operations.ts` (`AGENT_OPERATIONS`) and is described on the public developer page `/ai`.
 
 - Public, anonymous: job/freelancer search, public details/portfolio, sign-up URL.
 - Scoped: `profile:read/write`, `projects:read`, `jobs:read/write`, `proposals:read/write`, `invitations:read/write`, `contracts:read`, `notifications:read`, `connections:read`, `messages:read/write`.
@@ -82,7 +82,7 @@ Actual ChatGPT/Claude compatibility requires credentials and accounts and must b
 3. Confirm Vercel rewrites for `/api/mcp`, `/api/oauth/*` and the `/.well-known/*` paths resolve to the Render backend over HTTPS.
 4. Check `WWW-Authenticate` and metadata documents from a browser on the production domain.
 5. Register the custom connector in ChatGPT and Claude with your own accounts and complete the consent flow once per client.
-6. Confirm revocation from `/settings/integrations` immediately stops tool calls.
+6. Revoke the test client with `DELETE /api/oauth/connections/:id` and confirm its next tool call gets `401`.
 7. Keep `MCP_ENABLED=true`; set to `false` to disable the endpoint without touching other features.
 
 ## 9. Security notes

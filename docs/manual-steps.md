@@ -27,7 +27,7 @@ API (Render service settings):
 ## Platform configuration
 
 - [ ] Run `npm run migrate` in `apps/api` once against the production database (migrations `0019_mcp_oauth` and `0020_agent_idempotency` are required).
-- [ ] Verify the Next.js rewrites are present: `/api/mcp`, `/openapi.json`, `/.well-known/oauth-*`, `/api/oauth/*`, `/api/v1/*`, `/api/auth/*`, `/developers/mcp`.
+- [ ] Verify the Next.js rewrites are present: `/api/mcp`, `/openapi.json`, `/.well-known/oauth-*`, `/api/oauth/*`, `/api/v1/*`, `/api/auth/*`. The legacy `/developers/mcp` path resolves internally to `/ai`.
 - [ ] Confirm the host allows long-lived JSON POST responses for MCP (stateless JSON mode, no SSE required).
 - [ ] Ensure the WAF/load balancer does not strip `Authorization` or `WWW-Authenticate` headers.
 - [ ] Set up alerting on `429` rate limits and 5xx from `/api/mcp`.
@@ -36,7 +36,7 @@ API (Render service settings):
 
 - [ ] `GET /robots.txt`, `/sitemap.xml`, `/openapi.json`, `/llms.txt`, `/ai` return 200 from the public origin.
 - [ ] MCP Inspector connects to `https://<origin>/api/mcp`, lists tools, completes browser OAuth, and calls a public read and one confirmed write in staging.
-- [ ] Revoke the test agent at `/settings/integrations` and confirm its next tool call gets `401`.
+- [ ] Revoke the test client with `DELETE /api/oauth/connections/:id` and confirm its next tool call gets `401`.
 - [ ] Validate JobPosting / ProfilePage JSON-LD in Google Rich Results Test.
 - [ ] Test ChatGPT and Claude connections separately with real accounts; record results in the final report. If access is unavailable, mark them untested.
 
