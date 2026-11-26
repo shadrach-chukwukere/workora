@@ -38,7 +38,7 @@ Better Auth cookie sessions remain the only identity provider for humans. OAuth 
 
 ## Tests executed
 
-`cd apps/api && npm test` (serial execution, real PostgreSQL): **30/30 passed**. Coverage includes anonymous MCP rejection, authenticated reads, expired/revoked/invalid/wrong-scope tokens, cross-user isolation, role restrictions, OAuth consent/code exchange/form-encoded token endpoint/refresh rotation/revocation, PKCE rejection, loopback and hosted redirect matching, two-step confirmation, idempotency, rate limiting, annotations on all tools, OpenAPI/metadata and health checks.
+`cd apps/api && npm test` (serial execution, real PostgreSQL): **30/30 passed**. `npm run typecheck` passed for both the API and the web app, and `npm run build` passed for Next.js. Temporary Inspector test tokens/clients were deleted after verification. Coverage includes anonymous MCP rejection, authenticated reads, expired/revoked/invalid/wrong-scope tokens, cross-user isolation, role restrictions, OAuth consent/code exchange/form-encoded token endpoint/refresh rotation/revocation, PKCE rejection, loopback and hosted redirect matching, two-step confirmation, idempotency, rate limiting, annotations on all tools, OpenAPI/metadata and health checks.
 
 Other verification:
 - `npm run typecheck` (web and API) and `npm run build` (Next.js production) passed.
