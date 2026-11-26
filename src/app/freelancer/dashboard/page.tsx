@@ -4,7 +4,8 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EarningsAreaChart } from "@/components/ui/charts";
 import { Progress } from "@/components/ui/progress";
-import { PageHeader, StatCard } from "@/components/ui/page-blocks";
+import { StatCard } from "@/components/ui/page-blocks";
+import { ProfileHeader } from "@/components/ui/profile-header";
 import { Monogram } from "@/components/ui/logo";
 import { StatusTimeline } from "@/components/ui/status-timeline";
 import { SkeletonCard, SkeletonStatGrid } from "@/components/ui/skeleton-card";
@@ -26,14 +27,18 @@ import type { ProposalStatus } from "@/lib/types";
 import type { ConnectionList } from "@/lib/connections";
 import { ConnectionsCard } from "@/components/profile/connections-card";
 import { redirect } from "next/navigation";
-import { formatDateShort, formatMoney, formatPercent, formatRelative } from "@/lib/format";
+import { formatDateShort, formatMoney, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface MeResponse {
   user: {
     id: string;
     name: string;
+    image: string | null;
+    banner_url: string | null;
     headline: string | null;
+    location: string | null;
+    verified_identity: boolean | null;
     about: string | null;
     hourly_rate_minor: number | null;
     response_time_hours: number | null;
@@ -238,13 +243,25 @@ export default async function FreelancerDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title={`Welcome back, ${user.name.split(" ")[0]}`}
-        description="Here's where your work, money and pending decisions stand today."
+      <ProfileHeader
+        name={user.name}
+        headline={user.headline}
+        location={user.location}
+        avatarSrc={user.image}
+        bannerSrc={user.banner_url}
+        verified={user.verified_identity ?? false}
+        connectionsLabel={`${formatNumber(followersRes?.total ?? 0)} followers · ${formatNumber(followingRes?.total ?? 0)} following`}
+        isSelf
+        editHref="/freelancer/settings"
         actions={
-          <Button href="/freelancer/projects" size="md">
-            Find new projects
-          </Button>
+          <>
+            <Button href={`/freelancers/${user.id}`} size="md" variant="secondary">
+              View public profile
+            </Button>
+            <Button href="/freelancer/projects" size="md">
+              Find new projects
+            </Button>
+          </>
         }
       />
 

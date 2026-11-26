@@ -1,9 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ProfileHeader } from "@/components/ui/profile-header";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { ShareProfileButton } from "@/components/share-profile-button";
 import { ConnectButton } from "@/components/profile/connect-button";
@@ -13,18 +12,13 @@ import {
   ArrowUpRight02Icon,
   Clock01Icon,
   Icon,
-  Location01Icon,
   ShieldCheckIcon,
   StarIcon,
 } from "@/lib/icons";
 import { apiServerOr } from "@/lib/api-data";
+import { formatMoney, formatNumber } from "@/lib/format";
 import { ContactLinks } from "@/components/profile/contact-links";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { BannerScrim } from "@/components/ui/banner-scrim";
-import { FloatingAvatar } from "@/components/ui/floating-avatar";
 import { AvailabilityPulse } from "@/components/ui/availability-pulse";
-import { GradientHeadline } from "@/components/ui/gradient-headline";
-import { RevealStagger } from "@/components/ui/reveal-stagger";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
@@ -106,10 +100,6 @@ export default async function FreelancerPublicProfile({
         )
       : null;
   const hourly = profile.hourly_rate_minor != null ? profile.hourly_rate_minor / 100 : null;
-  const availabilityLabel =
-    profile.availability === "available" ? "Available now" : profile.availability === "limited" ? "Limited availability" : "Fully booked";
-  const availabilityDot =
-    profile.availability === "available" ? "bg-emerald-500" : profile.availability === "limited" ? "bg-amber-400" : "bg-neutral-300";
   const memberSince = new Date(user.created_at).getUTCFullYear();
   const levelLabel = profile.experience_level === "expert" ? "Expert" : profile.experience_level === "intermediate" ? "Intermediate" : "Entry";
 
@@ -121,102 +111,67 @@ export default async function FreelancerPublicProfile({
         Browse talent
       </Link>
 
-      {/* Profile banner — decorative only; the name and short note live in the hero below. */}
-      {user.banner_url ? (
-        <div className="relative mt-2 mb-6 h-48 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm sm:h-64">
-          <Image
-            src={user.banner_url}
-            alt={`Profile banner for ${user.name}`}
-            fill
-            sizes="100vw"
-            className="size-full object-cover object-center"
-            loading="eager"
-            fetchPriority="high"
-            unoptimized
-          />
-          <BannerScrim hasAurora={true} />
-        </div>
-      ) : null}
-      <AuroraBackground size="150%" />
-
-      {/* Hero */}
-      <div className="rounded-xl border border-neutral-200 bg-white grid gap-8 p-6 sm:p-8 lg:grid-cols-3 mt-4">
-        <div className="lg:col-span-2">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <FloatingAvatar
-              src={user.image ?? undefined}
-              alt={user.name}
-              className="shrink-0"
-            />
-            <div className="min-w-0">
-              <GradientHeadline>
-                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
-                {user.name}
-                {profile.verified_identity ? (
-                  <span title="Identity verified" className="inline-flex text-brand-600">
-                    <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
-                    <span className="sr-only">Identity verified</span>
-                  </span>
-                ) : null}
-              </h1>
-              </GradientHeadline>
-              <p className="mt-1.5 text-[15px] leading-snug text-neutral-600">{profile.headline}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-neutral-500">
-                {profile.location ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Icon icon={Location01Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
-                    {profile.location}
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon icon={Clock01Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
-                  Member since {memberSince}
-                </span>
-                {profile.experience_level ? <span>{levelLabel} level</span> : null}
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-neutral-100 pt-5">
-            <RatingStars value={profile.rating_avg ?? 0} count={profile.rating_count} size="md" />
-            <span className="text-sm text-neutral-600">
-              <span className="font-semibold text-neutral-900">{profile.completed_count}</span> projects completed
+      {/* LinkedIn-style identity header: cover banner + overlapping circular photo. */}
+      <ProfileHeader
+        className="mt-4"
+        name={user.name}
+        headline={profile.headline}
+        location={profile.location}
+        avatarSrc={user.image}
+        bannerSrc={user.banner_url}
+        verified={profile.verified_identity}
+        connectionsLabel={`${formatNumber(connections.followersCount)} followers · ${formatNumber(connections.followingCount)} following`}
+        isSelf={isSelf}
+        editHref="/freelancer/settings"
+        meta={
+          <>
+            <span className="inline-flex items-center gap-1.5">
+              <Icon icon={Clock01Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
+              Member since {memberSince}
             </span>
-            <span className="text-sm text-neutral-600">
-              <span className="font-semibold text-neutral-900">~{profile.response_time_hours}h</span> response
-            </span>
-            <AvailabilityPulse status={profile.availability} />
-          </div>
-        </div>
-
-        {/* Sidebar: rate + actions */}
-        <div className="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50/70 p-5">
-          <p className="text-3xl font-semibold tracking-tight text-neutral-900 tabular-nums">{hourly != null ? `$${Math.round(hourly)}` : "Open"}</p>
-          <p className="text-sm text-neutral-500">{hourly != null ? "hourly rate" : "rate on request"}</p>
-          <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-neutral-800">
-            <span aria-hidden className={`size-2 rounded-full ${availabilityDot}`} />
-            {availabilityLabel}
-          </p>
-          <div className="mt-5 flex flex-col gap-2">
-            <ConnectButton
-              targetId={user.id}
-              targetName={user.name}
-              viewerId={account?.userId ?? null}
-              isSelf={isSelf}
-              initialConnected={connectionStatus?.connected ?? false}
-              initialFollowersCount={connectionStatus?.followersCount ?? connections.followersCount}
-              initialFollowingCount={connectionStatus?.followingCount ?? connections.followingCount}
-              fullWidth
-            />
-            <Button href="/client/post-project" size="md">
-              Invite to project
+            {profile.experience_level ? <span>{levelLabel} level</span> : null}
+          </>
+        }
+        actions={
+          isSelf ? (
+            <Button href="/freelancer/settings" size="md" variant="secondary">
+              Edit profile
             </Button>
-            <ShareProfileButton />
-          </div>
-          <p className="mt-4 text-[11px] leading-relaxed text-neutral-500">
-            Milestones are funded before work starts and released only when you approve. Workora never touches funds without your go-ahead.
-          </p>
+          ) : (
+            <>
+              <ConnectButton
+                targetId={user.id}
+                targetName={user.name}
+                viewerId={account?.userId ?? null}
+                isSelf={isSelf}
+                initialConnected={connectionStatus?.connected ?? false}
+                initialFollowersCount={connectionStatus?.followersCount ?? connections.followersCount}
+                initialFollowingCount={connectionStatus?.followingCount ?? connections.followingCount}
+              />
+              <Button href="/client/post-project" size="md">
+                Invite to project
+              </Button>
+              <ShareProfileButton />
+            </>
+          )
+        }
+      >
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-neutral-600">
+          <RatingStars value={profile.rating_avg ?? 0} count={profile.rating_count} size="md" />
+          <span>
+            <span className="font-semibold text-neutral-900">{profile.completed_count}</span> projects completed
+          </span>
+          <span>
+            <span className="font-semibold text-neutral-900">~{profile.response_time_hours}h</span> response
+          </span>
+          {hourly != null ? (
+            <span>
+              <span className="font-semibold text-neutral-900">{formatMoney(hourly)}/hr</span>
+            </span>
+          ) : null}
+          <AvailabilityPulse status={profile.availability} />
         </div>
-      </div>
+      </ProfileHeader>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Main column */}

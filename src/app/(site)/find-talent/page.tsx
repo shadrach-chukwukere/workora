@@ -6,7 +6,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { FilterSelect } from "@/components/ui/select";
 import { FreelancerCard } from "@/components/freelancer/freelancer-card";
 import { Icon, Search01Icon, SearchRemoveIcon, StarIcon } from "@/lib/icons";
-import type { PublicFreelancer } from "@/lib/api-data";
+import { apiServerOr, type PublicFreelancer } from "@/lib/api-data";
 import { serverApiBase } from "@/lib/api-base";
 import { getSessionAccount } from "@/components/layout/session-guard";
 
@@ -66,6 +66,13 @@ export default async function FindTalentPage({
 }) {
   const sp = await searchParams;
   const viewer = await getSessionAccount();
+  // Shortlisting is a client-only feature; signed-out visitors never see the
+  // save button, and we preload the saved ids so existing entries look saved.
+  const canShortlist = viewer?.role === "client";
+  const shortlistIds = canShortlist
+    ? await apiServerOr<{ freelancerIds?: string[] }>("/api/v1/users/me/shortlist/ids", {}, false)
+    : {};
+  const savedTalentIds = new Set(shortlistIds.freelancerIds ?? []);
   const q = param(sp.q).trim().toLowerCase();
   const category = param(sp.category, "all");
   const availability = param(sp.availability, "all");
@@ -190,9 +197,14 @@ export default async function FindTalentPage({
           />
         </div>
       ) : (
-        <ul className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {pageItems.map((freelancer) => (
-            <FreelancerCard key={freelancer.id} freelancer={freelancer} />
+            <FreelancerCard
+              key={freelancer.id}
+              freelancer={freelancer}
+              canShortlist={canShortlist}
+              initiallyShortlisted={savedTalentIds.has(freelancer.id)}
+            />
           ))}
         </ul>
       )}
