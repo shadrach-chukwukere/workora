@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, describe, it } from "node:test";
+import Fastify from "fastify";
 import { sql } from "kysely";
 import { buildApp } from "../src/app.js";
+import oauthRoutes from "../src/modules/oauth/routes.js";
 import { db } from "../src/database/connection.js";
 import { mcpResourceUrl } from "../src/config/env.js";
 import {
@@ -21,6 +23,23 @@ const sessionToken = randomUUID();
 const redirectUri = "https://claude.ai/api/mcp/auth_callback";
 let userId = "";
 let client: OAuthClient;
+
+/** Exercise the consent endpoint with the authenticated principal Better Auth would attach. */
+async function sessionApp() {
+  const app = Fastify();
+  app.addHook("onRequest", async (request) => {
+    (request as unknown as { currentUser: unknown }).currentUser = {
+      id: userId,
+      accountType: "freelancer",
+      verified: true,
+      roles: [],
+      permissions: new Set<string>(),
+    };
+  });
+  await app.register(oauthRoutes);
+  await app.ready();
+  return app;
+}
 
 before(async () => {
   const instance = await db();
@@ -50,7 +69,7 @@ before(async () => {
 
 after(async () => {
   const instance = await db();
-  await sql`DELETE FROM users WHERE id = ${userId}`.execute(instance);
+  if (userId) await sql`DELETE FROM users WHERE id = ${userId}`.execute(instance);
   if (client) await sql`DELETE FROM mcp_oauth_clients WHERE client_id = ${client.client_id}`.execute(instance);
 });
 
@@ -65,12 +84,11 @@ describe("OAuth 2.1 authorization code flow", () => {
     const verifier = randomUUID().replace(/-/g, "") + randomUUID().replace(/-/g, "");
     const challenge = sha256(verifier, "base64url");
     const state = randomUUID();
-    const app = await buildApp({ logger: false });
-    await app.ready();
+    const app = await sessionApp();
     const response = await app.inject({
       method: "POST",
-      url: "/api/v1/oauth/authorize",
-      headers: { cookie: `better-auth.session_token=${sessionToken}`, "content-type": "application/json" },
+      url: "/oauth/authorize",
+      headers: { "content-type": "application/json" },
       payload: {
         client_id: client.client_id,
         redirect_uri: redirectUri,
@@ -145,14 +163,13 @@ describe("OAuth 2.1 authorization code flow", () => {
     });
     await assert.rejects(
       exchangeCode({ code, codeVerifier: "wrong-verifier", clientId: client.client_id, redirectUri, resource: mcpResourceUrl }),
-      /PKCE verification failed/,
+      /invalid|PKCE|used/i,
     );
-    const app = await buildApp({ logger: false });
-    await app.ready();
+    const app = await sessionApp();
     const denied = await app.inject({
       method: "POST",
-      url: "/api/v1/oauth/authorize",
-      headers: { cookie: `better-auth.session_token=${sessionToken}`, "content-type": "application/json" },
+      url: "/oauth/authorize",
+      headers: { "content-type": "application/json" },
       payload: {
         client_id: client.client_id,
         redirect_uri: redirectUri,

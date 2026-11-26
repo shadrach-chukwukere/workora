@@ -163,7 +163,8 @@ describe("agent REST surface", () => {
       headers: auth(fullToken),
     });
     await app.close();
-    assert.equal(response.statusCode, 404);
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.json<{ error: { code: string } }>().error.code, "FORBIDDEN");
   });
 
   it("rejects a role-restricted operation for a freelancer token", async () => {

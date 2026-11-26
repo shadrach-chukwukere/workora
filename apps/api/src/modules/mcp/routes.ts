@@ -70,6 +70,13 @@ export default async function mcpRoutes(app: FastifyInstance) {
         return;
       }
 
+      // Throttle by IP before authentication so anonymous floods are also bounded.
+      if (rateLimited(`preauth:${request.ip}`)) {
+        reply.header("Retry-After", "60");
+        reply.code(429).send({ error: "rate_limit_exceeded", error_description: "Too many MCP requests" });
+        return;
+      }
+
       // Every MCP request — including initialization and tool discovery — must
       // carry a valid, user-bound bearer token. The 401 challenge is what
       // starts the OAuth flow in Claude and other spec-compliant clients.

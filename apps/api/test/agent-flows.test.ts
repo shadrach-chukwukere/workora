@@ -109,7 +109,7 @@ describe("rate limiting", () => {
     };
     let lastStatus = 200;
     for (let i = 0; i < 185; i += 1) {
-      const response = await app.inject({ method: "POST", url: "/mcp", headers, payload });
+      const response = await app.inject({ method: "POST", url: "/mcp", headers, payload, remoteAddress: ip });
       lastStatus = response.statusCode;
     }
     await app.close();
