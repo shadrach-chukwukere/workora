@@ -174,6 +174,17 @@ The API base URL in local development is `http://localhost:3010`; the web app pr
 
 The API contract documents authentication, users, freelancer discovery, projects, proposals, contracts, milestones, conversations, notifications, reviews, payments, subscriptions, verification, disputes, admin operations, and reports. Refer to [`docs/api-contract.md`](docs/api-contract.md) for routes, authorization notes, parameters, and payloads.
 
+### AI agents and MCP
+
+Workora exposes one MCP endpoint at `/api/mcp` and one shared operation layer used by the website, REST, MCP and WebMCP. See:
+
+- [`docs/ai-agent-plan.md`](docs/ai-agent-plan.md) — audit and implementation plan
+- [`docs/ai-agents.md`](docs/ai-agents.md) — architecture, tools, scopes, auth, deployment, testing, troubleshooting
+- [`docs/agent-capabilities.md`](docs/agent-capabilities.md) — supported and explicitly unsupported operations
+- [`docs/manual-steps.md`](docs/manual-steps.md) — DNS, env vars, platform configuration and directory submissions
+
+The generated OpenAPI 3.1 document is served at `/openapi.json`; the public explainer is at `/ai`.
+
 ## Environment configuration
 
 - **Web app:** copy `.env.example` to `.env.local`; set `API_URL` if the API is not running on the default local address.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Icon, ArrowRight02Icon, ShieldCheckIcon } from "@/lib/icons";
 import { LogoMark } from "@/components/ui/logo";
+import { CopyButton } from "@/components/ui/copy-button";
 
 export const metadata: Metadata = {
   title: "Connect Workora to Your AI Assistant",
@@ -96,9 +97,14 @@ export default function McpDocumentationPage() {
 
       <Section title="Endpoint">
         <p>Use this URL when a client asks for a remote MCP server URL:</p>
-        <code className="block break-all rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800">
-          {MCP_ENDPOINT}
-        </code>
+        <div className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3">
+          <code className="min-w-0 flex-1 break-all text-sm font-medium text-brand-800">{MCP_ENDPOINT}</code>
+          <CopyButton
+            value={MCP_ENDPOINT}
+            label="Copy MCP server URL"
+            className="text-brand-700 hover:bg-brand-100 hover:text-brand-900"
+          />
+        </div>
         <p>
           Transport: Streamable HTTP. Discovery: OAuth 2.0 Authorization Server Metadata and OAuth 2.0 Protected
           Resource Metadata at the standard <code className="font-mono text-xs">/.well-known/</code> paths on this domain.

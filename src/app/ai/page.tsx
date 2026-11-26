@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-blocks";
 import { Icon, ArrowRight02Icon, ShieldCheckIcon } from "@/lib/icons";
+import { CopyButton } from "@/components/ui/copy-button";
 
 const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
 const MCP_ENDPOINT = `${baseUrl}/api/mcp`;
@@ -71,9 +72,14 @@ export default function AiPage() {
           <Link className="text-brand-700 hover:underline" href="/openapi.json">/openapi.json</Link>. The remote MCP
           endpoint is:
         </p>
-        <code className="block break-all rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800">
-          {MCP_ENDPOINT}
-        </code>
+        <div className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3">
+          <code className="min-w-0 flex-1 break-all text-sm font-medium text-brand-800">{MCP_ENDPOINT}</code>
+          <CopyButton
+            value={MCP_ENDPOINT}
+            label="Copy MCP server URL"
+            className="text-brand-700 hover:bg-brand-100 hover:text-brand-900"
+          />
+        </div>
         <p>
           Public discovery tools need no account. Anything that touches your own account needs an authorized
           connection.
