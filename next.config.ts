@@ -91,8 +91,6 @@ const nextConfig: NextConfig = {
         // are relative (same-origin cookies); Next.js rewrites them to Render.
         { source: "/api/v1/:path*", destination: `${apiOrigin}/api/v1/:path*` },
         { source: "/api/auth/:path*", destination: `${apiOrigin}/api/auth/:path*` },
-        // One MCP HTTP endpoint, implemented once in the API using the official SDK.
-        { source: "/api/mcp", destination: `${apiOrigin}/mcp` },
         // Public OpenAPI document generated from the shared operation schemas.
         { source: "/openapi.json", destination: `${apiOrigin}/api/v1/openapi.json` },
         // OAuth 2.1 / RFC 9728 discovery and protocol endpoints (web origin = issuer).

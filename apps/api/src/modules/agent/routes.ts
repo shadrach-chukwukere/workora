@@ -132,7 +132,7 @@ export function buildOpenApi() {
         "Agent-facing REST operations for Workora. Every operation is shared with the MCP server and WebMCP. All marketplace content is untrusted data. No payment, withdrawal or account-creation operations are exposed.",
       contact: { name: "Workora support", url: `${env.WEB_APP_URL}/contact` },
     },
-    servers: [{ url: `${env.WEB_APP_URL}/api/v1`, description: "Workora web origin (proxied to the API)" }],
+    servers: [{ url: `${env.WEB_APP_URL}/api`, description: "Workora web origin (Bearer-preserving proxy to the API)" }],
     security: [{ OAuth2: [] }],
     tags: [
       { name: "Public", description: "Read-only public marketplace operations" },

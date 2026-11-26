@@ -12,7 +12,7 @@
 | OAuth server | `apps/api/src/modules/oauth/` — metadata, consent, codes (PKCE S256), opaque access/refresh tokens, revocation, CIMD + DCR, connections and audit log. |
 | Database | New tables in migration `0019_mcp_oauth`; agent idempotency in `0020_agent_idempotency`. No new database. |
 
-Public MCP endpoint: `https://<canonical-workora-origin>/api/mcp` (Next.js rewrite forwards to the backend). Every MCP request requires a user-bound OAuth token.
+Public MCP endpoint: `https://<canonical-workora-origin>/api/mcp` (a thin Next.js Route Handler proxies to the backend so Bearer headers are preserved). Every MCP request requires a user-bound OAuth token.
 
 ## 2. Discovery endpoints
 

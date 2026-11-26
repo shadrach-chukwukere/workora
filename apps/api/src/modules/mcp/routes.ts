@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { env, mcpIssuer, mcpResourceUrl } from "../../config/env.js";
 import { MCP_SCOPES } from "../oauth/scopes.js";
-import { audit, verifyAccessToken, type TokenContext } from "../oauth/service.js";
+import { MINIMUM_MCP_SCOPES, audit, verifyAccessToken, type TokenContext } from "../oauth/service.js";
 import { AGENT_OPERATIONS } from "../agent/operations.js";
 import { buildMcpServer } from "./server.js";
 
@@ -26,7 +26,7 @@ function unauthorized(reply: FastifyReply): void {
   reply.header("Cache-Control", "no-store");
   reply.header(
     "WWW-Authenticate",
-    `Bearer resource_metadata="${mcpIssuer}/.well-known/oauth-protected-resource/api/mcp", scope="${MCP_SCOPES.join(" ")}", error="invalid_token"`,
+    `Bearer resource_metadata="${mcpIssuer}/.well-known/oauth-protected-resource/api/mcp", scope="${MINIMUM_MCP_SCOPES.join(" ")}", error="invalid_token"`,
   );
   reply.code(401).send({ error: "invalid_token", error_description: "Connect your Workora account to use this tool" });
 }

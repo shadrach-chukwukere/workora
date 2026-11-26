@@ -39,7 +39,7 @@ WebMCP is a W3C Community Group draft (24 Nov 2026) using `document.modelContext
 | `GET /oauth/authorize` (web page) | Consent screen; requires a logged-in browser |
 | `GET /api/v1/oauth/connections`, `DELETE /api/v1/oauth/connections/:id` | User's connected agents, settings page |
 | `GET /openapi.json` | Generated OpenAPI 3.1 document |
-| `GET /api/v1/agent/*` | Same operations over REST (see OpenAPI) |
+| `GET/POST /api/agent/*` | Bearer-preserving proxy to the same REST operations (see OpenAPI) |
 
 ## Tools and scopes
 
@@ -72,7 +72,7 @@ Consequential operations return HTTP 202 / tool result `{success:false, requires
 
 1. Set `WEB_APP_URL` to the public HTTPS origin on the API; set `MCP_ISSUER_URL` to the same origin and `MCP_RESOURCE_URL` to `https://<origin>/api/mcp`.
 2. Run migrations (`npm run migrate` in `apps/api`).
-3. Keep the Next.js rewrites in `next.config.ts`: `/api/mcp`, `/openapi.json`, `/.well-known/*`, `/api/oauth/*`, `/api/v1/*`, `/api/auth/*`.
+3. Keep the Next.js Route Handlers (`/api/mcp`, `/api/agent/*`) and rewrites (`/openapi.json`, `/.well-known/*`, `/api/oauth/*`, `/api/v1/*`, `/api/auth/*`). The Route Handlers forward Authorization; config rewrites can drop Bearer headers.
 4. Allow the web origin in `CORS_ORIGINS` and keep HTTPS termination at the platform (MCP rejects `http` forwarded protocol in production).
 5. Configure assistant connections in ChatGPT/Claude with the MCP URL `https://<origin>/api/mcp` and complete OAuth in the browser. Never paste a Workora password or session cookie into an assistant.
 
