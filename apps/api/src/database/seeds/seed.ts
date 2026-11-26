@@ -180,24 +180,6 @@ export async function seed(db: Kysely<DB>): Promise<void> {
     VALUES (${naomi.id}, 'Loopwork', '51-200', 'Software', 'Work operations for modern teams', 4.7, 21, 21)
     ON CONFLICT (user_id) DO NOTHING`.execute(db);
 
-  /* --------------------------------- demo logins ---------------------------------- */
-  // Local development only. The password is `workora-demo` for the three seeded users.
-  // These intentionally mirror the Better Auth credential flow so the demo
-  // works out of the box on a clean DB. Never run this on a real deployment.
-  const demoPasswordHash = await hash("workora-demo");
-  const demoAccounts = [
-    { userId: "00000000-0000-4000-8000-0000000000a1", email: "rhea@workora.example" },
-    { userId: "00000000-0000-4000-8000-0000000000a2", email: "amara@workora.example" },
-    { userId: "00000000-0000-4000-8000-0000000000a3", email: "naomi@workora.example" },
-  ];
-  for (const account of demoAccounts) {
-    await sql`
-      INSERT INTO accounts (user_id, account_id, provider_id, password, created_at, updated_at)
-      VALUES (${account.userId}, ${account.userId}, 'credential', ${demoPasswordHash}, now(), now())
-      ON CONFLICT DO NOTHING
-    `.execute(db);
-  }
-
   /* ------------------------------- one live project -------------------------- */
   const projectId = "00000000-0000-4000-8000-0000000000p1".replace("p", "e");
   await sql`INSERT INTO projects (id, client_id, title, summary, description, category_id, status, budget_type, budget_min_minor, budget_max_minor, experience_level, proposals_count, published_at, deadline)
@@ -233,3 +215,4 @@ function whenRequired(metaUrl: string, argv: string | undefined, fn: () => Promi
     });
   }
 }
+

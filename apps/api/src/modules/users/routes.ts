@@ -282,12 +282,11 @@ export default async function usersRoutes(app: FastifyInstance) {
     reply.send(ok({ id: deleted.id }, "Portfolio item removed"));
   });
 
-  /** GET /api/v1/users/:id — public profile (safe fields only). */
+  /** GET /api/v1/users/:id — public profile (safe fields only). Contact details are never exposed publicly. */
   app.get("/users/:id", async (request, reply) => {
     const instance = await db();
     const rows = await sql`
       SELECT u.id, u.name, u.image, u.banner_url, u.account_type, u.verified, u.created_at,
-             ${CONTACT_COLUMNS_SQL},
              fp.headline, fp.about AS freelancer_about, fp.location, fp.hourly_rate_minor, fp.availability,
              fp.verified_identity, fp.rating_avg, fp.rating_count, fp.completed_count,
              cp.company_name, cp.company_size, cp.industry, cp.about AS client_about, cp.projects_count
