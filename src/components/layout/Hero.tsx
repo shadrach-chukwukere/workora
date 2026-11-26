@@ -3,16 +3,8 @@ import { Icon } from "@/lib/icons";
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "../ui/button";
 import SocialProofBadge from "./SocialHighlight";
-import { workspacePathForRole } from "@/lib/workspace";
-import type { SessionAccount } from "@/components/layout/session-guard";
 
-interface HeroProps {
-  account?: SessionAccount | null;
-}
-
-export default function Hero({ account = null }: HeroProps) {
-  const workspace = account ? workspacePathForRole(account.role) : "/register";
-
+export default function Hero() {
   return (
     <section className="container-page py-16 lg:py-24 lg:h-[500px] relative">
       <div className="flex justify-center">
@@ -32,8 +24,8 @@ export default function Hero({ account = null }: HeroProps) {
             place for the whole arc from brief to payment.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-3 justify-center">
-            <Button href={workspace} size="lg">
-              {account ? "Open your dashboard" : "Start hiring"}
+            <Button href="/register" size="lg">
+              Start hiring
             </Button>
             <Button href="/find-work" variant="secondary" size="lg">
               Find work

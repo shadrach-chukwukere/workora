@@ -15,6 +15,7 @@ import {
   type IconName,
 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { PORTRAITS } from "@/lib/portraits";
 
 interface CategoryItem {
   title: string;
@@ -56,15 +57,6 @@ const ITEMS: CategoryItem[] = [
   { title: "Customer Support Specialists", count: "8,640+ available", slug: "virtual-assistance", tab: "admin" },
   { title: "Content Writers", count: "14,780+ available", slug: "writing-translation", tab: "writing" },
   { title: "Copywriters", count: "6,920+ available", slug: "writing-translation", tab: "writing" },
-];
-
-const PORTRAITS = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=96&h=96&q=80",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=96&h=96&q=80",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&h=96&q=80",
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=96&h=96&q=80",
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=96&h=96&q=80",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=96&h=96&q=80",
 ];
 
 /** Upwork-style category browser: scrollable icon tabs + a grid of role cards. */
@@ -149,6 +141,8 @@ export function CategoryExplorer() {
                         alt=""
                         width={28}
                         height={28}
+                        sizes="28px"
+                        quality={75}
                         className={cn("size-7 rounded-full object-cover ring-2 ring-white", offset > 0 && "hidden sm:block")}
                       />
                     ))}

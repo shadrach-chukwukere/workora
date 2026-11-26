@@ -94,3 +94,23 @@ export async function apiServerOr<T>(path: string, fallback: T, publicCall = tru
     return fallback;
   }
 }
+
+/**
+ * Public, cacheable read for marketing pages. The response is shared across
+ * visitors and revalidated in the background, so the homepage can be prerendered
+ * instead of waiting on (and being marked no-store by) every request.
+ */
+export async function apiServerCached<T>(path: string, fallback: T, revalidateSeconds = 60): Promise<T> {
+  try {
+    const res = await fetch(serverApiBase + path, {
+      headers: { accept: "application/json" },
+      next: { revalidate: revalidateSeconds },
+    });
+    if (!res.ok) return fallback;
+    const envelope = (await res.json()) as { success?: boolean; data?: T; message?: string };
+    if (!envelope.success || envelope.data === undefined) return fallback;
+    return envelope.data;
+  } catch {
+    return fallback;
+  }
+}

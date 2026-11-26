@@ -42,10 +42,11 @@ const nextConfig: NextConfig = {
             key: "Link",
             value: `<https://images.unsplash.com>; rel=dns-prefetch`,
           },
-          // GTM loads after hydration; warm the connection so it stays off the critical path.
+          // Stop third parties from adding unload listeners, which would make the
+          // page ineligible for the back/forward cache.
           {
-            key: "Link",
-            value: `<https://www.googletagmanager.com>; rel=preconnect`,
+            key: "Permissions-Policy",
+            value: "unload=()",
           },
           // Isolate the top-level window from cross-origin documents while still
           // allowing popups opened by sign-in and payment providers.

@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Monogram } from "@/components/ui/logo";
 import { ArrowRight02Icon, Icon, ShieldCheckIcon, StarIcon } from "@/lib/icons";
-import { apiServerOr } from "@/lib/api-data";
-import { getSessionAccount } from "@/components/layout/session-guard";
-import { workspacePathForRole } from "@/lib/workspace";
+import { apiServerCached } from "@/lib/api-data";
 import { formatMoney, formatRelative } from "@/lib/format";
 import Hero from "@/components/layout/Hero";
 import { LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons";
@@ -16,6 +14,9 @@ import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
 import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
 
 const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
+
+/** Public marketplace data is fine to serve slightly stale; it keeps / out of no-store. */
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Talent meets opportunity",
@@ -81,24 +82,17 @@ function budgetLabel(project: ProjectSummary): string {
 }
 
 export default async function Home() {
-  const account = await getSessionAccount();
-  const freelancersPath = account
-    ? `/api/v1/freelancers?excludeUserId=${encodeURIComponent(account.userId)}`
-    : "/api/v1/freelancers";
   const [{ projects }, { freelancers }] =
     await Promise.all([
-      apiServerOr<{ projects: ProjectSummary[] }>(
+      apiServerCached<{ projects: ProjectSummary[] }>(
         "/api/v1/projects?status=open",
         { projects: [] },
-        true,
       ),
-      apiServerOr<{ freelancers: FreelancerSummary[] }>(
-        freelancersPath,
+      apiServerCached<{ freelancers: FreelancerSummary[] }>(
+        "/api/v1/freelancers",
         { freelancers: [] },
-        true,
       ),
     ]);
-  const workspace = workspacePathForRole(account?.role);
   const openList = projects;
   const roles = openList.slice(0, 3);
   const talent = freelancers.slice(0, 3);
@@ -145,7 +139,7 @@ export default async function Home() {
         }}
       />
       {/* Hero */}
-      <Hero account={account} />
+      <Hero />
 
       <TrustedByMarquee wordmarks={WORDMARKS} />
 
@@ -379,11 +373,11 @@ export default async function Home() {
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Button
-              href={account ? workspace : "/register"}
+              href="/register"
               size="md"
               className="border-0 bg-white text-neutral-900 hover:bg-neutral-100"
             >
-              {account ? "Go to your dashboard" : "Create your account"}
+              Create your account
             </Button>
             <Button
               href="/pricing"

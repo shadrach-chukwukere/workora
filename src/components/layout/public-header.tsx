@@ -24,13 +24,14 @@ import {
   Pen01Icon,
 } from "@/lib/icons";
 import { workspacePathForRole, type SessionAccount } from "@/lib/workspace";
+import { getClientAccount, clearClientAccountCache } from "@/lib/client-session";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/sign-out";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 interface PublicHeaderProps {
-  /** Signed-in account resolved server-side; null when signed out. */
+  /** Optional server-resolved account; public pages resolve it on the client instead. */
   account?: SessionAccount | null;
 }
 
@@ -44,11 +45,34 @@ const findWorkItems: NavDropdownItem[] = [
   { label: "Saved projects", href: "/freelancer/saved", description: "Keep the briefs you want to revisit", icon: <Icon icon={Settings01Icon} size={16} strokeWidth={1.8} /> },
 ];
 
-export function PublicHeader({ account = null }: PublicHeaderProps) {
+export function PublicHeader({ account: initialAccount }: PublicHeaderProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [account, setAccount] = useState<SessionAccount | null>(initialAccount ?? null);
+
+  useEffect(() => {
+    if (initialAccount) return;
+    let active = true;
+    const load = () => {
+      void getClientAccount().then((value) => {
+        if (active) setAccount(value);
+      });
+    };
+    const onRestore = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        clearClientAccountCache();
+        load();
+      }
+    };
+    load();
+    window.addEventListener("pageshow", onRestore);
+    return () => {
+      active = false;
+      window.removeEventListener("pageshow", onRestore);
+    };
+  }, [initialAccount]);
 
   useEffect(() => {
     if (menuOpen) {
@@ -74,6 +98,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
     setSigningOut(true);
     setMenuOpen(false);
     toast.success("Signed out");
+    clearClientAccountCache();
     await signOut("/login");
   };
 

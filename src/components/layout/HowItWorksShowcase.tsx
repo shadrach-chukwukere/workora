@@ -29,13 +29,13 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
         caption: "Get proposals and hire",
         helper: "Screen, interview, or book a consult with an expert before hiring.",
         image:
-          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=750&h=563&q=70",
         alt: "Developer reviewing a project on a phone at a desk",
       },
       {
         caption: "Pay when work is done",
         image:
-          "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=750&h=563&q=70",
         alt: "Team collaborating around a laptop",
       },
     ],
@@ -54,13 +54,13 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
         caption: "Find work that fits you",
         helper: "Browse briefs with public budgets and apply in a couple of clicks.",
         image:
-          "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=750&h=563&q=70",
         alt: "Code on a laptop screen",
       },
       {
         caption: "Get paid milestone by milestone",
         image:
-          "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80",
+          "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=750&h=563&q=70",
         alt: "Freelancer working on a laptop at home",
       },
     ],
@@ -120,9 +120,10 @@ export function HowItWorksShowcase() {
                   <Image
                     src={step.image}
                     alt={step.alt ?? ""}
-                    width={900}
-                    height={675}
+                    width={750}
+                    height={563}
                     sizes="(max-width: 768px) 100vw, 33vw"
+                    quality={70}
                     className="size-full object-cover"
                   />
                 </div>

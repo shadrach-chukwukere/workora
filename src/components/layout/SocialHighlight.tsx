@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { PORTRAITS } from "@/lib/portraits";
 
 export interface AvatarItem {
   id: string;
@@ -14,23 +15,11 @@ interface SocialProofBadgeProps {
   className?: string;
 }
 
-const DEFAULT_AVATARS: AvatarItem[] = [
-  {
-    id: "1",
-    src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-    alt: "Verified user 1",
-  },
-  {
-    id: "2",
-    src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
-    alt: "Verified user 2",
-  },
-  {
-    id: "3",
-    src: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
-    alt: "Verified user 3",
-  },
-];
+const DEFAULT_AVATARS: AvatarItem[] = PORTRAITS.slice(0, 3).map((src, index) => ({
+  id: String(index + 1),
+  src,
+  alt: `Verified user ${index + 1}`,
+}));
 
 export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
   avatars = DEFAULT_AVATARS,
@@ -48,6 +37,8 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
             alt={avatar.alt}
             width={32}
             height={32}
+            sizes="32px"
+            quality={75}
             className="h-8 w-8 rounded-full object-cover ring-2 ring-white dark:ring-neutral-950"
             style={{ zIndex: avatars.length - index }}
           />

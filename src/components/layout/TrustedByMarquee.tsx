@@ -1,10 +1,4 @@
-"use client";
-
-import { useState } from "react";
-
 export default function TrustedByMarquee({ wordmarks }: { wordmarks: string[] }) {
-  const [paused, setPaused] = useState(false);
-
   return (
     <section className="mb-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-7 px-6 py-10 sm:px-10 lg:py-12">
@@ -12,7 +6,7 @@ export default function TrustedByMarquee({ wordmarks }: { wordmarks: string[] })
           Trusted by ambitious teams worldwide
         </p>
 
-        <div className={`trusted-marquee${paused ? " is-paused" : ""}`} aria-label="Trusted by teams and companies">
+        <div className="trusted-marquee" aria-label="Trusted by teams and companies">
           <div className="trusted-marquee__viewport">
             <div className="trusted-marquee__track">
               {[false, true].map((isDuplicate) => (
