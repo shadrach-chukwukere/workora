@@ -343,7 +343,7 @@ async function apiRequest<T>(
 /** Step 1 of the application flow: 202 preview with a confirmation token. */
 async function prepareProposal(body: Obj, signal: AbortSignal): Promise<RequestResult<{ confirmationToken: string }>> {
   try {
-    const response = await fetch("/api/v1/agent/proposals", {
+    const response = await fetch("/api/v1/agent/applications/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

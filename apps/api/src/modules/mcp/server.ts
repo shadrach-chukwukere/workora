@@ -8,9 +8,7 @@ import { AGENT_OPERATIONS, type Actor } from "../agent/operations.js";
 function reply(data: Record<string, unknown>, isError = false) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-    // Error payloads intentionally omit structuredContent: clients validate it
-    // against the tool's success output schema and would reject a mismatch.
-    ...(isError ? {} : { structuredContent: data }),
+    structuredContent: data,
     isError,
   };
 }
