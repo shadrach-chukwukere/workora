@@ -3,38 +3,16 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Monogram } from "@/components/ui/logo";
-import {
-  ArrowRight02Icon,
-  ChartLineIcon,
-  CheckmarkCircle02Icon,
-  GridViewIcon,
-  HandshakeIcon,
-  Icon,
-  MarketingIcon,
-  PaletteIcon,
-  SchoolIcon,
-  ShieldCheckIcon,
-  SourceCodeIcon,
-  StarIcon,
-  TerminalIcon,
-  TextIcon,
-  Video01Icon,
-  SmartPhone01Icon,
-  Briefcase02Icon,
-  Building01Icon,
-  UserMultiple02Icon,
-  type IconName,
-} from "@/lib/icons";
+import { ArrowRight02Icon, Icon, ShieldCheckIcon, StarIcon } from "@/lib/icons";
 import { apiServerOr } from "@/lib/api-data";
 import { getSessionAccount } from "@/components/layout/session-guard";
 import { workspacePathForRole } from "@/lib/workspace";
 import { formatMoney, formatRelative } from "@/lib/format";
 import Hero from "@/components/layout/Hero";
-import { BriefcaseBusinessIcon, ArrowUpRightIcon, UserRoundIcon, BookmarkIcon, CodeIcon, SendIcon, LaptopIcon, CheckCircle, LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import HowItWorks from "@/components/layout/HowItWorks";
+import { LockKeyIcon, ScaleIcon, Wallet02Icon } from "@hugeicons/core-free-icons";
 import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
-import { CATEGORY_BASE } from "@/lib/constants";
+import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
+import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
 
 const WORDMARKS = [
   "Loopwork",
@@ -67,13 +45,6 @@ interface FreelancerSummary {
   completed_count: number;
 }
 
-interface CategorySummary {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-}
-
 function budgetLabel(project: ProjectSummary): string {
   const min =
     project.budgetMinMinor != null ? project.budgetMinMinor / 100 : null;
@@ -90,7 +61,7 @@ export default async function Home() {
   const freelancersPath = account
     ? `/api/v1/freelancers?excludeUserId=${encodeURIComponent(account.userId)}`
     : "/api/v1/freelancers";
-  const [{ projects }, { freelancers }, { categories }] =
+  const [{ projects }, { freelancers }] =
     await Promise.all([
       apiServerOr<{ projects: ProjectSummary[] }>(
         "/api/v1/projects?status=open",
@@ -102,17 +73,11 @@ export default async function Home() {
         { freelancers: [] },
         true,
       ),
-      apiServerOr<{ categories: CategorySummary[] }>(
-        "/api/v1/categories",
-        { categories: [] },
-        true,
-      ),
     ]);
   const workspace = workspacePathForRole(account?.role);
   const openList = projects;
   const roles = openList.slice(0, 3);
   const talent = freelancers.slice(0, 3);
-  const shownCategories = categories.slice(0, 6);
 
   return (
     <>
@@ -124,52 +89,10 @@ export default async function Home() {
 
       <TrustedByMarquee wordmarks={WORDMARKS} />
 
-      {/* Categories - asymmetric: one featured + grid */}
-      <section id="categories" className="container-page py-16">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <h2 className="max-w-xl text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl text-wrap-balance">
-              {shownCategories.length > 0
-                ? `${shownCategories.length} crafts you can hire from.`
-                : "Categories"}
-            </h2>
-            <p className="mt-2 max-w-lg text-neutral-600">
-              Every discipline we support, with the specialists to staff it.
-            </p>
-          </div>
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800"
-          >
-            All categories
-            <Icon icon={ArrowRight02Icon} size={14} strokeWidth={1.8} />
-          </Link>
-        </div>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {shownCategories.map((category) => (
-            <li key={category.id}>
-              <Link
-                href={`/find-talent?category=${encodeURIComponent(category.slug)}`}
-                className="flex h-full flex-col rounded-xl border border-neutral-200 bg-white p-5 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
-              >
-                <span className="inline-flex size-10 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700 transition-colors group-hover:bg-brand-100 group-hover:text-brand-700">
-                  <Icon
-                    icon={categoryIcon(category.slug) as IconName}
-                    size={19}
-                    strokeWidth={1.8}
-                  />
-                </span>
-                <span className="mt-3 block text-sm font-semibold text-neutral-900">
-                  {category.name}
-                </span>
-                <span className="mt-1 block line-clamp-2 text-xs text-neutral-500">
-                  {category.description}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* Categories — tabbed marketplace explorer */}
+      <div id="categories">
+        <CategoryExplorer />
+      </div>
 
       {/* Featured talent - cleaner cards */}
       <section className="border-t border-neutral-100 bg-neutral-50/60">
@@ -323,6 +246,7 @@ export default async function Home() {
       </section>
 
       {/* How Workora works */}
+      <HowItWorksShowcase />
 
       {/* Trust & Security */}
       <section className="container-page pb-20">
@@ -418,19 +342,4 @@ export default async function Home() {
       </section>
     </>
   );
-}
-
-function categoryIcon(slug: string): IconName {
-  const map: Record<string, IconName> = {
-    "web-development": SourceCodeIcon,
-    "mobile-development": SmartPhone01Icon,
-    "ui-ux-design": PaletteIcon,
-    "brand-graphic-design": PaletteIcon,
-    "writing-translation": TextIcon,
-    "digital-marketing": MarketingIcon,
-    "data-ai": ChartLineIcon,
-    "video-audio": Video01Icon,
-    "virtual-assistance": Briefcase02Icon,
-  };
-  return map[slug] ?? GridViewIcon;
 }
