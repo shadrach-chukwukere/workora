@@ -91,6 +91,17 @@ const nextConfig: NextConfig = {
         // are relative (same-origin cookies); Next.js rewrites them to Render.
         { source: "/api/v1/:path*", destination: `${apiOrigin}/api/v1/:path*` },
         { source: "/api/auth/:path*", destination: `${apiOrigin}/api/auth/:path*` },
+        // One MCP HTTP endpoint, implemented once in the API using the official SDK.
+        { source: "/api/mcp", destination: `${apiOrigin}/mcp` },
+        // Public OpenAPI document generated from the shared operation schemas.
+        { source: "/openapi.json", destination: `${apiOrigin}/api/v1/openapi.json` },
+        // OAuth 2.1 / RFC 9728 discovery and protocol endpoints (web origin = issuer).
+        { source: "/.well-known/oauth-authorization-server", destination: `${apiOrigin}/api/v1/oauth/metadata` },
+        { source: "/.well-known/oauth-protected-resource", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
+        { source: "/.well-known/oauth-protected-resource/api/mcp", destination: `${apiOrigin}/api/v1/oauth/protected-resource` },
+        { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },
+        // Existing marketing links keep working; canonical docs live at /ai.
+        { source: "/developers/mcp", destination: "/ai" },
         // Remote MCP server and OAuth 2.1 authorization endpoints.
         { source: "/api/mcp", destination: `${apiOrigin}/api/mcp` },
         { source: "/api/oauth/:path*", destination: `${apiOrigin}/api/v1/oauth/:path*` },

@@ -1,10 +1,26 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 
-export const metadata = {
-  title: "Privacy Policy · Workora",
-  description: "Workora Privacy Policy — how we collect, use, and protect your information.",
+const description = "Workora Privacy Policy — how we collect, use, and protect your information.";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description,
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    type: "website",
+    url: "/privacy",
+    title: "Privacy Policy · Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy · Workora",
+    description,
+  },
 };
 
 const headingClass = "text-xl font-semibold text-neutral-900 mb-3 mt-8";

@@ -1,7 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-blocks";
 import { Icon, ArrowRight02Icon, HelpCircleIcon, SchoolIcon, ShieldCheckIcon, Wallet02Icon, Message01Icon, StarIcon, Briefcase02Icon } from "@/lib/icons";
+
+const description =
+  "Workora help center: answers about accounts, profiles, projects, proposals, milestone payments, disputes and fees.";
+
+export const metadata: Metadata = {
+  title: "Help center",
+  description,
+  alternates: { canonical: "/help" },
+  openGraph: {
+    type: "website",
+    url: "/help",
+    title: "Help center · Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Help center · Workora",
+    description,
+  },
+};
 
 interface HelpCategory {
   id: string;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Icon, ShieldCheckIcon, TrashIcon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
+import { AGENT_SCOPE_LABELS } from "@/lib/agent-scopes";
 
 interface Connection {
   id: string;
@@ -20,20 +21,7 @@ interface ConnectionsResponse {
   connections: Connection[];
 }
 
-const SCOPE_LABELS: Record<string, string> = {
-  "freelancers:read": "Search freelancers and view public profiles",
-  "projects:read": "Search projects and view public details",
-  "profile:read": "Read your own profile",
-  "proposals:read": "Read your proposals",
-  "proposals:write": "Create and submit proposals",
-  "jobs:read": "Read your projects",
-  "jobs:write": "Create and publish projects",
-  "invitations:read": "Read invitations",
-  "invitations:write": "Respond to invitations",
-  "contracts:read": "Read your contracts",
-  "notifications:read": "Read your notifications",
-  "connections:read": "Read your connections",
-};
+const SCOPE_LABELS = AGENT_SCOPE_LABELS;
 
 function AssistantMark({ kind }: { kind: "chatgpt" | "claude" | "mcp" }) {
   const letters = kind === "chatgpt" ? "AI" : kind === "claude" ? "✳" : "MCP";
@@ -75,7 +63,7 @@ export function IntegrationsClient() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/mcp/connections", { credentials: "include", cache: "no-store" });
+      const res = await fetch("/api/oauth/connections", { credentials: "include", cache: "no-store" });
       const body = (await res.json().catch(() => null)) as
         | { success?: boolean; data?: ConnectionsResponse; message?: string }
         | null;
@@ -97,7 +85,7 @@ export function IntegrationsClient() {
     if (busyId) return;
     setBusyId(id);
     try {
-      const res = await fetch(`/api/v1/mcp/connections/${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/oauth/connections/${encodeURIComponent(id)}`, {
         method: "DELETE",
         credentials: "include",
       });

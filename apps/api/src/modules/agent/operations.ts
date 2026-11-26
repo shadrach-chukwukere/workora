@@ -127,7 +127,7 @@ function needsConfirmation(actor: Actor, op: AgentOperation, params: Record<stri
   delete clean.idempotencyKey;
   if (verifyConfirmation(token, op.name, userId, clean)) return null;
   return confirmationRequired(op.name, userId, clean, {
-    ...preview,
+    ...(typeof preview === "object" && preview !== null ? preview : {}),
     resource: mcpResourceUrl,
     expiresInSeconds: 600,
   });
@@ -229,6 +229,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     outputSchema: okOne("jobs"),
     scope: "projects:read",
     role: "freelancer",
+    http: { method: "GET", path: "/agent/jobs/recommended" },
     annotations: { title: "Recommended jobs", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     handler: async (actor, input) => ok({ jobs: await data.recommendedProjects(requireUser(actor), input.limit ?? 10) }),
   },
@@ -240,6 +241,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     outputSchema: okOne("projects"),
     scope: "jobs:read",
     role: "client",
+    http: { method: "GET", path: "/agent/projects" },
     annotations: { title: "My client projects", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const instance = await db();
@@ -267,6 +269,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyProfileInput,
     outputSchema: okOne("profile"),
     scope: "profile:read",
+    http: { method: "GET", path: "/agent/me" },
     annotations: { title: "My profile", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor) => {
       const userId = requireUser(actor);
@@ -300,6 +303,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     outputSchema: okOne("proposals"),
     scope: "proposals:read",
     role: "freelancer",
+    http: { method: "GET", path: "/agent/proposals" },
     annotations: { title: "My proposals", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const user = await requireRole(actor, "freelancer");
@@ -314,6 +318,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     outputSchema: okOne("applications"),
     scope: "proposals:read",
     role: "freelancer",
+    http: { method: "GET", path: "/agent/applications" },
     annotations: { title: "My applications", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const user = await requireRole(actor, "freelancer");
@@ -327,6 +332,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyMessagesInput,
     outputSchema: okOne("messages"),
     scope: "messages:read",
+    http: { method: "GET", path: "/agent/messages/:conversationId" },
     annotations: { title: "My messages", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const userId = requireUser(actor);
@@ -341,6 +347,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyContractsInput,
     outputSchema: okOne("contracts"),
     scope: "contracts:read",
+    http: { method: "GET", path: "/agent/contracts" },
     annotations: { title: "My contracts", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const user = await data.loadAuthedUser(requireUser(actor));
@@ -354,6 +361,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyNotificationsInput,
     outputSchema: okOne("notifications"),
     scope: "notifications:read",
+    http: { method: "GET", path: "/agent/notifications" },
     annotations: { title: "My notifications", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) =>
       ok({
@@ -371,6 +379,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyConnectionsInput,
     outputSchema: okOne("connections"),
     scope: "connections:read",
+    http: { method: "GET", path: "/agent/connections" },
     annotations: { title: "My connections", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const user = await data.loadAuthedUser(requireUser(actor));
@@ -385,6 +394,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     outputSchema: okOne("invitations"),
     scope: "invitations:read",
     role: "freelancer",
+    http: { method: "GET", path: "/agent/invitations" },
     annotations: { title: "My invitations", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) =>
       ok({ invitations: await invitationService.listMyInvitations(requireUser(actor), { status: input.status, limit: input.limit ?? 20 }) }),
@@ -396,6 +406,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.getMyAccountSummaryInput,
     outputSchema: okOne("summary"),
     scope: "profile:read",
+    http: { method: "GET", path: "/agent/me/summary" },
     annotations: { title: "Account summary", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor) => {
       const userId = requireUser(actor);
@@ -427,6 +438,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     inputSchema: S.updateProfileInput,
     outputSchema: okNone,
     scope: "profile:write",
+    http: { method: "POST", path: "/agent/me" },
     annotations: { title: "Update my profile", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const userId = requireUser(actor);
@@ -556,6 +568,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     scope: "proposals:write",
     role: "freelancer",
     confirmation: true,
+    http: { method: "POST", path: "/agent/applications/drafts" },
     annotations: { title: "Prepare proposal", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     handler: async (actor, input) => {
       const userId = requireUser(actor);
@@ -641,6 +654,7 @@ export const AGENT_OPERATIONS: AgentOperation[] = [
     scope: "invitations:write",
     role: "freelancer",
     confirmation: true,
+    http: { method: "POST", path: "/agent/invitations/:invitationId/respond" },
     annotations: { title: "Respond to invitation", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     handler: async (actor, input) => {
       const userId = requireUser(actor);

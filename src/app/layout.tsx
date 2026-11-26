@@ -5,7 +5,8 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { QueryProvider } from "@/components/layout/query-provider";
-import { InstallApp } from "@/components/pwa/install-app";
+import { SwRegistrar } from "@/components/pwa/sw-registrar";
+import { WebMcpTools } from "@/components/agent/webmcp-tools";
 
 export const metadata: Metadata = {
   title: {
@@ -50,7 +51,8 @@ export default function RootLayout({
           <ThemeProvider>{children}</ThemeProvider>
         </QueryProvider>
         <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font-geist-sans)" } }} />
-        <InstallApp />
+        <SwRegistrar />
+        <WebMcpTools />
       </body>
     </html>
   );

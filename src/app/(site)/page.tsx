@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,29 @@ import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
 import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
 import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
 import { AiMcpBanner } from "@/components/layout/ai-mcp-banner";
+
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+
+export const metadata: Metadata = {
+  title: "Talent meets opportunity",
+  description:
+    "Browse open projects with public budgets or find vetted freelancers on Workora. Remote work, funded milestones and transparent fees.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "Workora - Talent meets opportunity",
+    description:
+      "Browse open projects with public budgets or find vetted freelancers on Workora. Remote work, funded milestones and transparent fees.",
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Workora - Talent meets opportunity",
+    description:
+      "Browse open projects with public budgets or find vetted freelancers on Workora. Remote work, funded milestones and transparent fees.",
+  },
+};
 
 const WORDMARKS = [
   "Loopwork",
@@ -80,8 +104,47 @@ export default async function Home() {
   const roles = openList.slice(0, 3);
   const talent = freelancers.slice(0, 3);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${baseUrl}/#organization`,
+        name: "Workora",
+        url: baseUrl,
+        logo: {
+          "@type": "ImageObject",
+          url: `${baseUrl}/icon-192.png`,
+          width: 192,
+          height: 192,
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${baseUrl}/#website`,
+        url: baseUrl,
+        name: "Workora",
+        publisher: { "@id": `${baseUrl}/#organization` },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: `${baseUrl}/find-work?q={search_term_string}`,
+          },
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* Skip link */}
       <a href="#main-content" className="skip-link" />
 

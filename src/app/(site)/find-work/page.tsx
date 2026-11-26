@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BUDGET_RANGES, EXPERIENCE_LEVELS, SORT_OPTIONS } from "@/lib/constants";
 import { formatMoney, formatNumber, formatRelative, labelize } from "@/lib/format";
@@ -11,6 +12,27 @@ import { ArrowUpRight02Icon, Briefcase02Icon, Icon, Search01Icon, SearchRemoveIc
 import { serverApiBase } from "@/lib/api-base";
 
 const PAGE_SIZE = 9;
+
+const description =
+  "Browse open Workora projects with public budgets, clear timelines and visible proposal counts. Search by skill, category and experience level.";
+
+export const metadata: Metadata = {
+  title: "Find work",
+  description,
+  alternates: { canonical: "/find-work" },
+  openGraph: {
+    type: "website",
+    url: "/find-work",
+    title: "Find work on Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Find work on Workora",
+    description,
+  },
+};
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.projects)[number]>(SORT_OPTIONS.projects.map((s) => [s.value, s]));
 const EXPERIENCE = new Map<string, (typeof EXPERIENCE_LEVELS)[number]>(EXPERIENCE_LEVELS.map((s) => [s.value, s]));

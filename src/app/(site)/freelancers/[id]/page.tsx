@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ import { AvailabilityPulse } from "@/components/ui/availability-pulse";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
+
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
 
 interface PublicProfile {
   user: { id: string; name: string; image: string | null; banner_url: string | null; created_at: string };
@@ -71,16 +74,54 @@ interface ReviewItem {
   reviewer_name?: string | null;
 }
 
+/** The same best-effort public read is used by the page and its metadata. */
+async function getFreelancer(id: string): Promise<PublicProfile | null> {
+  if (!/^[0-9a-fA-F-]{36}$/.test(id)) return null;
+  return apiServerOr<PublicProfile | null>(
+    `/api/v1/freelancers/${encodeURIComponent(id)}`,
+    null,
+    true,
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const data = await getFreelancer(id);
+  if (!data) return { title: "Freelancer not found" };
+  const description =
+    data.profile.headline?.trim() ||
+    data.profile.about?.trim().slice(0, 160) ||
+    `Public freelancer profile for ${data.user.name} on Workora.`;
+  return {
+    title: `${data.user.name} · Freelancer`,
+    description,
+    alternates: { canonical: `/freelancers/${encodeURIComponent(id)}` },
+    openGraph: {
+      type: "profile",
+      url: `/freelancers/${encodeURIComponent(id)}`,
+      title: `${data.user.name} on Workora`,
+      description,
+      siteName: "Workora",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${data.user.name} on Workora`,
+      description,
+    },
+  };
+}
+
 export default async function FreelancerPublicProfile({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const uuidOk = /^[0-9a-fA-F-]{36}$/.test(id);
-  const data = uuidOk
-    ? await apiServerOr<PublicProfile | null>(`/api/v1/freelancers/${encodeURIComponent(id)}`, null, true)
-    : null;
+  const data = await getFreelancer(id);
   if (!data) notFound();
 
   const reviewsEnvelope = await apiServerOr<{ reviews: ReviewItem[]; averageRating?: number | null; total?: number }>(
@@ -113,8 +154,37 @@ export default async function FreelancerPublicProfile({
   const hasCertifications = certifications.length > 0;
   const hasReviews = reviews.length > 0;
 
+  const profileUrl = `${baseUrl}/freelancers/${encodeURIComponent(id)}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": `${profileUrl}#person`,
+        name: user.name,
+        url: profileUrl,
+        ...(user.image ? { image: user.image } : {}),
+        ...(hasAbout ? { description: profile.about?.trim() } : {}),
+        ...(profile.headline?.trim() ? { jobTitle: profile.headline.trim() } : {}),
+        ...(hasSkills ? { knowsAbout: skills.map((skill) => skill.name) } : {}),
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": `${profileUrl}#profile`,
+        url: profileUrl,
+        mainEntity: { "@id": `${profileUrl}#person` },
+      },
+    ],
+  };
+
   return (
     <div className="container-page max-w-full py-8 sm:py-12 lg:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <a href="#main-content" className="skip-link" />
       <Link href="/find-talent" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 transition-colors hover:text-neutral-800 mb-4 sm:mb-6 block">
         <Icon icon={ArrowLeft02Icon} size={14} strokeWidth={1.8} />

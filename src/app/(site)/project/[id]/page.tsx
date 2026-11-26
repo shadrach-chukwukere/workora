@@ -29,6 +29,14 @@ import { formatDate, formatMoney, formatNumber, labelize } from "@/lib/format";
 import { PLATFORM_FEE_PERCENT } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+
+function toIsoDate(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 interface ProjectClient {
   id: string;
   name: string;
@@ -114,7 +122,24 @@ export async function generateMetadata({
   const { id } = await params;
   const project = await getProject(encodeURIComponent(id));
   if (!project) return { title: "Project not found" };
-  return { title: project.title, description: project.description.slice(0, 160) };
+  const description = project.description.slice(0, 160);
+  return {
+    title: project.title,
+    description,
+    alternates: { canonical: `/project/${encodeURIComponent(id)}` },
+    openGraph: {
+      type: "website",
+      url: `/project/${encodeURIComponent(id)}`,
+      title: `${project.title} on Workora`,
+      description,
+      siteName: "Workora",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${project.title} on Workora`,
+      description,
+    },
+  };
 }
 
 function priceLabel(project: ProjectDetail): string {
@@ -160,6 +185,37 @@ export default async function ProjectPage({
   const price = priceLabel(project);
   const priceCaption = project.budgetType === "fixed" ? "Fixed price" : "Hourly rate";
 
+  const budgetMin = project.budgetMinMinor != null ? project.budgetMinMinor / 100 : null;
+  const budgetMax = project.budgetMaxMinor != null ? project.budgetMaxMinor / 100 : null;
+  const hasBudget = budgetMin != null || budgetMax != null;
+  const organizationName = project.clientCompanyName ?? client?.companyName ?? client?.name;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: project.title,
+    description: project.description,
+    datePosted: toIsoDate(project.publishedAt ?? project.createdAt),
+    ...(toIsoDate(project.deadline) ? { validThrough: project.deadline } : {}),
+    employmentType: "CONTRACT",
+    ...(hasBudget
+      ? {
+          baseSalary: {
+            "@type": "MonetaryAmount",
+            currency: project.currency,
+            value:
+              budgetMin != null && budgetMax != null
+                ? { "@type": "QuantitativeValue", minValue: budgetMin, maxValue: budgetMax }
+                : { "@type": "QuantitativeValue", value: budgetMax ?? budgetMin },
+          },
+        }
+      : {}),
+    // The page lists the location as Worldwide.
+    jobLocationType: "TELECOMMUTE",
+    ...(organizationName ? { hiringOrganization: { "@type": "Organization", name: organizationName } } : {}),
+    url: `${baseUrl}/project/${encodeURIComponent(id)}`,
+  };
+
   async function flagListing(formData: FormData) {
     "use server";
     const reason = String(formData.get("reason") ?? "").trim();
@@ -176,6 +232,12 @@ export default async function ProjectPage({
 
   return (
     <div className="bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <a href="#main-content" className="skip-link" />
 
       <div className="container-page py-8">

@@ -11,6 +11,8 @@ import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
 import { ArrowLeft02Icon, Building01Icon, Calendar03Icon, Icon } from "@/lib/icons";
 
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+
 interface PublicClientResponse {
   client: {
     id: string;
@@ -53,9 +55,25 @@ export async function generateMetadata({
   const data = await getClient(id);
   if (!data) return { title: "Client not found" };
   const client = data.client;
+  const displayName = client.company_name || client.name;
+  const description =
+    client.about?.trim().slice(0, 160) || `Public client profile for ${client.name} on Workora.`;
   return {
-    title: `${client.company_name || client.name} · Client profile`,
-    description: (client.about || "").slice(0, 160) || `Public client profile for ${client.name} on Workora.`,
+    title: `${displayName} · Client profile`,
+    description,
+    alternates: { canonical: `/clients/${encodeURIComponent(id)}` },
+    openGraph: {
+      type: "profile",
+      url: `/clients/${encodeURIComponent(id)}`,
+      title: `${displayName} on Workora`,
+      description,
+      siteName: "Workora",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${displayName} on Workora`,
+      description,
+    },
   };
 }
 
@@ -92,8 +110,24 @@ export default async function ClientProfilePage({
     portfolio_url: client.portfolio_url,
   };
 
+  const profileUrl = `${baseUrl}/clients/${encodeURIComponent(id)}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: displayName,
+    url: profileUrl,
+    ...(client.image ? { image: client.image } : {}),
+    ...(client.about?.trim() ? { description: client.about.trim() } : {}),
+  };
+
   return (
     <div className="container-page py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <a href="#main-content" className="skip-link" />
       <Link
         href="/find-work"

@@ -15,9 +15,6 @@ export const MCP_SCOPES = [
   "contracts:read",
   "notifications:read",
   "connections:read",
-  "messages:read",
-  "messages:write",
-  "profile:write",
 ] as const;
 
 export type McpScope = (typeof MCP_SCOPES)[number];
@@ -38,9 +35,6 @@ export const SCOPE_DESCRIPTIONS: Record<McpScope, string> = {
   "contracts:read": "Read contracts you are a party to",
   "notifications:read": "Read your notifications",
   "connections:read": "Read your connections",
-  "messages:read": "Read conversations you participate in",
-  "messages:write": "Send messages in conversations you participate in",
-  "profile:write": "Edit your own profile fields",
 };
 
 export function isMcpScope(value: string): value is McpScope {

@@ -8,7 +8,9 @@ import { AGENT_OPERATIONS, type Actor } from "../agent/operations.js";
 function reply(data: Record<string, unknown>, isError = false) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-    structuredContent: data,
+    // Error payloads intentionally omit structuredContent: clients validate it
+    // against the tool's success output schema and would reject a mismatch.
+    ...(isError ? {} : { structuredContent: data }),
     isError,
   };
 }
@@ -42,7 +44,7 @@ export function buildMcpServer(ctx: TokenContext | null): McpServer {
       {
         title: op.annotations.title,
         description: op.description,
-        inputSchema: op.inputSchema as z.ZodRawShape,
+        inputSchema: op.inputSchema as unknown as z.ZodRawShape,
         outputSchema: op.outputSchema,
         annotations: op.annotations,
       },

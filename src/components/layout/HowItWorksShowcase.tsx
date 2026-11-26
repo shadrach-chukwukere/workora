@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LazyVideo } from "@/components/ui/lazy-video";
-import { LogoMark } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 type Mode = "hiring" | "finding";
@@ -20,13 +19,18 @@ interface Step {
 const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
   hiring: {
     steps: [
-      { caption: "Posting jobs is always free" },
       {
-        caption: "Get proposals and hire",
-        helper: "Screen, interview, or book a consult with an expert before hiring.",
+        caption: "Posting jobs is always free",
         image: "/videos/workora-intro-poster.jpg",
         video: "/videos/workora-intro.mp4",
         alt: "Workora client platform walkthrough showing how to hire a freelancer",
+      },
+      {
+        caption: "Get proposals and hire",
+        helper: "Screen, interview, or book a consult with an expert before hiring.",
+        image:
+          "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
+        alt: "Developer reviewing a project on a phone at a desk",
       },
       {
         caption: "Pay when work is done",
@@ -40,13 +44,18 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
   },
   finding: {
     steps: [
-      { caption: "Create your free profile" },
       {
-        caption: "Find work that fits you",
-        helper: "Browse briefs with public budgets and apply in a couple of clicks.",
+        caption: "Create your free profile",
         image: "/videos/workora-freelancer-poster.jpg",
         video: "/videos/workora-freelancer.mp4",
         alt: "Workora freelancer platform walkthrough showing how to find projects",
+      },
+      {
+        caption: "Find work that fits you",
+        helper: "Browse briefs with public budgets and apply in a couple of clicks.",
+        image:
+          "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=900&q=80",
+        alt: "Code on a laptop screen",
       },
       {
         caption: "Get paid milestone by milestone",
@@ -117,24 +126,7 @@ export function HowItWorksShowcase() {
                     className="size-full object-cover"
                   />
                 </div>
-              ) : (
-                <div className="relative flex aspect-[4/3] flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-brand-100 via-brand-50 to-emerald-100 p-6">
-                  <div className="flex flex-col items-center gap-3">
-                    <LogoMark size={48} />
-                    <p className="text-2xl font-semibold tracking-tight text-neutral-900">Workora</p>
-                    <p className="text-sm font-medium text-neutral-700">Get started</p>
-                  </div>
-                  <span
-                    aria-hidden="true"
-                    className="absolute bottom-4 right-4 flex size-9 items-center justify-center rounded-full bg-white/80 text-neutral-700"
-                  >
-                    <span className="flex gap-1">
-                      <span className="h-3 w-0.5 rounded-full bg-current" />
-                      <span className="h-3 w-0.5 rounded-full bg-current" />
-                    </span>
-                  </span>
-                </div>
-              )}
+              ) : null}
               <h3 className="mt-4 text-lg font-medium tracking-tight text-neutral-900">
                 {step.caption}
               </h3>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,27 @@ import { PLATFORM_FEE_PERCENT } from "@/lib/constants";
 import { apiServer } from "@/lib/api-data";
 import { getSessionAccount } from "@/components/layout/session-guard";
 import PricingClient from "./pricing-client";
+
+const description =
+  "Workora pricing: free freelancer profiles and an 8% commission on released milestones, with no client platform fee. Compare plans for freelancers and clients.";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description,
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    type: "website",
+    url: "/pricing",
+    title: "Pricing on Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pricing on Workora",
+    description,
+  },
+};
 
 interface PublicPlan {
   id: string;

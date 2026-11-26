@@ -186,7 +186,7 @@ export default async function agentRoutes(app: FastifyInstance) {
           const body = (request.body ?? {}) as Record<string, unknown>;
           const idempotencyKey = (request.headers["idempotency-key"] as string | undefined) ?? (body.idempotencyKey as string | undefined);
           const params = (request.params ?? {}) as Record<string, unknown>;
-          const raw = { ...(op.http?.method === "GET" ? (request.query ?? {}) : body), ...params };
+          const raw: Record<string, unknown> = { ...(op.http?.method === "GET" ? (request.query ?? {}) : body), ...params };
           if (idempotencyKey) raw.idempotencyKey = idempotencyKey;
           const result = await executeOperation(op, requestActor, raw);
           const payload = result as { requiresConfirmation?: boolean };

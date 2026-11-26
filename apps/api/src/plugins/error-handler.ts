@@ -27,6 +27,11 @@ export class AppError extends Error {
     super(message);
     this.name = "AppError";
   }
+
+  /** Alias used by the MCP/agent layer when mapping errors to JSON-RPC. */
+  get status(): number {
+    return this.statusCode;
+  }
 }
 
 export function notFound(message = "Resource not found"): AppError {

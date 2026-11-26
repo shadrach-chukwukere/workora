@@ -18,10 +18,25 @@ import {
 import { apiServer } from "@/lib/api-data";
 import { cn } from "@/lib/utils";
 
+const description =
+  "Browse the nine crafts on Workora: web and mobile development, design, marketing, data and AI, and more. Every category is open to remote talent worldwide.";
+
 export const metadata: Metadata = {
   title: "Categories",
-  description:
-    "Browse the nine crafts on Workora: web and mobile development, design, marketing, data and AI, and more. Every category is open to remote talent worldwide.",
+  description,
+  alternates: { canonical: "/categories" },
+  openGraph: {
+    type: "website",
+    url: "/categories",
+    title: "Categories on Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Categories on Workora",
+    description,
+  },
 };
 
 interface PublicCategory {

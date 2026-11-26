@@ -1,10 +1,26 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 
-export const metadata = {
-  title: "Terms of Service · Workora",
-  description: "Workora Terms of Service — the terms governing your use of the platform.",
+const description = "Workora Terms of Service — the terms governing your use of the platform.";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description,
+  alternates: { canonical: "/terms" },
+  openGraph: {
+    type: "website",
+    url: "/terms",
+    title: "Terms of Service · Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms of Service · Workora",
+    description,
+  },
 };
 
 const headingClass = "text-xl font-semibold text-neutral-900 mb-3 mt-8";

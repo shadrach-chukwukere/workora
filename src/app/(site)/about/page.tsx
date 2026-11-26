@@ -2,10 +2,25 @@ import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Icon, ArrowRight02Icon, EyeIcon, Globe02Icon, ShieldCheckIcon, Wallet01Icon } from "@/lib/icons";
 
+const description =
+  "Workora is the marketplace we wanted to work in: verified signal, milestone payments that clear, and no theatre. Remote-first, built in San Francisco and London.";
+
 export const metadata: Metadata = {
   title: "About",
-  description:
-    "Workora is the marketplace we wanted to work in: verified signal, milestone payments that clear, and no theatre. Remote-first, built in San Francisco and London.",
+  description,
+  alternates: { canonical: "/about" },
+  openGraph: {
+    type: "website",
+    url: "/about",
+    title: "About Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Workora",
+    description,
+  },
 };
 
 export default function AboutPage() {

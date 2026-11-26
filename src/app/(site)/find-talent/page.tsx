@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AVAILABILITY_OPTIONS, CATEGORY_BASE, RATE_RANGES, SORT_OPTIONS } from "@/lib/constants";
 import { formatNumber } from "@/lib/format";
@@ -11,6 +12,27 @@ import { serverApiBase } from "@/lib/api-base";
 import { getSessionAccount } from "@/components/layout/session-guard";
 
 const PAGE_SIZE = 9;
+
+const description =
+  "Search public freelancer profiles on Workora by skill, rate, availability and experience. Real rates, portfolios and client reviews.";
+
+export const metadata: Metadata = {
+  title: "Find talent",
+  description,
+  alternates: { canonical: "/find-talent" },
+  openGraph: {
+    type: "website",
+    url: "/find-talent",
+    title: "Find talent on Workora",
+    description,
+    siteName: "Workora",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Find talent on Workora",
+    description,
+  },
+};
 
 const SORTS = new Map<string, (typeof SORT_OPTIONS.talent)[number]>(SORT_OPTIONS.talent.map((s) => [s.value, s]));
 const CATEGORIES = new Map(CATEGORY_BASE.map((c) => [c.id, c]));

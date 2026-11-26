@@ -55,6 +55,18 @@ export default async function oauthRoutes(app: FastifyInstance) {
     reply.send(protectedResourceMetadata());
   });
 
+  /** Public client metadata for the consent screen (never returns secrets). */
+  app.get("/oauth/client-info", async (request, reply) => {
+    noStore(reply);
+    const clientId = (request.query as { client_id?: string }).client_id ?? "";
+    const client = await resolveClient(clientId);
+    if (!client) {
+      reply.code(404).send({ error: "invalid_client", error_description: "Unknown client" });
+      return;
+    }
+    reply.send({ client_id: client.client_id, client_name: client.client_name, redirect_uris: client.redirect_uris });
+  });
+
   /** Consent submission from the Workora-hosted authorization page. */
   app.post("/oauth/authorize", { preHandler: requireAuth }, async (request, reply) => {
     noStore(reply);
