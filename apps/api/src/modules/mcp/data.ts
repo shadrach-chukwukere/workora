@@ -125,15 +125,21 @@ export async function searchFreelancers(input: FreelancerSearchInput) {
   }
 
   const offset = (input.page - 1) * input.perPage;
-  const rows = await builder
-    .orderBy("freelancer_profiles.is_featured", "desc")
-    .orderBy("users.created_at", "desc")
-    .limit(input.perPage)
-    .offset(offset)
-    .execute();
+  const [rows, totalRows] = await Promise.all([
+    builder
+      .orderBy("freelancer_profiles.is_featured", "desc")
+      .orderBy("users.created_at", "desc")
+      .limit(input.perPage)
+      .offset(offset)
+      .execute(),
+    builder.clearSelect().clearLimit().clearOffset().select("users.id").execute(),
+  ]);
 
   const skillMap = await skillsFor(instance, rows.map((row) => row.id));
   return {
+    page: input.page,
+    perPage: input.perPage,
+    total: totalRows.length,
     freelancers: rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -150,7 +156,6 @@ export async function searchFreelancers(input: FreelancerSearchInput) {
       skills: skillMap.get(row.id) ?? [],
       profileUrl: `/freelancers/${row.id}`,
     })),
-    pagination: { page: input.page, limit: input.perPage },
   };
 }
 
@@ -348,7 +353,10 @@ export async function searchProjects(input: ProjectSearchInput) {
   if (input.experience) builder = builder.where("projects.experience_level", "=", input.experience);
 
   const offset = (input.page - 1) * input.perPage;
-  const rows = await builder.orderBy("projects.published_at", "desc").limit(input.perPage).offset(offset).execute();
+  const [rows, totalRows] = await Promise.all([
+    builder.orderBy("projects.published_at", "desc").limit(input.perPage).offset(offset).execute(),
+    builder.clearSelect().clearLimit().clearOffset().select("projects.id").execute(),
+  ]);
 
   const projects: ApiProject[] = rows.map((row) => toApiProject(row));
   const skillsByProject = new Map<string, string[]>();
@@ -366,8 +374,10 @@ export async function searchProjects(input: ProjectSearchInput) {
     }
   }
   return {
+    page: input.page,
+    perPage: input.perPage,
+    total: totalRows.length,
     projects: projects.map((p) => ({ ...p, skills: skillsByProject.get(p.id) ?? [], projectUrl: `/project/${p.id}` })),
-    pagination: { page: input.page, limit: input.perPage },
   };
 }
 

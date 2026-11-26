@@ -33,7 +33,9 @@ export const searchJobsInput = z.object({
 });
 
 export const getJobDetailsInput = z.object({
-  projectId: uuid.describe("Public job (project) UUID"),
+  // Kept as a string at the transport boundary so invalid ids become a
+  // structured VALIDATION_ERROR tool result instead of an SDK-level error.
+  projectId: z.string().trim().min(1).max(100).describe("Public job (project) UUID"),
 });
 
 export const searchFreelancersInput = z.object({
