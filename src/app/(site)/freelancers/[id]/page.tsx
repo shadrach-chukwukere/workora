@@ -104,7 +104,7 @@ export default async function FreelancerPublicProfile({
   const levelLabel = profile.experience_level === "expert" ? "Expert" : profile.experience_level === "intermediate" ? "Intermediate" : "Entry";
 
   return (
-    <div className="container-page max-w-full overflow-x-hidden py-8">
+    <div className="container-page max-w-full py-8">
       <a href="#main-content" className="skip-link" />
       <Link href="/find-talent" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 transition-colors hover:text-neutral-800">
         <Icon icon={ArrowLeft02Icon} size={14} strokeWidth={1.8} />
@@ -153,7 +153,7 @@ export default async function FreelancerPublicProfile({
               <Button href="/client/post-project" size="md">
                 Invite to project
               </Button>
-              <ShareProfileButton />
+              <ShareProfileButton className="col-span-2 sm:col-span-1" />
             </>
           )
         }
