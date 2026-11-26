@@ -12,7 +12,7 @@
 | OAuth server | `apps/api/src/modules/oauth/` — metadata, consent, codes (PKCE S256), opaque access/refresh tokens, revocation, CIMD + DCR, connections and audit log. |
 | Database | New tables in migration `0019_mcp_oauth`; agent idempotency in `0020_agent_idempotency`. No new database. |
 
-Public MCP endpoint: `https://workora.com/api/mcp` (Next.js rewrite forwards to the backend).
+Public MCP endpoint: `https://workora-phi.vercel.app/api/mcp` (Next.js rewrite forwards to the backend).
 
 ## 2. Discovery endpoints
 
@@ -35,8 +35,8 @@ Backend (`apps/api/.env`, placeholders in `apps/api/.env.example`):
 
 ```dotenv
 MCP_ENABLED=true
-MCP_ISSUER_URL=https://workora.com
-MCP_RESOURCE_URL=https://workora.com/api/mcp
+MCP_ISSUER_URL=https://workora-phi.vercel.app
+MCP_RESOURCE_URL=https://workora-phi.vercel.app/api/mcp
 MCP_ACCESS_TOKEN_TTL_SECONDS=3600
 MCP_REFRESH_TOKEN_TTL_SECONDS=2592000
 ```
@@ -59,7 +59,7 @@ The authoritative tool list lives in `apps/api/src/modules/agent/operations.ts` 
 
 ## 6. Client connection instructions
 
-**ChatGPT:** ChatGPT Plugins → **+ Add custom MCP server** → enter `https://workora.com/api/mcp` → review the risk notice → create as a plugin → install → sign in to Workora and approve scopes.
+**ChatGPT:** ChatGPT Plugins → **+ Add custom MCP server** → enter `https://workora-phi.vercel.app/api/mcp` → review the risk notice → create as a plugin → install → sign in to Workora and approve scopes.
 
 **Claude:** Claude connector settings → **Add custom connector** → enter the URL → start a chat and connect → sign in to Workora and approve scopes.
 
@@ -70,7 +70,7 @@ Workora is **not** officially listed in either platform's directory. Both flows 
 - Backend types: `npx tsc --noEmit -p apps/api/tsconfig.json`
 - Backend tests: `npm test` in `apps/api` (includes OAuth, MCP protocol, tool and cross-user tests where present)
 - Frontend types/build: `npx tsc --noEmit`, `npm run build`
-- MCP Inspector: connect to `https://workora.com/api/mcp` (or `http://localhost:3000/api/mcp` locally) and inspect `tools/list` and `tools/call`.
+- MCP Inspector: connect to `https://workora-phi.vercel.app/api/mcp` (or `http://localhost:3000/api/mcp` locally) and inspect `tools/list` and `tools/call`.
 - Local handshake: `curl -X POST http://localhost:3000/api/mcp -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'`
 
 Actual ChatGPT/Claude compatibility requires credentials and accounts and must be verified manually; local protocol tests alone are not proof of a published integration.

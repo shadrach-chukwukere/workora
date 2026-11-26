@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Connect ChatGPT, Claude and other MCP-compatible assistants to your Workora marketplace account using the remote Workora MCP server.",
 };
 
-const MCP_ENDPOINT = "https://workora.com/api/mcp";
+const MCP_ENDPOINT = "https://workora-phi.vercel.app/api/mcp";
 
 const TOOLS = [
   ["search_jobs", "Search open jobs by keyword, category, skill, budget and experience.", "Public"],

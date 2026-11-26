@@ -10,8 +10,6 @@ import { buildMcpServer } from "./server.js";
 const WINDOW_MS = 60_000;
 const MAX_CALLS = 180;
 const calls = new Map<string, { count: number; resetAt: number }>();
-const PROTECTED_TOOLS = new Set(AGENT_OPERATIONS.filter((op) => op.scope).map((op) => op.name));
-
 function rateLimited(key: string): boolean {
   const now = Date.now();
   const entry = calls.get(key);
@@ -72,31 +70,30 @@ export default async function mcpRoutes(app: FastifyInstance) {
         return;
       }
 
+      // Every MCP request — including initialization and tool discovery — must
+      // carry a valid, user-bound bearer token. The 401 challenge is what
+      // starts the OAuth flow in Claude and other spec-compliant clients.
       const authorization = request.headers.authorization;
       let ctx: TokenContext | null = null;
       if (authorization?.startsWith("Bearer ")) {
         ctx = await verifyAccessToken(authorization.slice(7).trim());
-        if (!ctx) {
-          unauthorized(reply);
-          return;
-        }
+      }
+      if (!ctx) {
+        unauthorized(reply);
+        return;
       }
 
       const body = request.body as { method?: string; params?: { name?: string; arguments?: Record<string, unknown> } } | undefined;
       const toolName = body?.method === "tools/call" ? body.params?.name : undefined;
-      if (toolName && PROTECTED_TOOLS.has(toolName) && !ctx) {
-        unauthorized(reply);
-        return;
-      }
-      if (ctx && toolName) {
+      if (toolName) {
         const op = AGENT_OPERATIONS.find((candidate) => candidate.name === toolName);
-        if (op?.scope && !ctx.scopes.includes(op.scope)) {
-          insufficientScope(reply, op.scope);
+        if (!op || !op.scope || !ctx.scopes.includes(op.scope)) {
+          insufficientScope(reply, op?.scope ?? MCP_SCOPES[0]!);
           return;
         }
       }
 
-      const limits = [ctx?.userId ?? request.ip, ctx?.clientId ?? "public", request.ip];
+      const limits = [ctx.userId, ctx.clientId, request.ip];
       if (limits.some((key) => rateLimited(`${key}:${toolName ?? body?.method ?? "unknown"}`))) {
         reply.header("Retry-After", "60");
         reply.code(429).send({ error: "rate_limit_exceeded", error_description: "Too many MCP requests" });

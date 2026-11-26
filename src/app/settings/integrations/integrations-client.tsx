@@ -186,8 +186,8 @@ export function IntegrationsClient() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2">
-          <code className="min-w-0 flex-1 break-all text-xs text-neutral-700">https://workora.com/api/mcp</code>
-          <CopyButton value="https://workora.com/api/mcp" label="Copy MCP server URL" />
+          <code className="min-w-0 flex-1 break-all text-xs text-neutral-700">https://workora-phi.vercel.app/api/mcp</code>
+          <CopyButton value="https://workora-phi.vercel.app/api/mcp" label="Copy MCP server URL" />
         </div>
       </section>
 
