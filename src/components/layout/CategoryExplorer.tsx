@@ -149,7 +149,7 @@ export function CategoryExplorer() {
                         alt=""
                         width={28}
                         height={28}
-                        className="size-7 rounded-full object-cover ring-2 ring-white"
+                        className={cn("size-7 rounded-full object-cover ring-2 ring-white", offset > 0 && "hidden sm:block")}
                       />
                     ))}
                   </span>
