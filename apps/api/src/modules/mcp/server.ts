@@ -37,6 +37,7 @@ export function buildMcpServer(ctx: TokenContext | null): McpServer {
   const actor: Actor = { userId: ctx?.userId ?? null, token: ctx, session: false };
 
   for (const op of AGENT_OPERATIONS) {
+    if (op.name.length > 64) throw new Error(`MCP tool name exceeds 64 characters: ${op.name}`);
     server.registerTool(
       op.name,
       {

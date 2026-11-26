@@ -740,57 +740,6 @@ function getFreelancerProfileTool(pathFreelancerId: string | undefined): WebMcpT
   };
 }
 
-function getMyConnectionsTool(): WebMcpTool {
-  return {
-    name: "get_my_connections",
-    title: "Get my connected apps",
-    description:
-      "List the OAuth connections for the signed-in Workora account (client name, granted scopes and dates). Requires an active logged-in session; returns no tokens or secrets.",
-    inputSchema: inputSchema({}),
-    outputSchema: outputSchema({
-      type: "object",
-      properties: { connections: { type: "array", items: CONNECTION } },
-      required: ["connections"],
-      additionalProperties: false,
-    }),
-    annotations: READ_ONLY_PRIVATE,
-    execute: async (_input, { signal }) => {
-      const result = await apiRequest<{ connections?: unknown[] }>("/oauth/connections", { signal });
-      if (!result.ok) return failure(result);
-      return { connections: asArray(result.data?.connections).map(connection) };
-    },
-  };
-}
-
-function revokeConnectionTool(): WebMcpTool {
-  return {
-    name: "revoke_connection",
-    title: "Revoke a connected app",
-    description:
-      "Revoke one OAuth connection (and all tokens issued to it) for the signed-in Workora account. Requires an active logged-in session. This is consequential and cannot be undone.",
-    inputSchema: inputSchema({ connectionId: { ...UUID_PROPERTY, description: "Connection UUID from get_my_connections" } }, [
-      "connectionId",
-    ]),
-    outputSchema: outputSchema({
-      type: "object",
-      properties: {
-        status: { const: "revoked" },
-        id: { type: "string" },
-      },
-      required: ["status", "id"],
-      additionalProperties: false,
-    }),
-    annotations: CONSEQUENTIAL,
-    execute: async (input, { signal }) => {
-      const id = uuid(input.connectionId);
-      if (!id) return failure({ code: "INVALID_INPUT", message: "A valid connection id is required" });
-      const result = await apiRequest<Obj>(`/oauth/connections/${encodeURIComponent(id)}`, { method: "DELETE", signal });
-      if (!result.ok) return failure(result);
-      return { status: "revoked", id };
-    },
-  };
-}
-
 /* -------------------------------------------------------------------------- */
 /* Pathname-based registration                                                 */
 /* -------------------------------------------------------------------------- */
@@ -817,8 +766,6 @@ function toolsForPath(pathname: string): WebMcpTool[] {
   if (path === "/find-talent" || path.startsWith("/freelancers/")) {
     return [searchFreelancersTool(), getFreelancerProfileTool(pathId(path, "/freelancers/"))];
   }
-
-  if (path === "/settings/integrations") return [getMyConnectionsTool(), revokeConnectionTool()];
 
   return [];
 }

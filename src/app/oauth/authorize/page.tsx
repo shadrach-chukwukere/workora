@@ -82,16 +82,10 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
       signal: AbortSignal.timeout(3000),
     });
     if (response.ok) {
-      const info = (await response.json()) as { client_name?: string; redirect_uris?: string[] };
+      const info = (await response.json()) as { client_name?: string };
       if (info.client_name) clientName = info.client_name;
-      if (info.redirect_uris && !info.redirect_uris.includes(raw.redirect_uri)) {
-        return (
-          <main className="container-page py-12">
-            <h1 className="text-2xl font-semibold">Unregistered redirect address</h1>
-            <p className="mt-3 text-neutral-600">This assistant is not registered to receive a code at {redirectHost}.</p>
-          </main>
-        );
-      }
+      // Exact redirect-URI validation (including port-agnostic loopback) is
+      // performed by the authorization server when consent is submitted.
     }
   } catch {
     // Keep the client_id visible; the API revalidates the redirect on submit.
@@ -106,6 +100,12 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
         <p className="mt-2 text-sm text-neutral-600">
           You are signed in as {account.email}. Only you can approve this connection. No password, passkey or verification step is skipped.
         </p>
+        {/^(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(redirectHost) ? (
+          <p role="note" className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            Warning: this connection returns to a local application on your device ({redirectHost}). Only approve it if
+            you started this sign-in yourself.
+          </p>
+        ) : null}
         <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-5 sm:p-6">
           <h2 className="text-base font-semibold text-neutral-900">Requested permissions</h2>
           <p className="mb-4 mt-1 text-xs text-neutral-500">Each consequential action still needs a separate confirmation.</p>

@@ -145,9 +145,6 @@ export default async function Home() {
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      {/* Skip link */}
-      <a href="#main-content" className="skip-link" />
-
       {/* Hero */}
       <Hero account={account} />
 
@@ -318,10 +315,8 @@ export default async function Home() {
       <section className="container-page pb-20">
         <div className="border-t border-neutral-200 pt-12 sm:pt-16">
           <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-20">
-
             <div>
-
-              <h2 className="mt-5 max-w-sm text-3xl font-semibold leading-tight tracking-[-0.045em] text-neutral-950 sm:text-4xl">
+              <h2 className="max-w-sm text-3xl font-semibold leading-tight tracking-[-0.045em] text-neutral-950 sm:text-4xl">
                 Work with confidence. Every step.
               </h2>
 
@@ -371,11 +366,9 @@ export default async function Home() {
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       </section>
-
 
       {/* Final CTA */}
       <section className="container-page pb-16">

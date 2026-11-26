@@ -195,7 +195,17 @@ export default async function agentRoutes(app: FastifyInstance) {
       config: { rateLimit: false },
       handler: async (request, reply) => {
         const requestActor = await actorFor(request);
-        const key = requestActor.token?.clientId ?? requestActor.userId ?? request.ip;
+        // No anonymous agent operations: every REST call resolves to one Workora user.
+        if (!requestActor.userId) {
+          reply.header("Cache-Control", "no-store");
+          reply.header(
+            "WWW-Authenticate",
+            `Bearer resource_metadata="${mcpIssuer}/.well-known/oauth-protected-resource/api/mcp", scope="${MCP_SCOPES.join(" ")}"`,
+          );
+          reply.code(401).send({ success: false, message: "Authentication required", error: { code: "UNAUTHENTICATED" } });
+          return;
+        }
+        const key = requestActor.token?.clientId ?? requestActor.userId;
         if (rateLimited(`${key}:${requestActor.userId ?? "anon"}`)) {
           reply.code(429).send({ success: false, message: "Too many requests", error: { code: "RATE_LIMITED" } });
           return;

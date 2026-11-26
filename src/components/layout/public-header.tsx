@@ -100,7 +100,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
       </a>
 
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/94 border-b border-neutral-200/50">
-        <div className="container-page flex h-14 w-full items-center justify-between gap-x-3 px-4 sm:px-6 lg:px-8">
+        <div className="container-page flex h-16 w-full items-center justify-between gap-x-4 px-4 sm:px-6 lg:px-8">
           {/* Brand — always visible on left */}
           <div className="flex min-w-0 shrink-0 items-center gap-2">
             <Logo className="shrink-0" size="sm" />
@@ -192,7 +192,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Site menu">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <div className="anim-pop absolute inset-y-0 right-0 flex w-full max-w-[85vw] flex-col border-l border-neutral-200 bg-white shadow-dropdown">
-            <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-4">
+            <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-4">
               <Logo size="md" />
               <button
                 type="button"

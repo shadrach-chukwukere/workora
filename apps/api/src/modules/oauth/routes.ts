@@ -11,6 +11,7 @@ import {
   protectedResourceMetadata,
   refreshTokens,
   registerClient,
+  redirectUriAllowed,
   resolveClient,
   revokeConnection,
   revokeToken,
@@ -76,7 +77,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
       const body = authorizeSchema.parse(request.body);
       const client = await resolveClient(body.client_id, true);
       if (!client) throw new OAuthError("invalid_client", "Unknown or invalid client", 401);
-      if (!client.redirect_uris.includes(body.redirect_uri)) {
+      if (!redirectUriAllowed(client, body.redirect_uri)) {
         throw new OAuthError("invalid_request", "redirect_uri is not registered for this client");
       }
 

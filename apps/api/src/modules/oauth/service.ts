@@ -66,6 +66,27 @@ export function isValidRedirectUri(uri: string): boolean {
   }
 }
 
+/**
+ * Exact match for https redirects, with port-agnostic loopback matching for
+ * Claude Code (RFC 8252). Claude Code declares http://localhost/callback and
+ * http://127.0.0.1/callback but connects on an ephemeral local port.
+ */
+export function redirectUriAllowed(client: OAuthClient, uri: string): boolean {
+  if (client.redirect_uris.includes(uri)) return true;
+  try {
+    const requested = new URL(uri);
+    if (requested.protocol !== "http:" || !isLoopback(requested.hostname)) return false;
+    return client.redirect_uris.some((registered) => {
+      if (!isValidRedirectUri(registered)) return false;
+      const allowed = new URL(registered);
+      if (allowed.protocol !== "http:" || !isLoopback(allowed.hostname)) return false;
+      return allowed.pathname === requested.pathname && allowed.search === requested.search;
+    });
+  } catch {
+    return false;
+  }
+}
+
 async function fetchCimd(clientId: string): Promise<OAuthClient | null> {
   const cached = cimdCache.get(clientId);
   if (cached && cached.expiresAt > Date.now()) return cached.client;
@@ -232,7 +253,7 @@ export async function createAuthorizationCode(input: {
   codeChallenge: string;
   resource: string;
 }): Promise<string> {
-  if (!input.client.redirect_uris.includes(input.redirectUri)) {
+  if (!redirectUriAllowed(input.client, input.redirectUri)) {
     throw new OAuthError("invalid_request", "redirect_uri is not registered for this client");
   }
   if (!/^[A-Za-z0-9_-]{43}$/.test(input.codeChallenge)) {

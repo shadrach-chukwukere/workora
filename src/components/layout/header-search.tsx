@@ -15,8 +15,6 @@ const CONTEXT_OPTIONS: ContextOption[] = [
   { value: "projects", label: "Projects" },
 ];
 
-const BRAND = "#5a50e5";
-
 const contextStyles: StylesConfig<ContextOption, false> = {
   container: (base) => ({ ...base, display: "inline-flex", verticalAlign: "middle" }),
   control: (base) => ({
@@ -75,7 +73,7 @@ export function HeaderSearch() {
     <form
       onSubmit={submit}
       role="search"
-      className="ml-auto hidden h-10 items-center rounded-full border border-neutral-200 bg-white pl-3.5 pr-2 transition-colors focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100 lg:flex"
+      className="flex h-10 items-center rounded-full border border-neutral-200 bg-white pl-3.5 pr-2 transition-colors focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100"
     >
       <Icon icon={Search01Icon} size={16} strokeWidth={1.8} className="shrink-0 text-neutral-400" aria-hidden="true" />
       <input
@@ -84,7 +82,7 @@ export function HeaderSearch() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search"
         aria-label="Search talent or projects"
-        className="h-full w-24 min-w-0 bg-transparent px-2.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 xl:w-36"
+        className="h-full w-24 min-w-0 bg-transparent px-2.5 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 lg:w-32 xl:w-44"
       />
       <span className="h-5 w-px shrink-0 bg-neutral-200" aria-hidden="true" />
       <div className="pl-1">
