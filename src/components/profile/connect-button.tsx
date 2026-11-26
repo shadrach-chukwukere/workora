@@ -19,6 +19,8 @@ interface ConnectButtonProps {
   initialFollowersCount?: number;
   initialFollowingCount?: number;
   fullWidth?: boolean;
+  /** Hide the extra follower/following links when the parent already shows them. */
+  showCounts?: boolean;
 }
 
 function Counts({
@@ -63,6 +65,7 @@ export function ConnectButton({
   initialFollowersCount = 0,
   initialFollowingCount = 0,
   fullWidth = false,
+  showCounts = true,
 }: ConnectButtonProps) {
   const [connected, setConnected] = useState(initialConnected);
   const [followers, setFollowers] = useState(initialFollowersCount);
@@ -139,11 +142,11 @@ export function ConnectButton({
   if (isSelf) {
     return (
       <div className={wrapperClass}>
-        <Button variant="secondary" size="md" disabled className="w-full">
+        <Button variant="secondary" size="md" disabled className={fullWidth ? "w-full" : "w-auto"}>
           <Icon icon={UserMultiple02Icon} size={16} strokeWidth={1.8} />
           Your network
         </Button>
-        <Counts targetId={targetId} followers={followers} following={following} />
+        {showCounts ? <Counts targetId={targetId} followers={followers} following={following} /> : null}
       </div>
     );
   }
@@ -151,11 +154,11 @@ export function ConnectButton({
   if (!viewerId) {
     return (
       <div className={wrapperClass}>
-        <Button href={loginHref} variant="primary" size="md" className="w-full">
+        <Button href={loginHref} variant="primary" size="md" className={fullWidth ? "w-full" : "w-auto"}>
           <Icon icon={PlusSignIcon} size={16} strokeWidth={1.8} />
           Connect
         </Button>
-        <Counts targetId={targetId} followers={followers} following={following} />
+        {showCounts ? <Counts targetId={targetId} followers={followers} following={following} /> : null}
       </div>
     );
   }
@@ -171,7 +174,8 @@ export function ConnectButton({
         variant={connected ? "secondary" : "primary"}
         size="md"
         className={cn(
-          "group relative w-full transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          "group relative transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98]",
+          fullWidth ? "w-full" : "w-auto",
           connected
             ? "border-brand-200 bg-brand-50 text-brand-800 hover:border-brand-300 hover:bg-brand-100"
             : "shadow-sm hover:shadow-md",
@@ -200,7 +204,7 @@ export function ConnectButton({
         </span>
         <span className="relative">{connected ? "Connected" : "Connect"}</span>
       </Button>
-      <Counts targetId={targetId} followers={followers} following={following} />
+      {showCounts ? <Counts targetId={targetId} followers={followers} following={following} /> : null}
     </div>
   );
 }

@@ -49,7 +49,7 @@ export function ContactLinks({
   if (items.length === 0) return null;
 
   return (
-    <section className={cn("rounded-xl border border-neutral-200 bg-white p-6", className)}>
+    <section className={cn("rounded-xl border border-neutral-200 bg-white p-5 sm:p-6", className)}>
       <h2 className="text-sm font-semibold text-neutral-900">Contact & links</h2>
       <ul className="mt-3 space-y-0.5">
         {items.map((item) => {

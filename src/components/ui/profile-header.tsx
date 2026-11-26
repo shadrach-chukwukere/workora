@@ -21,6 +21,7 @@ export function ProfileHeader({
   connectionsLabel,
   meta,
   actions,
+  actionsClassName,
   children,
   isSelf = false,
   editHref,
@@ -35,15 +36,16 @@ export function ProfileHeader({
   connectionsLabel?: string | null;
   meta?: React.ReactNode;
   actions?: React.ReactNode;
+  actionsClassName?: string;
   children?: React.ReactNode;
   isSelf?: boolean;
   editHref?: string;
   className?: string;
 }) {
   return (
-    <section className={cn("overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm", className)}>
+    <section className={cn("w-full max-w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm", className)}>
       {/* Cover banner */}
-      <div className="relative h-28 w-full overflow-hidden bg-gradient-to-br from-brand-50 via-brand-100/70 to-sky-50 sm:h-40 lg:h-48">
+      <div className="relative h-24 w-full overflow-hidden bg-gradient-to-br from-brand-50 via-brand-100/70 to-sky-50 sm:h-40 lg:h-44">
         {bannerSrc ? (
           <Image
             src={bannerSrc}
@@ -60,17 +62,17 @@ export function ProfileHeader({
             href={editHref}
             aria-label="Edit cover photo"
             title="Edit cover photo"
-            className="absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-full bg-white text-neutral-700 shadow-sm ring-1 ring-black/5 hover:bg-neutral-50"
+            className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full bg-white text-neutral-700 shadow-sm ring-1 ring-black/5 hover:bg-neutral-50 sm:right-4 sm:top-4 sm:size-9"
           >
             <Icon icon={Pen01Icon} size={16} strokeWidth={1.8} />
           </Link>
         ) : null}
       </div>
 
-      <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+      <div className="px-4 pb-4 sm:px-6 sm:pb-6">
         {/* Circular photo overlapping the cover — no animation */}
-        <div className="relative -mt-12 sm:-mt-16">
-          <div className="inline-flex size-24 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-2xl font-semibold text-brand-800 ring-4 ring-white sm:size-32">
+        <div className="relative -mt-10 sm:-mt-14">
+          <div className="inline-flex size-20 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-xl font-semibold text-brand-800 ring-4 ring-white sm:size-28 sm:text-2xl">
             {avatarSrc ? (
               <Image
                 src={avatarSrc}
@@ -86,29 +88,29 @@ export function ProfileHeader({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2 sm:mt-4">
+        <div className="mt-2 flex min-w-0 flex-col gap-2 sm:mt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
-              <span className="truncate">{name}</span>
+            <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight text-neutral-900 sm:text-2xl lg:text-3xl">
+              <span className="min-w-0 break-words">{name}</span>
               {verified ? (
                 <span title="Identity verified" className="inline-flex shrink-0 text-brand-600">
-                  <Icon icon={ShieldCheckIcon} size={20} strokeWidth={1.8} />
+                  <Icon icon={ShieldCheckIcon} size={18} strokeWidth={1.8} />
                   <span className="sr-only">Identity verified</span>
                 </span>
               ) : null}
             </h1>
             {headline ? (
-              <p className="mt-1 max-w-2xl text-[15px] leading-snug text-neutral-700">{headline}</p>
+              <p className="mt-1 max-w-2xl break-words text-sm leading-snug text-neutral-700 sm:text-[15px]">{headline}</p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-neutral-500">
+            <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500 sm:text-[13px]">
               {location ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon icon={Location01Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
-                  {location}
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <Icon icon={Location01Icon} size={14} strokeWidth={1.8} className="shrink-0 text-neutral-400" />
+                  <span className="min-w-0 break-words">{location}</span>
                 </span>
               ) : null}
               {connectionsLabel ? (
-                <span className="font-semibold text-brand-700">{connectionsLabel}</span>
+                <span className="whitespace-nowrap font-semibold text-brand-700">{connectionsLabel}</span>
               ) : null}
               {meta}
             </div>
@@ -118,15 +120,17 @@ export function ProfileHeader({
               href={editHref}
               aria-label="Edit profile"
               title="Edit profile"
-              className="inline-flex size-8 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
             >
               <Icon icon={Pen01Icon} size={16} strokeWidth={1.8} />
             </Link>
           ) : null}
         </div>
 
-        {actions ? <div className="mt-4 flex flex-wrap items-center gap-2">{actions}</div> : null}
-        {children ? <div className="mt-5 border-t border-neutral-100 pt-4">{children}</div> : null}
+        {actions ? (
+          <div className={cn("mt-4 flex flex-wrap items-center gap-2", actionsClassName)}>{actions}</div>
+        ) : null}
+        {children ? <div className="mt-4 border-t border-neutral-100 pt-4">{children}</div> : null}
       </div>
     </section>
   );

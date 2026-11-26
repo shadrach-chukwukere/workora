@@ -104,7 +104,7 @@ export default async function FreelancerPublicProfile({
   const levelLabel = profile.experience_level === "expert" ? "Expert" : profile.experience_level === "intermediate" ? "Intermediate" : "Entry";
 
   return (
-    <div className="container-page py-8">
+    <div className="container-page max-w-full overflow-x-hidden py-8">
       <a href="#main-content" className="skip-link" />
       <Link href="/find-talent" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 transition-colors hover:text-neutral-800">
         <Icon icon={ArrowLeft02Icon} size={14} strokeWidth={1.8} />
@@ -123,13 +123,14 @@ export default async function FreelancerPublicProfile({
         connectionsLabel={`${formatNumber(connections.followersCount)} followers · ${formatNumber(connections.followingCount)} following`}
         isSelf={isSelf}
         editHref="/freelancer/settings"
+        actionsClassName={isSelf ? "mt-4 flex flex-wrap" : "mt-4 grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center"}
         meta={
           <>
-            <span className="inline-flex items-center gap-1.5">
-              <Icon icon={Clock01Icon} size={14} strokeWidth={1.8} className="text-neutral-400" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Icon icon={Clock01Icon} size={14} strokeWidth={1.8} className="shrink-0 text-neutral-400" />
               Member since {memberSince}
             </span>
-            {profile.experience_level ? <span>{levelLabel} level</span> : null}
+            {profile.experience_level ? <span className="whitespace-nowrap">{levelLabel} level</span> : null}
           </>
         }
         actions={
@@ -147,6 +148,7 @@ export default async function FreelancerPublicProfile({
                 initialConnected={connectionStatus?.connected ?? false}
                 initialFollowersCount={connectionStatus?.followersCount ?? connections.followersCount}
                 initialFollowingCount={connectionStatus?.followingCount ?? connections.followingCount}
+                showCounts={false}
               />
               <Button href="/client/post-project" size="md">
                 Invite to project
@@ -156,26 +158,30 @@ export default async function FreelancerPublicProfile({
           )
         }
       >
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-neutral-600">
-          <RatingStars value={profile.rating_avg ?? 0} count={profile.rating_count} size="md" />
-          <span>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] text-neutral-600 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:text-sm">
+          <span className="inline-flex min-w-0 items-center whitespace-nowrap">
+            <RatingStars value={profile.rating_avg ?? 0} count={profile.rating_count} size="md" />
+          </span>
+          <span className="min-w-0">
             <span className="font-semibold text-neutral-900">{profile.completed_count}</span> projects completed
           </span>
-          <span>
+          <span className="min-w-0 whitespace-nowrap">
             <span className="font-semibold text-neutral-900">~{profile.response_time_hours}h</span> response
           </span>
           {hourly != null ? (
-            <span>
+            <span className="min-w-0 whitespace-nowrap">
               <span className="font-semibold text-neutral-900">{formatMoney(hourly)}/hr</span>
             </span>
           ) : null}
-          <AvailabilityPulse status={profile.availability} />
+          <span className="inline-flex min-w-0 items-center whitespace-nowrap sm:ml-auto">
+            <AvailabilityPulse status={profile.availability} />
+          </span>
         </div>
       </ProfileHeader>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-3">
         {/* Main column */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
+        <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
           {/* About */}
           <SpotlightCard>
             <h2 className="text-sm font-semibold text-neutral-900">About {user.name.split(" ")[0]}</h2>
@@ -295,7 +301,7 @@ export default async function FreelancerPublicProfile({
 
           {/* Client reviews */}
           {reviews.length > 0 ? (
-            <section className="rounded-xl border border-neutral-200 bg-white p-6">
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 sm:p-6">
               <h2 className="text-sm font-semibold text-neutral-900">Client reviews</h2>
               <ul className="mt-4 space-y-4">
                 {reviews.map((review) => (
@@ -313,9 +319,9 @@ export default async function FreelancerPublicProfile({
         </div>
 
         {/* Sidebar column */}
-        <aside className="flex flex-col gap-6">
+        <aside className="flex min-w-0 flex-col gap-6">
           {/* Profile facts */}
-          <section className="rounded-xl border border-neutral-200 bg-white p-6">
+          <section className="rounded-xl border border-neutral-200 bg-white p-5 sm:p-6">
             <h2 className="text-sm font-semibold text-neutral-900">Details</h2>
             <dl className="mt-3 space-y-2.5 text-[13px]">
               {profile.experience_level ? (
@@ -346,7 +352,7 @@ export default async function FreelancerPublicProfile({
           <ContactLinks contact={contact} />
 
           {/* Payment honesty */}
-          <section className="rounded-xl border border-brand-100 bg-brand-50/50 p-6">
+          <section className="rounded-xl border border-brand-100 bg-brand-50/50 p-5 sm:p-6">
             <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
               <Icon icon={ShieldCheckIcon} size={16} strokeWidth={1.8} className="text-brand-600" />
               How payment works

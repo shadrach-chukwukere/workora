@@ -42,7 +42,7 @@ export function SpotlightCard({
           aria-hidden="true"
         />
       ) : null}
-      <div className="relative z-10 p-6">{children}</div>
+      <div className="relative z-10 p-5 sm:p-6">{children}</div>
     </div>
   );
 }
