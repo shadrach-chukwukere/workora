@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 /** Browser requests stay same-origin; this is the upstream they are proxied to. */
 const apiOrigin = (process.env.API_URL || "https://workora-backend-x5il.onrender.com").replace(/\/+$/, "");
+const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -41,6 +42,17 @@ const nextConfig: NextConfig = {
             key: "Link",
             value: `<https://images.unsplash.com>; rel=dns-prefetch`,
           },
+          // GTM loads after hydration; warm the connection so it stays off the critical path.
+          {
+            key: "Link",
+            value: `<https://www.googletagmanager.com>; rel=preconnect`,
+          },
+          // Isolate the top-level window from cross-origin documents while still
+          // allowing popups opened by sign-in and payment providers.
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
           // Clickjacking protection.
           {
             key: "X-Frame-Options",
@@ -61,14 +73,20 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${apiOrigin} https://www.googletagmanager.com https://www.google-analytics.com`,
+              // The API origin is reached via same-origin rewrites, never as a script
+              // source. Dropping it from script-src removes an allowlist bypass path.
+              // React only needs unsafe-eval in development for enhanced error stacks.
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.google-analytics.com`,
               `connect-src 'self' ${apiOrigin} https://api.paystack.co https://*.vercel-storage.com https://www.googletagmanager.com https://www.google-analytics.com`,
               `img-src 'self' data: https:`,
               `style-src 'self' 'unsafe-inline'`,
               "font-src 'self'",
+              "object-src 'none'",
               `frame-ancestors 'none'`,
               "base-uri 'self'",
               "form-action 'self'",
+              // Avoid upgrading localhost's http assets while developing.
+              ...(isDev ? [] : ["upgrade-insecure-requests"]),
             ].join("; "),
           },
         ],

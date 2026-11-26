@@ -130,6 +130,7 @@ export function CategoryExplorer() {
             <li key={`${activeTab}-${item.title}`}>
               <Link
                 href={`/find-talent?category=${encodeURIComponent(item.slug)}`}
+                prefetch={false}
                 className={cn(
                   "group flex h-full min-h-40 flex-col justify-between rounded-xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-dropdown",
                   index === 0 ? "border-brand-600 ring-1 ring-brand-600" : "border-neutral-200 hover:border-brand-200",
@@ -161,6 +162,7 @@ export function CategoryExplorer() {
         <div className="mt-8 text-center">
           <Link
             href="/find-talent"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800"
           >
             Browse all talent

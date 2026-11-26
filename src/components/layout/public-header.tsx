@@ -116,6 +116,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     "inline-flex items-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900",
                     isActive(item.href) ? "text-neutral-900" : "text-neutral-600",
@@ -139,6 +140,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               <>
                 <Link
                   href={workspace}
+                  prefetch={false}
                   className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                 >
                   <Icon icon={Home01Icon} size={14} strokeWidth={1.8} className="shrink-0" />
@@ -162,12 +164,13 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               <>
                 <Button
                   href="/login"
+                  prefetch={false}
                   size="md"
                   className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                 >
                   Log in
                 </Button>
-                <Button href="/register" size="md" className="hidden sm:inline-flex rounded-full px-4">
+                <Button href="/register" prefetch={false} size="md" className="hidden sm:inline-flex rounded-full px-4">
                   Get started
                   <HugeiconsIcon icon={ArrowRight01Icon} />
                 </Button>
@@ -221,6 +224,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className={cn(
                     "block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isActive(item.href) ? "bg-brand-50 text-brand-800" : "text-neutral-800 hover:bg-neutral-50 hover:text-neutral-900"
@@ -239,11 +243,11 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                       <p className="truncate text-xs text-neutral-500">{account.email}</p>
                     </div>
                   </div>
-                  <Link href={workspace} className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50">
+                  <Link href={workspace} prefetch={false} className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50">
                     <Icon icon={Home01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
                     Open dashboard
                   </Link>
-                  <Link href={settingsHref} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900">
+                  <Link href={settingsHref} prefetch={false} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900">
                     <Icon icon={Settings01Icon} size={15} strokeWidth={1.8} className="shrink-0" />
                     Account settings
                   </Link>

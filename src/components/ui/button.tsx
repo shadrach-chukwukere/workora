@@ -38,6 +38,8 @@ export interface ButtonProps
   href?: string;
   external?: boolean;
   loading?: boolean;
+  /** Set false for above-the-fold links that shouldn't spend the first load on prefetching. */
+  prefetch?: boolean;
 }
 
 function Spinner({ className }: { className?: string }) {
@@ -51,6 +53,7 @@ export function Button({
   href,
   external,
   loading,
+  prefetch,
   children,
   disabled,
   type,
@@ -66,7 +69,7 @@ export function Button({
       );
     }
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} prefetch={prefetch} className={classes}>
         {children}
       </Link>
     );

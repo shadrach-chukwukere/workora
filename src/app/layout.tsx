@@ -5,9 +5,9 @@ import { GeistMono } from "geist/font/mono";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { QueryProvider } from "@/components/layout/query-provider";
 import { SwRegistrar } from "@/components/pwa/sw-registrar";
 import { WebMcpTools } from "@/components/agent/webmcp-tools";
+import { AnalyticsLoader } from "@/components/layout/analytics-loader";
 
 export const metadata: Metadata = {
   title: {
@@ -58,19 +58,12 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-dvh bg-white font-sans text-neutral-900 antialiased">
         <Script
-          id="workora-gtm"
-          src="https://www.googletagmanager.com/gtm.js?id=GTM-TQ3Q7HWR"
-          strategy="beforeInteractive"
-          async
-        />
-        <Script
           id="workora-gtm-inline"
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: analyticsSnippet }}
         />
-        <QueryProvider>
-          <ThemeProvider>{children}</ThemeProvider>
-        </QueryProvider>
+        <AnalyticsLoader />
+        <ThemeProvider>{children}</ThemeProvider>
         <Toaster position="bottom-right" toastOptions={{ style: { fontFamily: "var(--font-geist-sans)" } }} />
         <SwRegistrar />
         <WebMcpTools />
