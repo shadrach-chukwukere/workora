@@ -100,16 +100,26 @@ export default function HelpPage() {
           <p className="text-sm font-semibold text-neutral-900">Search the help center</p>
         </div>
         <div className="px-5 py-4">
-          <div className="relative max-w-lg">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-              <Icon icon={HelpCircleIcon} size={16} strokeWidth={1.8} />
-            </span>
-            <input
-              type="search"
-              placeholder="Ask a question (e.g. how do escrow payments work?)"
-              className="w-full h-10 rounded-lg border border-neutral-200 bg-white pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-            />
-          </div>
+          <form action="/help" method="get" role="search" aria-label="Search the help center">
+            <div className="relative max-w-lg">
+              <label htmlFor="help-search" className="sr-only">
+                Search help articles
+              </label>
+              <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                <Icon icon={HelpCircleIcon} size={16} strokeWidth={1.8} />
+              </span>
+              <input
+                id="help-search"
+                name="q"
+                type="search"
+                placeholder="Ask a question (e.g. how do escrow payments work?)"
+                className="w-full h-10 rounded-lg border border-neutral-200 bg-white pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              />
+            </div>
+            <button type="submit" className="sr-only">
+              Search help articles
+            </button>
+          </form>
           <p className="mt-3 text-[12px] text-neutral-500">Try searching for "escrow", "dispute", "withdrawal" or "proposal".</p>
         </div>
       </section>

@@ -196,7 +196,7 @@ export default async function FindWorkPage({
       </div>
 
       {/* Filters (native GET form: everything works without JS) */}
-      <form method="get" action="/find-work" className="mt-6 grid gap-3 md:grid-cols-12">
+      <form method="get" action="/find-work" role="search" aria-label="Search open projects" className="mt-6 grid gap-3 md:grid-cols-12">
         <label className="relative md:col-span-4">
           <span className="sr-only">Search briefs</span>
           <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">

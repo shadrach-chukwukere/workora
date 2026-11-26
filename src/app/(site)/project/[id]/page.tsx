@@ -29,7 +29,7 @@ import { formatDate, formatMoney, formatNumber, labelize } from "@/lib/format";
 import { PLATFORM_FEE_PERCENT } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 
 function toIsoDate(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
@@ -404,7 +404,7 @@ export default async function ProjectPage({
                   <Icon icon={ArrowRight02Icon} size={16} strokeWidth={1.8} />
                 </Button>
                 <Button
-                  href={`mailto:?subject=${encodeURIComponent(`Workora project: ${project.title}`)}&body=${encodeURIComponent(`I found this brief on Workora and thought it might fit: https://workora.com/project/${project.id}`)}`}
+                  href={`mailto:?subject=${encodeURIComponent(`Workora project: ${project.title}`)}&body=${encodeURIComponent(`I found this brief on Workora and thought it might fit: https://workora-phi.vercel.app/project/${project.id}`)}`}
                   variant="secondary"
                   className="w-full"
                 >

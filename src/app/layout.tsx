@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
   description:
     "Workora is a modern freelance marketplace connecting businesses with vetted independent professionals worldwide. Find talent or find work.",
-  metadataBase: new URL("https://workora.com"),
+  metadataBase: new URL("https://workora-phi.vercel.app"),
   manifest: "/manifest.webmanifest",
   applicationName: "Workora",
   appleWebApp: { capable: true, title: "Workora", statusBarStyle: "default" },

@@ -11,7 +11,7 @@ import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
 import { ArrowLeft02Icon, Building01Icon, Calendar03Icon, Icon } from "@/lib/icons";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 
 interface PublicClientResponse {
   client: {

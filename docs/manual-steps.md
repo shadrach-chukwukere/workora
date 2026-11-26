@@ -4,7 +4,7 @@ Nothing here is automated by the code. Complete these after review in a staging 
 
 ## DNS / domains
 
-- [ ] Point the public hostname (default in docs: `https://workora.com`) at the Vercel deployment; add the custom domain in Vercel.
+- [ ] Point the public hostname (default in docs: `https://workora-phi.vercel.app`) at the Vercel deployment; add the custom domain in Vercel.
 - [ ] Confirm HTTPS works on the apex and `www` if both are used. The OAuth issuer and MCP resource URL must use the canonical origin consistently.
 
 ## Environment variables (placeholders only in `.env.example`)

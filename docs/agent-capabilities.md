@@ -1,6 +1,6 @@
 # Workora agent capabilities (supported and unsupported)
 
-This list describes **implemented** functionality only. It is the canonical answer to "what can an AI agent do on Workora?".
+This list describes **implemented** functionality only. Every MCP operation requires an authenticated Workora user via OAuth 2.1; there are no anonymous or shared-account tools.
 
 ## Supported
 

@@ -4,25 +4,27 @@ import { PageHeader } from "@/components/ui/page-blocks";
 import { Icon, ArrowRight02Icon, ShieldCheckIcon } from "@/lib/icons";
 import { CopyButton } from "@/components/ui/copy-button";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 const MCP_ENDPOINT = `${baseUrl}/api/mcp`;
 
 export const metadata: Metadata = {
-  title: "MCP server for AI agents",
+  title: "Workora for AI agents",
   description:
-    "Technical documentation for Workora's remote MCP server: endpoint, OAuth 2.1 flow, tools, scopes, example prompts, errors and troubleshooting.",
+    "How AI agents and browser automation discover and use Workora: public pages, semantic forms, llms.txt, WebMCP tools, and scoped developer APIs.",
   alternates: { canonical: "/ai" },
   openGraph: {
     type: "website",
     url: "/ai",
-    title: "Workora MCP server documentation",
-    description: "Endpoint, OAuth 2.1 authorization, tools, scopes, examples and troubleshooting for the Workora MCP server.",
+    title: "Workora for AI agents",
+    description:
+      "Discover how agents can browse Workora, read public marketplace data, use accessible forms, and call documented developer APIs.",
     siteName: "Workora",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Workora MCP server documentation",
-    description: "Endpoint, OAuth 2.1 authorization, tools, scopes, examples and troubleshooting for the Workora MCP server.",
+    title: "Workora for AI agents",
+    description:
+      "Discover how agents can browse Workora, read public marketplace data, use accessible forms, and call documented developer APIs.",
   },
 };
 
@@ -41,8 +43,8 @@ export default function AiPage() {
   return (
     <div className="container-page flex flex-col gap-6 py-10">
       <PageHeader
-        title="Workora MCP server"
-        description="Technical documentation for connecting an AI agent to Workora. This page describes implementation, permissions, and limits — not a separate account interface."
+        title="Workora for AI agents"
+        description="Workora is built to be discoverable and usable by autonomous agents. Public marketplace pages need no account; private actions still use the normal signed-in flows and permissions."
         actions={
           <Link href="/llms.txt" className="btn-secondary inline-flex items-center gap-1.5">
             llms.txt
@@ -51,20 +53,65 @@ export default function AiPage() {
         }
       />
 
-      <Section title="What the server does">
+      <Section title="What Workora is">
         <p>
-          Workora is a freelance marketplace: clients post projects, freelancers submit proposals (called applications
-          in the UI), clients may invite freelancers directly, and accepted work is tracked as contracts with
-          milestones, conversations, and reviews. The MCP server lets an authorized AI assistant read public
-          marketplace data and act on the connected user&apos;s own account through those same Workora features.
+          Workora is a freelance marketplace: clients post projects with public budgets, freelancers submit proposals
+          (called applications in some screens), clients may invite freelancers directly, and accepted work runs as a
+          contract with funded milestones, conversations and reviews.
         </p>
         <p>
-          The machine-readable API description is at <Link className="text-brand-700 hover:underline" href="/openapi.json">/openapi.json</Link>.
-          Tools are implemented once in a shared service layer used by the website, REST API, MCP, and WebMCP.
+          Public profiles, listings, categories and policies are readable without an account. Browser agents can use
+          the same pages, forms and buttons as people; private actions still require the normal session and permissions.
         </p>
       </Section>
 
-      <Section title="Endpoint">
+      <Section title="Discover the website">
+        <p>
+          Agents can start from{" "}
+          <Link className="text-brand-700 hover:underline" href="/robots.txt">robots.txt</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/sitemap.xml">sitemap.xml</Link> and{" "}
+          <Link className="text-brand-700 hover:underline" href="/llms.txt">llms.txt</Link>. Useful public entry points
+          are <Link className="text-brand-700 hover:underline" href="/find-work">open work</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/find-talent">public talent</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/categories">categories</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/about">how it works</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/pricing">pricing</Link>,{" "}
+          <Link className="text-brand-700 hover:underline" href="/privacy">privacy</Link> and{" "}
+          <Link className="text-brand-700 hover:underline" href="/terms">terms</Link>.
+        </p>
+        <p>
+          Public pages use semantic headings and landmarks, labelled inputs, descriptive buttons, canonical URLs,
+          OpenGraph/Twitter metadata and JSON-LD structured data (Organization, WebSite, JobPosting, Person and
+          ProfilePage). Native GET forms work without JavaScript and expose validation and status messages.
+        </p>
+      </Section>
+
+      <Section title="Use the normal account flows">
+        <p>
+          Browser agents can navigate to <Link className="text-brand-700 hover:underline" href="/register">/register</Link>{" "}
+          and <Link className="text-brand-700 hover:underline" href="/login">/login</Link>. Account creation and sign-in
+          keep the existing security checks, including email verification where required. There is no separate agent
+          account and no bypass of those checks.
+        </p>
+        <p>
+          Once signed in, agents can use supported marketplace actions through the same forms users see. Consequential
+          actions such as submitting a proposal or sending a message keep their explicit confirmation step.
+        </p>
+      </Section>
+
+      <Section title="Browser-agent tools (WebMCP)">
+        <p>
+          In browsers that implement <code className={CODE}>document.modelContext</code>, Workora registers tools only
+          for the current page: search jobs, read job details, prepare and confirm a proposal, search freelancers and
+          read a public freelancer profile. Other browsers keep the normal accessible website with no extra UI.
+        </p>
+        <p>
+          Tool responses are explicit allowlists of public fields. Marketplace text is treated as untrusted data, never
+          as instructions. Private responses still depend on the signed-in session and server-side permissions.
+        </p>
+      </Section>
+
+      <Section title="Developer MCP endpoint (optional infrastructure)">
         <p>Production Streamable HTTP endpoint (HTTPS, port 443):</p>
         <div className="flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3">
           <code className="min-w-0 flex-1 break-all text-sm font-medium text-brand-800">{MCP_ENDPOINT}</code>
@@ -76,10 +123,11 @@ export default function AiPage() {
         </p>
       </Section>
 
-      <Section title="Authentication (always required)">
+      <Section title="MCP authentication">
         <p>
+          This section applies only to the developer MCP endpoint. The public website and public pages need no account.
           Every MCP request, including initialization and tool discovery, requires a bearer token for a specific
-          Workora user. There are no anonymous or shared-account tools. A request without a valid token receives{" "}
+          Workora user. There are no anonymous or shared-account MCP tools. A request without a valid token receives{" "}
           <strong>401</strong> with <code className={CODE}>WWW-Authenticate: Bearer resource_metadata=&quot;…&quot;</code>{" "}
           so the client can discover and start the OAuth flow.
         </p>

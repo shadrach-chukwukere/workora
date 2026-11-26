@@ -146,7 +146,7 @@ export default async function FindTalentPage({
       </div>
 
       {/* Filters (native GET form) */}
-      <form method="get" action="/find-talent" className="mt-6 grid gap-3 md:grid-cols-12">
+      <form method="get" action="/find-talent" role="search" aria-label="Search freelancers" className="mt-6 grid gap-3 md:grid-cols-12">
         <label className="relative md:col-span-4">
           <span className="sr-only">Search freelancers</span>
           <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">

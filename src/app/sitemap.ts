@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { apiServerOr } from "@/lib/api-data";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 
 // Keep the sitemap bounded: four pages of 50 public records per collection.
 const MAX_PAGES = 4;

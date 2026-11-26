@@ -15,7 +15,7 @@ import TrustedByMarquee from "@/components/layout/TrustedByMarquee";
 import { CategoryExplorer } from "@/components/layout/CategoryExplorer";
 import { HowItWorksShowcase } from "@/components/layout/HowItWorksShowcase";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 
 export const metadata: Metadata = {
   title: "Talent meets opportunity",

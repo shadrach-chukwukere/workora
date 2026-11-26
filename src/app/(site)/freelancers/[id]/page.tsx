@@ -25,7 +25,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { ContactDetails } from "@/lib/contact";
 import type { ConnectionStatus } from "@/lib/connections";
 
-const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora.com").replace(/\/+$/, "");
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://workora-phi.vercel.app").replace(/\/+$/, "");
 
 interface PublicProfile {
   user: { id: string; name: string; image: string | null; banner_url: string | null; created_at: string };
