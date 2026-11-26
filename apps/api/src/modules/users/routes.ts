@@ -6,6 +6,21 @@ import { db } from "../../database/connection.js";
 import { publicUser } from "../../utils/serializers.js";
 import { updateMeSchema } from "./schemas.js";
 
+/** Accept bare domains and store a safe, absolute http(s) URL. */
+function normalizeExternalUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return candidate;
+  } catch {
+    return null;
+  }
+}
+
 const CONTACT_COLUMNS_SQL = sql`
   u.phone, u.github_url, u.linkedin_url, u.twitter_url,
   u.instagram_url, u.website_url, u.portfolio_url
@@ -223,12 +238,17 @@ export default async function usersRoutes(app: FastifyInstance) {
       reply.status(400).send({ success: false, message: "title is required", error: { code: "VALIDATION_ERROR", details: { field: "title" } } });
       return;
     }
+    const projectUrl = normalizeExternalUrl(body.project_url);
+    if (body.project_url?.trim() && !projectUrl) {
+      reply.status(400).send({ success: false, message: "project_url must be a valid http(s) URL", error: { code: "VALIDATION_ERROR", details: { field: "project_url" } } });
+      return;
+    }
     const tags = Array.isArray(body.tags) ? body.tags.map((t) => String(t).trim()).filter(Boolean) : [];
     const year = Number.isFinite(body.year) && body.year! >= 1990 && body.year! <= 2100 ? Math.floor(body.year!) : null;
     const instance = await db();
     const inserted = await sql<{ id: string }>`
       INSERT INTO portfolio_projects (freelancer_id, title, summary, description, role, year, project_url, image_url)
-      VALUES (${user.id}, ${title}, ${title}, ${body.description?.trim() ?? ""}, ${tags.length > 0 ? tags.join(", ") : null}, ${year}, ${body.project_url?.trim() || null}, ${body.image_url?.trim() || null})
+      VALUES (${user.id}, ${title}, ${title}, ${body.description?.trim() ?? ""}, ${tags.length > 0 ? tags.join(", ") : null}, ${year}, ${projectUrl}, ${body.image_url?.trim() || null})
       RETURNING id
     `.execute(instance).then((r) => r.rows[0]!);
     reply.status(201).send(ok({ id: inserted.id }, "Portfolio item added"));
@@ -243,6 +263,11 @@ export default async function usersRoutes(app: FastifyInstance) {
     }
     const { id } = request.params as { id: string };
     const body = request.body as { title?: string; description?: string; tags?: string[]; year?: number; project_url?: string; image_url?: string };
+    const projectUrl = normalizeExternalUrl(body.project_url);
+    if (body.project_url?.trim() && !projectUrl) {
+      reply.status(400).send({ success: false, message: "project_url must be a valid http(s) URL", error: { code: "VALIDATION_ERROR", details: { field: "project_url" } } });
+      return;
+    }
     const tags = Array.isArray(body.tags) ? body.tags.map((t) => String(t).trim()).filter(Boolean).join(", ") : undefined;
     const year = body.year === null ? null : Number.isFinite(body.year) ? Math.floor(body.year!) : undefined;
     const instance = await db();
@@ -253,7 +278,7 @@ export default async function usersRoutes(app: FastifyInstance) {
           description = COALESCE(${body.description?.trim() ?? null}, description),
           role = COALESCE(${tags ?? null}, role),
           year = COALESCE(${year ?? null}, year),
-          project_url = COALESCE(${body.project_url?.trim() ?? null}, project_url),
+          project_url = COALESCE(${projectUrl}, project_url),
           image_url = COALESCE(${body.image_url?.trim() ?? null}, image_url)
       WHERE id = ${id} AND freelancer_id = ${user.id}
       RETURNING id

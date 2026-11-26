@@ -100,9 +100,9 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
       </a>
 
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/94 border-b border-neutral-200/50">
-        <div className="container-page flex h-14 items-center justify-between gap-x-3 px-4 sm:px-6 lg:px-8">
+        <div className="container-page flex h-14 w-full items-center justify-between gap-x-3 px-4 sm:px-6 lg:px-8">
           {/* Brand — always visible on left */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
             <Logo className="shrink-0" size="sm" />
           </div>
 
@@ -128,7 +128,7 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
           </nav>
 
           {/* Right side: search (desktop), account actions, hamburger */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {/* Search — desktop only */}
             <div className="hidden md:flex items-center">
               <HeaderSearch />
@@ -147,7 +147,11 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
                 <DropdownMenu
                   label="Account menu"
                   trigger={
-                    <button type="button" aria-label="Account menu" className="inline-flex size-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100">
+                    <button
+                      type="button"
+                      aria-label="Account menu"
+                      className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 ring-1 ring-neutral-200 transition-shadow hover:ring-brand-300 touch-target"
+                    >
                       <Avatar src={account.image} name={account.name} size="sm" />
                     </button>
                   }
@@ -175,9 +179,9 @@ export function PublicHeader({ account = null }: PublicHeaderProps) {
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 md:hidden touch-target"
+              className="inline-flex size-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-50 md:hidden touch-target"
             >
-              <Icon icon={Menu01Icon} size={20} strokeWidth={1.8} />
+              <Icon icon={Menu01Icon} size={19} strokeWidth={1.8} />
             </button>
           </div>
         </div>

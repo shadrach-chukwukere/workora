@@ -364,7 +364,9 @@ function PortfolioEditor({
   const yearValid = Number.isInteger(yearValue) && yearValue >= 2000 && yearValue <= new Date().getFullYear();
   const titleValid = title.trim().length >= 3;
   const tagsValid = tags.split(",").map((t) => t.trim()).filter(Boolean).length > 0;
-  const canSave = titleValid && tagsValid && yearValid && description.trim().length >= 10 && !saving;
+  const linkUrl = normalizeExternalUrl(link);
+  const linkError = link.trim() && !linkUrl ? "Enter a valid link, e.g. https://my-project.vercel.app" : undefined;
+  const canSave = titleValid && tagsValid && yearValid && description.trim().length >= 10 && !linkError && !saving;
 
   const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -393,7 +395,7 @@ function PortfolioEditor({
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
       year: yearValue,
       imageUrl: imageUrl ?? undefined,
-      link: link.trim() || undefined,
+      link: linkUrl ?? undefined,
     });
     onClose();
   }
@@ -507,8 +509,8 @@ function PortfolioEditor({
             <p className="mt-2 text-xs text-rose-600">{imageUploadError}</p>
           ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Link" hint="Optional, opens in a new tab">
-              <Input id="portfolio-link" type="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} />
+            <Field label="Link" hint="Optional, opens in a new tab. Bare domains are fine." error={linkError}>
+              <Input id="portfolio-link" type="text" inputMode="url" placeholder="https://my-project.vercel.app" value={link} onChange={(e) => setLink(e.target.value)} />
             </Field>
           </div>
       </div>
