@@ -59,7 +59,7 @@ The authoritative tool list lives in `apps/api/src/modules/agent/operations.ts` 
 
 ## 6. Client connection instructions
 
-**ChatGPT:** ChatGPT Plugins → **+ Add custom MCP server** → enter `https://workora-phi.vercel.app/api/mcp` → review the risk notice → create as a plugin → install → sign in to Workora and approve scopes.
+**ChatGPT:** ChatGPT Plugins → **+ Add custom MCP server** → enter `https://workora-phi.vercel.app/api/mcp` → review the risk notice → create as a plugin → install → sign in to Workora and approve scopes. ChatGPT identifies itself with `https://chatgpt.com/oauth/client.json`; its metadata prefers `private_key_jwt` but also lists `none`, so Workora accepts it as a public PKCE client. The token endpoint does not implement `private_key_jwt`.
 
 **Claude:** Claude connector settings → **Add custom connector** → enter the URL → start a chat and connect → sign in to Workora and approve scopes.
 

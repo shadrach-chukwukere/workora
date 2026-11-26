@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { authorizationServerMetadata, isValidRedirectUri, protectedResourceMetadata } from "../src/modules/oauth/service.js";
+import {
+  authorizationServerMetadata,
+  cimdSupportsPublicClient,
+  isValidRedirectUri,
+  protectedResourceMetadata,
+} from "../src/modules/oauth/service.js";
 import { hasScope, isMcpScope, parseScopes } from "../src/modules/oauth/scopes.js";
 import { issueConfirmation, verifyConfirmation } from "../src/modules/mcp/confirmation.js";
 import { buildMcpServer, MCP_TOOL_NAMES } from "../src/modules/mcp/server.js";
@@ -26,6 +31,24 @@ test("discovery metadata advertises the Workora resource and authorization serve
   assert.equal(prm.resource, mcpResourceUrl);
   assert.equal(prm.authorization_servers[0], as.issuer);
   assert.ok(prm.scopes_supported.includes("jobs:write"));
+});
+
+test("CIMD accepts clients that advertise public PKCE support", () => {
+  assert.equal(cimdSupportsPublicClient({ token_endpoint_auth_method: "none" }), true);
+  assert.equal(
+    cimdSupportsPublicClient({
+      token_endpoint_auth_method: "private_key_jwt",
+      token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+    }),
+    true,
+  );
+  assert.equal(
+    cimdSupportsPublicClient({
+      token_endpoint_auth_method: "private_key_jwt",
+      token_endpoint_auth_methods_supported: ["private_key_jwt"],
+    }),
+    false,
+  );
 });
 
 test("redirect URI validation allows https and loopback only", () => {

@@ -87,6 +87,22 @@ export function redirectUriAllowed(client: OAuthClient, uri: string): boolean {
   }
 }
 
+/**
+ * Workora's token endpoint supports public clients only. Some clients (notably
+ * ChatGPT) declare `private_key_jwt` as their preferred method while also
+ * advertising `none` in `token_endpoint_auth_methods_supported`; those clients
+ * can complete the PKCE flow without client authentication, so accept them.
+ */
+export function cimdSupportsPublicClient(doc: Record<string, unknown>): boolean {
+  const preferred =
+    typeof doc.token_endpoint_auth_method === "string" ? doc.token_endpoint_auth_method : "none";
+  if (preferred === "none") return true;
+  return (
+    Array.isArray(doc.token_endpoint_auth_methods_supported) &&
+    doc.token_endpoint_auth_methods_supported.some((method) => method === "none")
+  );
+}
+
 async function fetchCimd(clientId: string): Promise<OAuthClient | null> {
   const cached = cimdCache.get(clientId);
   if (cached && cached.expiresAt > Date.now()) return cached.client;
@@ -123,14 +139,14 @@ async function fetchCimd(clientId: string): Promise<OAuthClient | null> {
     if (!Array.isArray(doc.redirect_uris) || doc.redirect_uris.some((u) => typeof u !== "string" || !isValidRedirectUri(u))) {
       return null;
     }
-    const authMethod = typeof doc.token_endpoint_auth_method === "string" ? doc.token_endpoint_auth_method : "none";
-    // Public clients with PKCE are the only supported client authentication method.
-    if (authMethod !== "none") return null;
+    // We do not implement private_key_jwt; accept only clients that advertise
+    // public PKCE as an available method, even if they prefer a keyed method.
+    if (!cimdSupportsPublicClient(doc)) return null;
     const client: OAuthClient = {
       client_id: clientId,
       client_name: doc.client_name.slice(0, 120),
       redirect_uris: doc.redirect_uris as string[],
-      token_endpoint_auth_method: authMethod,
+      token_endpoint_auth_method: "none",
       application_type: typeof doc.application_type === "string" ? doc.application_type : "web",
     };
     cimdCache.set(clientId, { client, expiresAt: Date.now() + CIMD_CACHE_MS });
@@ -353,7 +369,7 @@ export async function exchangeCode(input: {
       .updateTable("mcp_oauth_codes")
       .set({ used_at: new Date() })
       .where("code_hash", "=", sha256(input.code))
-      .where("used_at", "=", null)
+      .where("used_at", "is", null)
       .where("expires_at", ">", new Date())
       .where("client_id", "=", input.clientId)
       .where("redirect_uri", "=", input.redirectUri)
@@ -399,7 +415,7 @@ export async function refreshTokens(input: { refreshToken: string; clientId: str
         .updateTable("mcp_oauth_tokens")
         .set({ revoked_at: new Date() })
         .where("family_id", "=", row.family_id)
-        .where("revoked_at", "=", null)
+        .where("revoked_at", "is", null)
         .execute();
       await audit(row.user_id, row.client_id, "token.replay_detected", row.family_id);
       throw new OAuthError("invalid_grant", "Refresh token has been revoked");
@@ -482,7 +498,7 @@ export async function revokeToken(input: { token: string; userId?: string; clien
     .updateTable("mcp_oauth_tokens")
     .set({ revoked_at: new Date() })
     .where("family_id", "=", row.family_id)
-    .where("revoked_at", "=", null)
+    .where("revoked_at", "is", null)
     .execute();
   await audit(row.user_id, row.client_id, "token.revoked");
   return true;
@@ -527,7 +543,7 @@ export async function revokeConnection(userId: string, connectionId: string): Pr
     .set({ revoked_at: now })
     .where("user_id", "=", userId)
     .where("client_id", "=", connection.client_id)
-    .where("revoked_at", "=", null)
+    .where("revoked_at", "is", null)
     .execute();
   await audit(userId, connection.client_id, "connection.revoked");
   return true;
