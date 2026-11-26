@@ -49,6 +49,13 @@ const envSchema = z.object({
    * Yoti/storage keys and manual review flow are ready for real users.
    */
   REQUIRE_VERIFICATION: z.string().default("false"),
+
+  /** MCP / OAuth 2.1 integration. URLs default to the existing web app origin. */
+  MCP_ISSUER_URL: z.string().url().optional(),
+  MCP_RESOURCE_URL: z.string().url().optional(),
+  MCP_ENABLED: z.string().default("true"),
+  MCP_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).default(3600),
+  MCP_REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().min(3600).default(2592000),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -67,6 +74,11 @@ function loadEnv(): AppEnv {
 
 export const env = loadEnv();
 export const corsOrigins = env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
+
+/** Public URLs used by MCP clients for discovery and token audience binding. */
+export const mcpIssuer = (env.MCP_ISSUER_URL ?? env.WEB_APP_URL).replace(/\/+$/, "");
+export const mcpResourceUrl = (env.MCP_RESOURCE_URL ?? `${mcpIssuer}/api/mcp`).replace(/\/+$/, "");
+export const mcpEnabled = ["1", "true", "yes", "on"].includes(env.MCP_ENABLED.trim().toLowerCase());
 
 /** Single source of truth for the temporary verification pause. */
 export const verificationRequired = ["1", "true", "yes", "on"].includes(

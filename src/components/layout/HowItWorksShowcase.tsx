@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { LazyVideo } from "@/components/ui/lazy-video";
 import { LogoMark } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface Step {
   caption: string;
   helper?: string;
   image?: string;
+  video?: string;
   alt?: string;
 }
 
@@ -24,7 +26,8 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
         helper: "Screen, interview, or book a consult with an expert before hiring.",
         image:
           "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80",
-        alt: "Developer reviewing a project on a phone at a desk",
+        video: "/videos/workora-intro.mp4",
+        alt: "Workora client platform walkthrough showing how to hire a freelancer",
       },
       {
         caption: "Pay when work is done",
@@ -44,7 +47,8 @@ const CONTENT: Record<Mode, { steps: Step[]; cta: string; href: string }> = {
         helper: "Browse briefs with public budgets and apply in a couple of clicks.",
         image:
           "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=900&q=80",
-        alt: "Code on a laptop screen",
+        video: "/videos/workora-freelancer.mp4",
+        alt: "Workora freelancer platform walkthrough showing how to find projects",
       },
       {
         caption: "Get paid milestone by milestone",
@@ -98,7 +102,13 @@ export function HowItWorksShowcase() {
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {content.steps.map((step, index) => (
             <article key={`${mode}-${step.caption}`}>
-              {step.image ? (
+              {step.video ? (
+                <LazyVideo
+                  src={step.video}
+                  posterSrc={step.image ?? ""}
+                  alt={step.alt ?? step.caption}
+                />
+              ) : step.image ? (
                 <div className="aspect-[4/3] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
                   <Image
                     src={step.image}

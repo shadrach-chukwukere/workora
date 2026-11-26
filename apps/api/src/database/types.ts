@@ -709,6 +709,68 @@ export interface ReportsTable {
   created_at: Timestamp;
 }
 
+/** OAuth 2.1 state for third-party AI clients (Better Auth still owns user sessions). */
+export interface McpOAuthClientsTable {
+  id: Generated<string>;
+  client_id: string;
+  client_name: string;
+  redirect_uris: string;
+  grant_types: string;
+  token_endpoint_auth_method: string;
+  application_type: string;
+  client_id_metadata_url: string | null;
+  created_at: Timestamp;
+}
+
+export interface McpOAuthCodesTable {
+  code_hash: string;
+  user_id: string;
+  client_id: string;
+  redirect_uri: string;
+  scopes: string;
+  code_challenge: string;
+  resource: string;
+  expires_at: Timestamp;
+  used_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
+export interface McpOAuthTokensTable {
+  id: Generated<string>;
+  token_hash: string;
+  refresh_hash: string | null;
+  user_id: string;
+  client_id: string;
+  scopes: string;
+  resource: string;
+  family_id: string;
+  expires_at: Timestamp;
+  refresh_expires_at: Timestamp;
+  revoked_at: Timestamp | null;
+  last_used_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
+export interface McpConnectionsTable {
+  id: Generated<string>;
+  user_id: string;
+  client_id: string;
+  client_name: string;
+  scopes: string;
+  created_at: Timestamp;
+  last_used_at: Timestamp | null;
+  revoked_at: Timestamp | null;
+}
+
+export interface McpAuditLogsTable {
+  id: Generated<string>;
+  user_id: string | null;
+  client_id: string | null;
+  action: string;
+  detail: string | null;
+  created_at: Timestamp;
+}
+
 export interface DB {
   users: UsersTable;
   sessions: SessionsTable;
@@ -770,4 +832,9 @@ export interface DB {
   moderation_actions: ModerationActionsTable;
   platform_settings: PlatformSettingsTable;
   reports: ReportsTable;
+  mcp_oauth_clients: McpOAuthClientsTable;
+  mcp_oauth_codes: McpOAuthCodesTable;
+  mcp_oauth_tokens: McpOAuthTokensTable;
+  mcp_connections: McpConnectionsTable;
+  mcp_audit_logs: McpAuditLogsTable;
 }

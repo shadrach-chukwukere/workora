@@ -175,7 +175,7 @@ export function IntegrationsClient() {
                       disabled={busyId === c.id}
                       onClick={() => void revoke(c.id)}
                     >
-                      <Icon icon={Trash01Icon} size={14} strokeWidth={1.8} />
+                      <Icon icon={TrashIcon} size={14} strokeWidth={1.8} />
                       Disconnect
                     </Button>
                   </div>
