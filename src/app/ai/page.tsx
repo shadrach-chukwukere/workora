@@ -102,7 +102,8 @@ export default function AiPage() {
         <p>
           <strong className="font-medium text-neutral-800">Writes, always in two steps:</strong> an agent can prepare a
           draft or preview, then ask for your explicit confirmation before it publishes a job, submits an application,
-          sends an invitation, leaves a review or sends a message. A write is not applied until you confirm it.
+          sends an invitation, accepts or declines an invitation, reviews an application or sends a message. A write is
+          not applied until you confirm it.
         </p>
       </Section>
 

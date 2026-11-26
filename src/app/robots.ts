@@ -16,6 +16,7 @@ const disallowed = [
   "/connections/",
   "/invoice/",
   "/notifications/",
+  "/oauth/",
 ];
 
 export default function robots(): MetadataRoute.Robots {
